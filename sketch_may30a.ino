@@ -87,19 +87,6 @@
 #define SW_RX     4                         /**< software serial rx (debug printout) */
 #define SW_TX     5                         /**< software serial tx (debug printout) */
 
-
-
-#define WIFI_SSID WIFI_DEFAULT_SSID
-#define WIFI_PASS WIFI_DEFAULT_PASS
-#define WIFI_CHAN WIFI_DEFAULT_CHAN
-#define WIFI_SECU WIFI_DEFAULT_SECU
-
-#define WEB_IP     APP_DEFAULT_IP
-#define WEB_IP_STR APP_DEFAULT_IP_S
-#define WEB_PORT   APP_DEFAULT_PORT
-
-
-
 #define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
 #define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
 #define PROBE_TEST_PERIOD       5000        /**< signal reading period, ms */
@@ -127,9 +114,16 @@
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_BAUD_RATE        115200      /**< shield's UART baud rate */
 
+#define WIFI_SSID               WIFI_DEFAULT_SSID
+#define WIFI_PASS               WIFI_DEFAULT_PASS
+#define WIFI_CHAN               WIFI_DEFAULT_CHAN
+#define WIFI_SECU               WIFI_DEFAULT_SECU
+
+#define WEB_IP                  APP_DEFAULT_IP
+#define WEB_IP_STR              APP_DEFAULT_IP_S
+#define WEB_PORT                APP_DEFAULT_PORT
 #define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
 #define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
-
 
 
 
