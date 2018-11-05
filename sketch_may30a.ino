@@ -181,6 +181,8 @@ typedef struct {
     byte cport;                             /**< port to perform a 'close' action */
 } valve_t;
 
+/* TODO: let the probes be disabled by hand */
+
 /** List of available probes. */
 static probe_t PROBES[] = {
     {PROBE0, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED0, LED_OFF},
@@ -408,6 +410,8 @@ static void halt_on_error(void)
     delay(10);
     pinMode(WIFIEN, OUTPUT);
     digitalWrite(WIFIEN, LOW);
+    pinMode(WIFIRS, OUTPUT);
+    digitalWrite(WIFIRS, LOW);
 
     while (i--) {
         pinMode(PROBES[i].led, OUTPUT);
@@ -828,14 +832,16 @@ static void web_configure(void)
     /* Start shield. */
     pinMode(WIFIEN, OUTPUT);
     digitalWrite(WIFIEN, HIGH);
+    pinMode(WIFIRS, OUTPUT);
+    digitalWrite(WIFIRS, HIGH);
 
     delay(SHIELD_STARTUP_TIME);
 
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
     if (WiFi.status() == WL_NO_SHIELD) {
-        DP("esp8266 shield is not responsive, halt");
-        halt_on_error();
+        DP("esp8266 shield is not responsive");
+        return;
     }
     DP("esp8266 online");
 
@@ -1148,10 +1154,7 @@ void setup()
 #endif
     DP("setup");
 
-    /* Turn off unused peripherals. */
     peripheral_configure();
-
-    /* TODO: swap the following two lines (WIFIEN pin should control WiFi-shield) */
     web_configure();
     probes_configure();
     leds_configure();
