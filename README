@@ -1,10 +1,24 @@
-TODO:
-1) + powering U1
-2) + move text
-3) + check sizes
-4) + remove REF** (top left)
-5) + remove mask beneath linear regulators
-6) + duplicate power-line from U2 to U3
-7) + buttons offset
+States of the Main Module:
+Ma - power off
+Mb - sleep (high power save) [maximum power save]
+Mc - suspend (minor power save) [operative context is kept alive]
+Md - idle [it is dry]
+Me - triggered [a leakage detected, valves should be closed]
+Mf - standing by [direct valve control is engaged]
 
+States of the WiFi Module:
+Wa - power off [WiFi module is power down]
+Wb - sleep (high power save) [WiFi module in power save with fast resume]
+Wc - suspend (minor power save) [kepp consumtion low, context remains actual]
+Wd - access point [basic mode]
+We - station mode [user settings were configured]
+Wf - access point and station mode [extended mode]
 
+Processes int the Main Module:
+ - power up
+ - sleep <= [internal]
+ - suspend <= [internal]
+ - restore <= [timer]
+ - engage <= [signal, command]
+ - disengage <= [command with condition]
+ - waiting <= [override]
