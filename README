@@ -15,10 +15,43 @@ We - station mode [user settings were configured]
 Wf - access point and station mode [extended mode]
 
 Processes int the Main Module:
- - power up
- - sleep <= [internal]
- - suspend <= [internal]
- - restore <= [timer]
- - engage <= [signal, command]
- - disengage <= [command with condition]
- - waiting <= [override]
+RESET   - power down
+INIT    - power up
+SLEEP   - sleep <= [internal, external power absent]
+SUSPEND - suspend <= [internal, external power present]
+WAKE    - restore <= [timer]
+ALARM   - engage <= [signal, command]
+AT_EASE - disengage <= [command with condition]
+ASIDE   - waiting <= [override]
+ERASE   - erase settings <= [override]
+
+
++-------+-------+-------+-------+-------+-------+-------+
+|  ...to|  Ma   | Mb/Mc | Mc/Mb |  Md   |  Me   |  Mf   |
+|from...|       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |       |
+|  Ma   |       |   X   |   X   |  INIT | ALARM | ERASE |
+|       |       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |       |
+|  Mb   | RESET |       |   X   |  WAKE | ALARM | ASIDE |
+|       |       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |       |
+|  Mc   | RESET |   X   |       |  WAKE | ALARM | ASIDE |
+|       |       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |       |
+|  Md   | RESET | SLEEP |SUSPEND|       | ALARM | ASIDE |
+|       |       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |       |
+|  Me   | RESET | SLEEP |SUSPEND|AT_EASE|       | ASIDE |
+|       |       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |       |
+|  Mf   | RESET |   X   |   X   |   X   |   X   |       |
+|       |       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+-------+
+
