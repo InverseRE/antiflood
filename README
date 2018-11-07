@@ -1,57 +1,49 @@
-States of the Main Module:
-Ma - power off
-Mb - sleep (high power save) [maximum power save]
-Mc - suspend (minor power save) [operative context is kept alive]
-Md - idle [it is dry]
-Me - triggered [a leakage detected, valves should be closed]
-Mf - standing by [direct valve control is engaged]
+================================================================================
+ SYSTEM STATES
+================================================================================
 
-States of the WiFi Module:
-Wa - power off [WiFi module is power down]
-Wb - sleep (high power save) [WiFi module in power save with fast resume]
-Wc - suspend (minor power save) [kepp consumtion low, context remains actual]
-Wd - access point [basic mode]
-We - station mode [user settings were configured]
-Wf - access point and station mode [extended mode]
+Main Module States:
+OFF - power off
+SRV - service mode (user settings and configures)
+IDL - idle (dry conditions)
+TRG - triggered (leakage detected)
+HWT - aside mode (direct control engaged)
 
-Processes int the Main Module:
-RESET   - power down
-INIT    - power up
-SLEEP   - sleep <= [internal, external power absent]
-SUSPEND - suspend <= [internal, external power present]
-WAKE    - restore <= [timer]
-ALARM   - engage <= [signal, command]
-AT_EASE - disengage <= [command with condition]
-ASIDE   - waiting <= [override]
-ERASE   - erase settings <= [override]
+WiFi Module States:
+DSC - power off and/or disconnected
+STM - station mode
+APM - access point mode
 
+Processes:
+reset - reboot
+init  - initialization
+setup - going to configure
+alarm - leakage event and all measures
+wait  - waiting for overriding controls
+cont  - returnoing to normal operations
 
-+-------+-------+-------+-------+-------+-------+-------+
-|  ...to|  Ma   | Mb/Mc | Mc/Mb |  Md   |  Me   |  Mf   |
-|from...|       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-|       |       |       |       |       |       |       |
-|  Ma   |       |   X   |   X   |  INIT | ALARM | ERASE |
-|       |       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-|       |       |       |       |       |       |       |
-|  Mb   | RESET |       |   X   |  WAKE | ALARM | ASIDE |
-|       |       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-|       |       |       |       |       |       |       |
-|  Mc   | RESET |   X   |       |  WAKE | ALARM | ASIDE |
-|       |       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-|       |       |       |       |       |       |       |
-|  Md   | RESET | SLEEP |SUSPEND|       | ALARM | ASIDE |
-|       |       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-|       |       |       |       |       |       |       |
-|  Me   | RESET | SLEEP |SUSPEND|AT_EASE|       | ASIDE |
-|       |       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-|       |       |       |       |       |       |       |
-|  Mf   | RESET |   X   |   X   |   X   |   X   |       |
-|       |       |       |       |       |       |       |
-+-------+-------+-------+-------+-------+-------+-------+
-
++-------+-------+-------+-------+-------+-------+
+|   ..to|       |       |       |       |       |
+|       |  OFF  |  SRV  |  IDL  |  TRG  |  HWT  |
+|from.. |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |
+|  OFF  |       | init  | init  |   X   |   X   |
+|       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |
+|  SRV  | reset |       |   X   |   X   |   X   |
+|       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |
+|  IDL  | reset |   X   |       | alarm | wait  |
+|       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |
+|  TRG  | reset |   X   |   X   |       | wait  |
+|       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+
+|       |       |       |       |       |       |
+|  HWT  | reset |   X   | cont  | cont  |       |
+|       |       |       |       |       |       |
++-------+-------+-------+-------+-------+-------+
