@@ -32,9 +32,30 @@
 
 
 
-/* Uncomment the following define to use software serial i/o for debug printing purpose. */
-// #define DEBUG_PRINTOUT
+/*
+ * Overall firmware settings.
+ */
 
+#undef  DEBUG_PRINTOUT                      /**< debug printout */
+#define DEBUG_BAUD_RATE 115200              /**< software serial baud rate */
+#define AUX_SOUND                           /**< sound beeper */
+
+#define WIFI_DEFAULT_SSID ">)"              /**< default network identifier */
+#define WIFI_DEFAULT_PASS "00000000"        /**< default network access password */
+#define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
+#define WIFI_DEFAULT_SECU ENC_TYPE_WPA2_PSK /**< default network security type */
+
+#define APP_DEFAULT_IP 192, 168, 111, 111   /**< application default IP address */
+#define APP_DEFAULT_IP_S "192.168.111.111"  /**< application default IP address string */
+#define APP_DEFAULT_PORT 80                 /**< application default port */
+
+#define USE_POWER_SAVE                      /**< use power saving mode between loop cycles */
+
+
+
+/*
+ * Technical firmware settings.
+ */
 
 
 #define PROBE0    A0                        /**< probe 0 */
@@ -68,20 +89,14 @@
 
 
 
-#define USE_POWER_SAVE                      /**< use power saving mode between loop cycles */
+#define WIFI_SSID WIFI_DEFAULT_SSID
+#define WIFI_PASS WIFI_DEFAULT_PASS
+#define WIFI_CHAN WIFI_DEFAULT_CHAN
+#define WIFI_SECU WIFI_DEFAULT_SECU
 
-
-
-#define WIFI_STATION                        /**< connect to an existed network */
-//#define WIFI_ACCESS_POINT                   /**< start own network */
-#define WIFI_SSID ">)"                      /**< network identifier */
-#define WIFI_PASS "00000000"                /**< network access password */
-#define WIFI_CH   10                        /**< network channel number */
-#define WIFI_SECU ENC_TYPE_WPA2_PSK         /**< network security type */
-
-#define WEB_IP     192, 168, 111, 111       /**< device's IP address */
-#define WEB_IP_STR "192.168.111.111"        /**< device's IP address string */
-#define WEB_PORT   80                       /**< server port */
+#define WEB_IP     APP_DEFAULT_IP
+#define WEB_IP_STR APP_DEFAULT_IP_S
+#define WEB_PORT   APP_DEFAULT_PORT
 
 
 
@@ -115,7 +130,6 @@
 #define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
 #define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
 
-#define DEBUG_BAUD_RATE         115200      /**< software serial baud rate */
 
 
 
