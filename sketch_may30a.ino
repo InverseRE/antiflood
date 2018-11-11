@@ -25,10 +25,10 @@
 
 #include <WiFiEspClient.h>
 #include <WiFiEspServer.h>
-#include <SoftwareSerial.h>
 #include <avr/wdt.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
+#include <avr/interrupt.h>
 
 
 
@@ -40,6 +40,7 @@
 #define DEBUG_BAUD_RATE 115200              /**< software serial baud rate */
 #define AUX_SOUND                           /**< sound beeper */
 
+#define WIFI_STATION
 #define WIFI_DEFAULT_SSID ">)"              /**< default network identifier */
 #define WIFI_DEFAULT_PASS "00000000"        /**< default network access password */
 #define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
@@ -84,8 +85,11 @@
 #define LED4      12                        /**< LED 4 */
 #define LED5      13                        /**< LED 5 */
 
+#ifdef DEBUG_PRINTOUT
+#include <SoftwareSerial.h>                 /**< only for debug purpose, conflicts with our version of PCINT1_vect  */
 #define SW_RX     4                         /**< software serial rx (debug printout) */
 #define SW_TX     5                         /**< software serial tx (debug printout) */
+#endif
 
 
 
@@ -126,6 +130,7 @@
 
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_BAUD_RATE        115200      /**< shield's UART baud rate */
+#define SHIELD_PWR_SAVE_ACTION  2           /**< turn off WIFI & activate power save mode action identifier */
 
 #define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
 #define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
@@ -227,7 +232,8 @@ app_state_t OVERALL_STATE = APP_MALFUNCTION;
 /** Buffered reading for Web-requests. */
 RingBuffer ibuff(WEB_IN_CACHE_SIZE);
 
-
+/** WIFI shield state. true - running, false - stoped */
+bool wifi_shield_state = false;
 
 /** Debug printout. */
 #ifdef DEBUG_PRINTOUT
@@ -243,6 +249,7 @@ SoftwareSerial SWS(SW_RX, SW_TX);
 /* HTML pages. */
 #define ACTION_OPEN_ALL       "/open_valves"
 #define ACTION_CLOSE_ALL      "/close_valves"
+#define ACTION_PWR_SAVE       "/power_save_mode"
 
 #define HTTP_RESPONSE         "HTTP/1.1 200 OK\r\n"\
                               "Content-Type: text/html\r\n"\
@@ -276,6 +283,7 @@ SoftwareSerial SWS(SW_RX, SW_TX);
 #define HTML_HEADING          "<h1 style=\"color:blue\">ANTIFLOOD SYSTEM</h1>"
 #define HTML_HEADING_OPEN     "<h2 style=\"color:green\">VALVE(S) OPENING ... </h2>"
 #define HTML_HEADING_CLOSE    "<h2 style=\"color:green\">VALVE(S) CLOSING ... </h2>"
+#define HTML_HEADING_PWR_SAVE "<h2 style=\"color:green\">GO TO PWR SAVE MODE ... </h2>"
 #define HTML_HEADING_UNKNOWN  "<h2 style=\"color:red\">ACTION NOT RECOGNIZED !!! </h2>"
 #define HTML_HEADING_OK       "<h2 style=\"color:green\">OK</h2>"
 #define HTML_HEADING_ALARM    "<h2 style=\"color:blue\">WATER DETECTED</h2>"
@@ -308,15 +316,28 @@ SoftwareSerial SWS(SW_RX, SW_TX);
                               "<input type=\"submit\" value=\"open valves\"> </form>"
 #define HTML_ACT_CLOSE_ALL    "<form action=\"" ACTION_CLOSE_ALL "\">"\
                               "<input type=\"submit\" value=\"close valves\"> </form>"
+#define HTML_ACT_POWER_SAVE   "<form action=\"" ACTION_PWR_SAVE  "\">"\
+                              "<input type=\"submit\" value=\"turn on power save\"> </form>"
 
 
 
 /** Is action on valve forced? */
 #define IS_FORCED(vs) (VALVE_FORCE_OPENING == (vs) || VALVE_FORCE_CLOSING == (vs))
 
+/** Pin change Interrupt Service. This is executed when pin form A0 to A5 changed. */
+ISR (PCINT1_vect) {
+    /* Turn off WDT. */
+    wdt_disable();
+    /* Disable pin change interrupts for A0 to A5 */
+    PCICR  &= ~bit(PCIE1);
+}
+
 /** Watchdog Interrupt Service. This is executed when watchdog timed out. */
-ISR(WDT_vect) {
-  /* May be added counter to increase sleep time. */
+ISR (WDT_vect) {
+    /* Turn off WDT. */
+    wdt_disable();
+    /* Disable pin change interrupts for A0 to A5 */
+    PCICR  &= ~bit(PCIE1);
 }
 
 /** Turn off unused modules at startup. */
@@ -341,16 +362,35 @@ static void enter_sleep(boolean adc_off, boolean bod_off)
     /* Setup watchdog. */
     wdt_setup();
 
-    /* disable ADC */
+    /* Prepare probes. */
+    int i = PROBES_CNT;
+    while (i--) {
+        digitalWrite(PROBES[i].port, HIGH);
+    }
+
+    delay(PROBE_CHECK_DURATION);
+
+    /* Disable interrupts. */
+    noInterrupts();
+
+    /* Pin change interrupt enable */
+    PCMSK1 |= bit (PCINT8);  // pin A0
+    PCMSK1 |= bit (PCINT9);  // pin A1
+    PCMSK1 |= bit (PCINT10); // pin A2
+    PCMSK1 |= bit (PCINT11); // pin A3
+    PCMSK1 |= bit (PCINT12); // pin A4
+    PCMSK1 |= bit (PCINT13); // pin A5
+    PCIFR  |= bit (PCIF1);   // clear any outstanding interrupts
+    PCICR  |= bit (PCIE1);   // enable pin change interrupts for A0 to A5
+
+    /* Disable ADC */
     if (adc_off) {
         previousADCSRA = ADCSRA;
         ADCSRA = 0;
     }
 
     /* Use the power saving mode. */
-    /* Only SLEEP_MODE_IDLE allow not turn off UART. */
-    /* TODO: use POWER_DOWN */
-    set_sleep_mode(SLEEP_MODE_IDLE);
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 
     /* Disable interrupts. */
     noInterrupts();
@@ -388,16 +428,15 @@ static void enter_sleep(boolean adc_off, boolean bod_off)
 
     /* Set previous ADC config. */
     ADCSRA = previousADCSRA;
-
-    /* Turn off WDT. */
-    wdt_disable();
 }
 
 /**
  * Setup the Watch Dog Timer (WDT).
- * WDT will generate interrupt without reset in about 1sec.
+ * WDT will generate interrupt without reset in about 8 sec.
  */
 static void wdt_setup() {
+
+    noInterrupts();
 
     /* Clear the reset flag on the MCUSR, the WDRF bit (bit 3). */
     MCUSR &= ~(1 << WDRF);
@@ -406,10 +445,12 @@ static void wdt_setup() {
     WDTCSR |= (1 << WDCE) | (1 << WDE);
 
     /* Setting the watchdog pre-scaler value. */
-    WDTCSR  = (0 << WDP3) | (1 << WDP2) | (1 << WDP1) | (0 << WDP0);
+    WDTCSR  = (1 << WDP3) | (0 << WDP2) | (0 << WDP1) | (1 << WDP0);
 
     /* Enable the WD interrupt (note: no reset). */
     WDTCSR |= _BV(WDIE);
+    
+    interrupts();
 }
 
 
@@ -716,7 +757,7 @@ static void valves_check(void)
             OVERALL_STATE = app_st > OVERALL_STATE ? app_st : OVERALL_STATE;
         }
 
-        /* Skip completet or bad states. */
+        /* Skip completed or bad states. */
         if (exp == act || exp == VALVE_IGNORE || exp == VALVE_MALFUNCTION) {
             continue;
         }
@@ -784,6 +825,34 @@ static void valve_force_close(int idx)
     VALVES[idx].exp_state = VALVE_CLOSE;
 
     OVERALL_STATE = APP_MALFUNCTION != OVERALL_STATE ? APP_OK : OVERALL_STATE;
+}
+
+/**
+ * Check if any not complete valves actions.
+ *
+ * @return 1 - there is some not complete actions
+ * @return 0 - there is no uncomplete actions
+ */
+static int is_valves_actions(void)
+{
+    int j = VALVES_CNT;
+
+    while (j--) {
+        const valve_state_t exp = VALVES[j].exp_state;
+        const valve_state_t act = VALVES[j].act_state;
+
+        /* Skip completed or bad states. */
+        if (exp == act || exp == VALVE_IGNORE || exp == VALVE_MALFUNCTION) {
+            continue;
+        }
+
+        /* Valve not complete action. */
+        if (exp != act) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 /** Force valves to open. */
@@ -855,6 +924,7 @@ static void web_configure(void)
     WiFi.init(&Serial);
     if (WiFi.status() == WL_NO_SHIELD) {
         DP("esp8266 shield is not responsive");
+        power_save_mode_on();
         return;
     }
     DP("esp8266 online");
@@ -875,7 +945,28 @@ static void web_configure(void)
 
     /* Start server. */
     WEB_SERVER.begin();
+    /* Set WIFI flag. */
+    wifi_shield_state = true;
     DP("web-server started");
+}
+
+static void power_save_mode_on(void)
+{
+    /* Turn off WIFI library. */
+    WiFi.disconnect();
+    delay(10);
+    /* Turn off WIFI shield. */
+    pinMode(WIFIEN, OUTPUT);
+    digitalWrite(WIFIEN, LOW);
+    /* Set low on all WIFI shield pins. */
+    pinMode(WIFIRS, OUTPUT);
+    digitalWrite(WIFIRS, LOW);
+    pinMode(WIFIRX, OUTPUT);
+    digitalWrite(WIFIRX, LOW);
+    pinMode(WIFITX, OUTPUT);
+    digitalWrite(WIFITX, LOW);
+    /* Set WIFI flag. */
+    wifi_shield_state = false;
 }
 
 /** Checks client request. */
@@ -900,6 +991,10 @@ static void http_parse_request(WiFiEspClient client, const String& rbuff)
     } else if (rbuff.indexOf(ACTION_CLOSE_ALL) >= 0 || rbuff.indexOf(ACTION_CLOSE_ALL "?") >= 0) {
         http_action_response(client, VALVE_CLOSING_ACTION, 1);
         valves_force_close();
+    } else if (rbuff.indexOf(ACTION_PWR_SAVE) >= 0 || rbuff.indexOf(ACTION_PWR_SAVE "?") >= 0) {
+        http_action_response(client, SHIELD_PWR_SAVE_ACTION, 1);
+        delay(100); /* Some delay to finish trunsmit. */
+        power_save_mode_on();
     } else {
         /* TODO: will be removed after debug. Let me know if GET request not parsed. */
         http_action_response(client, -1, 1);
@@ -929,6 +1024,8 @@ static void http_action_response(WiFiEspClient client, unsigned char act, unsign
         client.println(F(HTML_HEADING_OPEN));
     } else if (VALVE_CLOSING_ACTION == act) {
         client.println(F(HTML_HEADING_CLOSE));
+    } else if (SHIELD_PWR_SAVE_ACTION == act) {
+        client.println(F(HTML_HEADING_PWR_SAVE));
     } else {
         client.println(F(HTML_HEADING_UNKNOWN));
     }
@@ -1074,6 +1171,8 @@ static void http_response(WiFiEspClient client)
                     HTML_ACT_OPEN_ALL
                     HTML_LN_BR
                     HTML_ACT_CLOSE_ALL
+                    HTML_LN_BR
+                    HTML_ACT_POWER_SAVE
                     /* Conclusion. */
                     HTML_BODY_BR
                     HTML_BR
@@ -1164,11 +1263,13 @@ static void reset(void)
 void setup()
 {
 #ifdef DEBUG_PRINTOUT
-    SWS.init(DEBUG_BAUD_RATE);
+    SWS.begin(DEBUG_BAUD_RATE);
 #endif
     DP("setup");
 
+    /* Turn off unused peripherals. */
     peripheral_configure();
+
     web_configure();
     probes_configure();
     leds_configure();
@@ -1204,12 +1305,16 @@ void loop()
 
     /* Display info. */
     leds_display();
-    web_run();
+    if (wifi_shield_state) {
+        web_run();
+    }
 
 #ifdef USE_POWER_SAVE
     /* Power save. */
-    if (!Serial.available()) {
+    if (!wifi_shield_state && !is_valves_actions() && (OVERALL_STATE == APP_OK)) {
         enter_sleep(true, true);
+    } else {
+        delay(10);
     }
 #else
     /* Debug stub. */
