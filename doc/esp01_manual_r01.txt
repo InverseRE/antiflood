@@ -1,0 +1,54 @@
+
+  Antiflood board rev 0.1 ESP-01 connector pinout:
+
+  ----------------------
+  |            ------- |
+  |            | 1 2 | |
+  |            | 3 4 | |
+  |            | 5 6 | |
+  |            | 7 8 | |   1 3V3
+  |            ------- |   2 RX
+  ----------------------   3 3V3
+                           4 EN   ??? (Not used)
+     ------  ------        5 3V3
+     |    |  |    |        6 RST  ??? (Not used)
+     | R  |  | R  |        7 TX
+     ------  ------        8 GND
+
+
+   ESP-01 pinout:
+
+
+  ----------------------
+  |            ------- |
+  |            | 1 2 | |   1 RX
+  |            | 3 4 | |   2 3V3
+  |            | 5 6 | |   3 GPIO0 (Not used)
+  |            | 7 8 | |   4 RST   (Not used)
+  |            ------- |   5 GPIO2 (Not used)
+  ----------------------   6 EN
+                           7 GND
+                           8 TX
+
+
+
+   ESP-01 connection:
+
+
+    |   Antiflood   |  ESP-01
+    |   board pins  |  pins
+    |---------------|----------------------------
+    |   5  3V3      |  2 3V3
+    |   2  RX       |  8 TX
+    |   3  3V3      |  6 EN
+    |   7  TX       |  1 RX
+    |   8  GND      |  7 GND
+
+
+
+   Known issues:
+
+   1. Board rev 0.1 has incorrect ESP-01 pinout on the board. It should be fixed in next board revision. Expected pinout that support direct ESP-01 board connection.
+   2. EN must be pulled up to operate, and can be set to low for chip power down. EN have to be connected to some of Atmega pins.
+   3. If Atmega 328P configured to internal clock at 8MHz, maximum serial baudrate is about 9600.
+      (Default ESP-01 baudrate is 115200, to change it use AT+UART_CUR=9600,8,1,0,0 and AT+UART_DEF=9600,8,1,0,0 commands. )
