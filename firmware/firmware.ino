@@ -119,6 +119,8 @@
 #define WIFI_CHAN               WIFI_DEFAULT_CHAN
 #define WIFI_SECU               WIFI_DEFAULT_SECU
 
+enum { WIFI_APnST, WIFI_MODE_AP, WIFI_MODE_ST } WIFI_MODE = WIFI_APnST;
+
 #define WEB_IP                  APP_DEFAULT_IP
 #define WEB_IP_STR              APP_DEFAULT_IP_S
 #define WEB_PORT                APP_DEFAULT_PORT
@@ -188,8 +190,6 @@ typedef struct {
     byte oport;                             /**< port to perform an 'open' action */
     byte cport;                             /**< port to perform a 'close' action */
 } valve_t;
-
-/* TODO: let the probes be disabled by hand */
 
 /** List of available probes. */
 static probe_t PROBES[] = {
@@ -837,6 +837,7 @@ static void valves_force_close()
 /** Configure web-server. */
 static void web_configure(void)
 {
+
     /* Start shield. */
     pinMode(WIFIEN, OUTPUT);
     digitalWrite(WIFIEN, HIGH);
@@ -856,15 +857,28 @@ static void web_configure(void)
     /* Configure network. */
     IPAddress ip_addr(WEB_IP);
 
-#if defined WIFI_STATION
-    WiFi.config(ip_addr);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-#elif defined WIFI_ACCESS_POINT
-    WiFi.configAP(ip_addr);
-    WiFi.beginAP(WIFI_SSID, WIFI_CH, WIFI_PASS, WIFI_SECU);
-#else
-#   error WiFi unknown mode
-#endif
+    switch (WIFI_MODE) {
+
+    case WIFI_APnST:
+        DP("WiFi in a double mode, defaults to an access point");
+
+    case WIFI_MODE_AP:
+        DP("WiFi in an access point mode");
+        WiFi.configAP(ip_addr);
+        WiFi.beginAP(WIFI_SSID, WIFI_CHAN, WIFI_PASS, WIFI_SECU);
+        break;
+
+    case WIFI_MODE_ST:
+        DP("WiFi in a station mode");
+        WiFi.config(ip_addr);
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+        break;
+
+    default:
+        DP("WiFi unknown mode");
+        return;
+    }
+
     DP("wifi configured");
 
     /* Start server. */
