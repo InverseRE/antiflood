@@ -1,0 +1,48 @@
+
+   Antiflood board rev 0.2 flash connector pinout:
+
+  ----------------
+                 |
+  Module         |
+     -----       |               -----
+ GND |1 2| RST   |               |   |
+     |   |       |    1 GND      |   | ISP 6pin connector
+ MOSI|3 4  SCK   |    2 RST      |   >
+     |   |       |    3 MOSI     |   |
+ VCC |5 6| MISO  |    4 SCK      |   |
+     -----       |    5 VCC      -----
+     ICSP        |    6 MISO
+  ----------------
+
+   USBASP v2.0 flasher cable pinout:
+
+             _
+       -----/ \-----   1 MOSI
+       | 1 3 5 7 9 |   2 VCC
+       | 2 4 6 8 10|   3 NC   (Not used for flashing)
+       -------------   4 TXD  (Not used for flashing)
+                       5 RST
+                       6 RXD  (Not used for flashing)
+                       7 SCK
+                       8 GND
+                       9 MISO
+                      10 GND
+
+
+   Flasher connection:
+
+
+        |   Antiflood     |      USBASP v2.0
+        |   board pins    |      pins
+        |                 |
+   GND  |   1             |      8, 10
+   RST  |   2             |      5
+   MOSI |   3             |      1
+   SCK  |   4             |      7
+   VCC  |   5             |      2
+   MISO |   6             |      9
+
+
+   Known issues:
+
+   1. ISP Adapter 10-pin to 6-pin may be used.
