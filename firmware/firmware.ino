@@ -442,7 +442,7 @@ static void wdt_setup() {
 
     /* Enable the WD interrupt (note: no reset). */
     WDTCSR |= _BV(WDIE);
-    
+
     interrupts();
 }
 
