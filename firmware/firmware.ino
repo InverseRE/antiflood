@@ -32,8 +32,8 @@
 #define AUX_SOUND                           /**< sound beeper */
 
 /** Communication settings. */
-#define APP_DEFAULT_IP 192, 168, 111, 111   /**< application default IP address */
-#define APP_DEFAULT_IP_S "192.168.111.111"  /**< application default IP address string */
+#define APP_DEFAULT_IP 192, 168, 0, 111   /**< application default IP address */
+#define APP_DEFAULT_IP_S "192.168.0.111"  /**< application default IP address string */
 #define APP_DEFAULT_PORT 80                 /**< application default port */
 
 /** Power save settings. */
