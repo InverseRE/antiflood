@@ -21,6 +21,8 @@
    For more details see LICENSE file.
 */
 
+
+
 #include <WiFiEspClient.h>
 #include <WiFiEspServer.h>
 #include <avr/wdt.h>
@@ -28,24 +30,9 @@
 #include <avr/power.h>
 #include <avr/interrupt.h>
 
-/** Overall firmware settings. */
-#define AUX_SOUND                           /**< sound beeper */
+#include "config.h"
 
-/** Communication settings. */
-#define APP_DEFAULT_IP 192, 168, 0, 111   /**< application default IP address */
-#define APP_DEFAULT_IP_S "192.168.0.111"  /**< application default IP address string */
-#define APP_DEFAULT_PORT 80                 /**< application default port */
 
-/** Power save settings. */
-#define USE_POWER_SAVE                      /**< use power saving mode between loop cycles */
-
-/** Overall detector states. */
-typedef enum {
-    APP_OK = 0, /**< all is good */
-    APP_ALARM = 1, /**< water detected */
-    APP_SOLVED = 2, /**< valves closed */
-    APP_MALFUNCTION = 3 /**< something is wrong */
-} app_state_t;
 
 /** Startup procedure. */
 void setup() {
@@ -54,9 +41,7 @@ void setup() {
 #endif
     DP("setup");
 
-    /* Turn off unused peripherals. */
     peripheral_configure();
-
     web_configure();
     probes_configure();
     leds_configure();

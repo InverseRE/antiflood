@@ -21,6 +21,12 @@
    For more details see LICENSE file.
 */
 
+
+
+#include "config.h"
+
+
+
 /** Pin change Interrupt Service. This is executed when pin form A0 to A5 changed. */
 ISR (PCINT1_vect) {
     /* Turn off WDT. */
@@ -58,20 +64,6 @@ static void wdt_setup() {
     WDTCSR |= _BV(WDIE);
 
     interrupts();
-}
-
-/** Turn off unused modules at startup. */
-static void peripheral_configure()
-{
-    /* Disable not used timers. */
-    power_timer1_disable();
-    power_timer2_disable();
-
-    /* Disable I2C. */
-    power_twi_disable();
-
-    /* Disable SPI. */
-    power_spi_disable();
 }
 
 /** Enters the arduino into a sleep mode. */

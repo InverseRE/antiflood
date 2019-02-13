@@ -21,32 +21,11 @@
    For more details see LICENSE file.
 */
 
-#define WIFIRX    0                         /**< WiFi-shield RX */
-#define WIFITX    1                         /**< WiFi-shield TX */
-#define WIFIEN    2                         /**< enable WiFi-shield (active high) */
-#define WIFIRS    3                         /**< reset WiFi-shield (active low) */
 
-#define WIFI_STATION
-#define WIFI_DEFAULT_SSID ">)"              /**< default network identifier */
-#define WIFI_DEFAULT_PASS "00000000"        /**< default network access password */
-#define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
-#define WIFI_DEFAULT_SECU ENC_TYPE_WPA2_PSK /**< default network security type */
 
-#define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
-#define SHIELD_BAUD_RATE        115200      /**< shield's UART baud rate */
-#define SHIELD_PWR_SAVE_ACTION  2           /**< turn off WIFI & activate power save mode action identifier */
+#include "config.h"
 
-#define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
-#define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
 
-#define WIFI_SSID WIFI_DEFAULT_SSID
-#define WIFI_PASS WIFI_DEFAULT_PASS
-#define WIFI_CHAN WIFI_DEFAULT_CHAN
-#define WIFI_SECU WIFI_DEFAULT_SECU
-
-#define WEB_IP     APP_DEFAULT_IP
-#define WEB_IP_STR APP_DEFAULT_IP_S
-#define WEB_PORT   APP_DEFAULT_PORT
 
 /* HTML pages. */
 #define ACTION_OPEN_ALL       "/open_valves"

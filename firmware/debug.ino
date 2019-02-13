@@ -21,15 +21,17 @@
    For more details see LICENSE file.
 */
 
+
+
 /** Debug config. */
 #undef  DEBUG_PRINTOUT                      /**< debug printout */
 #define DEBUG_BAUD_RATE 115200              /**< software serial baud rate */
 
 #ifdef DEBUG_PRINTOUT
 #include <SoftwareSerial.h>                 /**< only for debug purpose, conflicts with our version of PCINT1_vect  */
-#define SW_RX     4                         /**< software serial rx (debug printout) */
-#define SW_TX     5                         /**< software serial tx (debug printout) */
 #endif
+
+
 
 /** Debug printout. */
 #ifdef DEBUG_PRINTOUT
