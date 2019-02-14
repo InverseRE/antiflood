@@ -27,7 +27,7 @@
 #include <avr/interrupt.h>
 
 #include "power.h"
-#include "probes.h"
+#include "probe.h"
 
 
 
