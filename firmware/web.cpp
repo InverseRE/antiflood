@@ -25,6 +25,8 @@
 #include "probe.h"
 #include "valve.h"
 #include "app.h"
+#include "power.h"
+#include "net.h"
 
 
 

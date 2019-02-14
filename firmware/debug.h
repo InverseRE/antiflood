@@ -43,8 +43,8 @@ SoftwareSerial SWS(SW_RX, SW_TX);
 void DP(String str) { SWS.println(F(str)); }
 void DPS(String str) { SWS.println(str); }
 #else
-void DP(String str) {}
-void DPS(String str) {}
+#define DP(x)
+#define DPS(x)
 #endif
 
 

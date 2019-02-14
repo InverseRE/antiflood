@@ -32,7 +32,7 @@
 
 
 
-x/** Configure and fast check for LEDs. */
+/** Configure and fast check for LEDs. */
 void leds_configure(void)
 {
     int i = PROBES_CNT;

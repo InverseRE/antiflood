@@ -28,12 +28,12 @@
 #include "web.h"
 #include "valve.h"
 #include "app.h"
+#include "power.h"
 
 
 
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_BAUD_RATE        115200      /**< shield's UART baud rate */
-#define SHIELD_PWR_SAVE_ACTION  2           /**< turn off WIFI & activate power save mode action identifier */
 
 #define WIFI_SSID               WIFI_DEFAULT_SSID
 #define WIFI_PASS               WIFI_DEFAULT_PASS
@@ -41,7 +41,6 @@
 #define WIFI_SECU               WIFI_DEFAULT_SECU
 
 #define WEB_IP                  APP_DEFAULT_IP
-#define WEB_IP_STR              APP_DEFAULT_IP_S
 #define WEB_PORT                APP_DEFAULT_PORT
 #define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
 #define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
@@ -164,7 +163,7 @@ void web_run(void)
 }
 
 /** Stop communications. */
-void web_deactivate(void)
+void web_stop(void)
 {
     WiFi.disconnect();
     delay(10);
@@ -172,6 +171,26 @@ void web_deactivate(void)
     digitalWrite(WIFIEN, LOW);
     pinMode(WIFIRS, OUTPUT);
     digitalWrite(WIFIRS, LOW);
+}
+
+/** Suspend interface. */
+void web_suspend(void)
+{
+    /* Turn off WIFI library. */
+    WiFi.disconnect();
+    delay(10);
+    /* Turn off WIFI shield. */
+    pinMode(WIFIEN, OUTPUT);
+    digitalWrite(WIFIEN, LOW);
+    /* Set low on all WIFI shield pins. */
+    pinMode(WIFIRS, OUTPUT);
+    digitalWrite(WIFIRS, LOW);
+    pinMode(WIFIRX, OUTPUT);
+    digitalWrite(WIFIRX, LOW);
+    pinMode(WIFITX, OUTPUT);
+    digitalWrite(WIFITX, LOW);
+    /* Set WIFI flag. */
+    wifi_shield_state = false;
 }
 
 /** Return actual wifi shield state. */

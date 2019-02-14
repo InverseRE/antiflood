@@ -22,6 +22,7 @@
 */
 
 #include "valve.h"
+#include "app.h"
 
 
 
@@ -45,8 +46,6 @@ int VALVES_CNT = (sizeof(VALVES) / sizeof(VALVES[0]));
 #define VALVE_CLOSING_TIME      6000        /**< amount of time to close valve, ms*/
 #define VALVE_FORCEOPENING_TIME 10000       /**< amount of time to force valve opening, ms*/
 #define VALVE_FORCECLOSING_TIME 15000       /**< amount of time to force valve closing, ms*/
-#define VALVE_OPENING_ACTION    0           /**< valve opening action identifier */
-#define VALVE_CLOSING_ACTION    1           /**< valve closing action identifier */
 
 
 
@@ -104,7 +103,7 @@ void valves_run(void)
 
         case VALVE_MALFUNCTION:
         default:
-            OVERALL_STATE = APP_MALFUNCTION;
+            app_set_state(APP_MALFUNCTION);
             DP("valves fail");
 
             /* Stop operations. */
@@ -138,8 +137,10 @@ void valves_check(void)
 
         /* If action completed. */
         if (exp == act) {
-            app_state_t app_st = exp == VALVE_CLOSE ? APP_SOLVED : OVERALL_STATE;
-            OVERALL_STATE = app_st > OVERALL_STATE ? app_st : OVERALL_STATE;
+            app_state_t app_st = app_get_state();
+            app_state_t st = exp == VALVE_CLOSE ? APP_SOLVED : app_st;
+            app_st = st > app_st ? st : app_st;
+            app_set_state(app_st);
         }
 
         /* Skip completed or bad states. */
@@ -210,7 +211,9 @@ void valves_force_open()
         VALVES[j].exp_state = VALVE_OPEN;
     }
 
-    OVERALL_STATE = APP_MALFUNCTION != OVERALL_STATE ? APP_OK : OVERALL_STATE;
+    if (!app_check_state(APP_MALFUNCTION)) {
+        app_set_state(APP_OK);
+    }
 }
 
 /** Force valves to close. */
@@ -237,5 +240,7 @@ void valves_force_close()
         VALVES[j].exp_state = VALVE_CLOSE;
     }
 
-    OVERALL_STATE = APP_MALFUNCTION != OVERALL_STATE ? APP_OK : OVERALL_STATE;
+    if (!app_check_state(APP_MALFUNCTION)) {
+        app_set_state(APP_OK);
+    }
 }

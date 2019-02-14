@@ -30,6 +30,11 @@
 
 
 
+#define LED_HALT_DURATION  100
+#define LED_SWITCH_LATENCY 500
+
+
+
 /** Turn off unused modules at startup. */
 void peripheral_configure()
 {
@@ -51,7 +56,7 @@ void halt_on_error(void)
 
     DP("halt");
 
-    web.stop();
+    web_stop();
 
     while (i--) {
         pinMode(PROBES[i].led, OUTPUT);
@@ -59,12 +64,11 @@ void halt_on_error(void)
 
     do {
         unsigned long tm = millis();
-        byte sig = tm % (  2 * LED_FLASH_DURATION) > LED_FLASH_DURATION ? LOW : HIGH;
+        byte sig = tm % (  2 * LED_HALT_DURATION) > LED_HALT_DURATION ? LOW : HIGH;
 
-        i = PROBES_CNT;
-        while (i--) {
-            digitalWrite(PROBES[i].led, sig);
-        }
+        i += tm % (  2 * LED_SWITCH_LATENCY) > LED_SWITCH_LATENCY ? 0 : 1;
+        i %= PROBES_CNT;
+        digitalWrite(PROBES[i].led, sig);
 
         delay(10);
 

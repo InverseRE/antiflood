@@ -28,6 +28,11 @@
 
 
 
+#define SHIELD_PWR_SAVE_ACTION  2           /**< turn off WIFI & activate power save mode action identifier */
+#define WEB_IP_STR              APP_DEFAULT_IP_S
+
+
+
 /** Configure web-server. */
 void web_configure(void);
 
@@ -35,7 +40,10 @@ void web_configure(void);
 void web_run(void);
 
 /** Stop communications. */
-void web_deactivate(void);
+void web_stop(void);
+
+/** Suspend interface. */
+void web_suspend(void);
 
 /** Return actual wifi shield state. */
 bool get_wifi_state(void);

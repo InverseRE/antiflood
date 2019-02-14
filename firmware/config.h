@@ -24,6 +24,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include <Arduino.h>
+
 #include "debug.h"
 
 

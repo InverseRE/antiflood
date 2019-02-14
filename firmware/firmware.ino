@@ -22,6 +22,13 @@
 */
 
 #include "config.h"
+#include "app.h"
+#include "hw.h"
+#include "led.h"
+#include "net.h"
+#include "power.h"
+#include "probe.h"
+#include "valve.h"
 
 
 
@@ -38,7 +45,7 @@ void setup() {
     leds_configure();
     valves_configure();
 
-    set_app_state(APP_OK);
+    app_set_state(APP_OK);
 
     DP("ready to go...");
 }
@@ -61,7 +68,8 @@ void loop() {
     probes_result();
 
     /* Control valves. */
-    valves_solve();
+    app_solve();
+
     valves_run();
     valves_check();
 
@@ -73,7 +81,7 @@ void loop() {
 
 #ifdef USE_POWER_SAVE
     /* Power save. */
-    if (!get_wifi_state() && !is_valves_actions() && check_app_state(APP_OK)) {
+    if (!get_wifi_state() && !is_valves_actions() && app_check_state(APP_OK)) {
         enter_sleep(true, true);
     } else {
         delay(10);

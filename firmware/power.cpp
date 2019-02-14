@@ -28,6 +28,7 @@
 
 #include "power.h"
 #include "probe.h"
+#include "net.h"
 
 
 
@@ -83,8 +84,6 @@ void enter_sleep(boolean adc_off, boolean bod_off)
     while (i--) {
         digitalWrite(PROBES[i].port, HIGH);
     }
-
-    delay(PROBE_CHECK_DURATION);
 
     /* Disable interrupts. */
     noInterrupts();
@@ -152,19 +151,5 @@ void enter_sleep(boolean adc_off, boolean bod_off)
 /** Apply power save mode. */
 void power_save_mode_on(void)
 {
-    /* Turn off WIFI library. */
-    WiFi.disconnect();
-    delay(10);
-    /* Turn off WIFI shield. */
-    pinMode(WIFIEN, OUTPUT);
-    digitalWrite(WIFIEN, LOW);
-    /* Set low on all WIFI shield pins. */
-    pinMode(WIFIRS, OUTPUT);
-    digitalWrite(WIFIRS, LOW);
-    pinMode(WIFIRX, OUTPUT);
-    digitalWrite(WIFIRX, LOW);
-    pinMode(WIFITX, OUTPUT);
-    digitalWrite(WIFITX, LOW);
-    /* Set WIFI flag. */
-    /* TODO: remove extern pointer */ wifi_shield_state = false;
+    web_suspend();
 }

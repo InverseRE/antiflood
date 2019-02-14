@@ -25,6 +25,7 @@
 #define __PROBE_H__
 
 #include "config.h"
+#include "led.h"
 
 
 

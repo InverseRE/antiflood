@@ -28,6 +28,11 @@
 
 
 
+#define VALVE_OPENING_ACTION    0           /**< valve opening action identifier */
+#define VALVE_CLOSING_ACTION    1           /**< valve closing action identifier */
+
+
+
 /** Valve states and controls. */
 typedef enum {
     VALVE_IGNORE,                           /**< valve disconnected or ignored */
