@@ -21,9 +21,13 @@
    For more details see LICENSE file.
 */
 
+#include <avr/wdt.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
+#include <avr/interrupt.h>
 
-
-#include "config.h"
+#include "power.h"
+#include "probes.h"
 
 
 
@@ -47,8 +51,8 @@ ISR (WDT_vect) {
  * Setup the Watch Dog Timer (WDT).
  * WDT will generate interrupt without reset in about 8 sec.
  */
-static void wdt_setup() {
-
+void wdt_setup()
+{
     noInterrupts();
 
     /* Clear the reset flag on the MCUSR, the WDRF bit (bit 3). */
@@ -67,7 +71,7 @@ static void wdt_setup() {
 }
 
 /** Enters the arduino into a sleep mode. */
-static void enter_sleep(boolean adc_off, boolean bod_off)
+void enter_sleep(boolean adc_off, boolean bod_off)
 {
     int previousADCSRA;
 
@@ -142,8 +146,11 @@ static void enter_sleep(boolean adc_off, boolean bod_off)
     ADCSRA = previousADCSRA;
 }
 
+/* TODO: remove extern pointer */ extern bool wifi_shield_state;
+
+
 /** Apply power save mode. */
-static void power_save_mode_on(void)
+void power_save_mode_on(void)
 {
     /* Turn off WIFI library. */
     WiFi.disconnect();
@@ -159,5 +166,5 @@ static void power_save_mode_on(void)
     pinMode(WIFITX, OUTPUT);
     digitalWrite(WIFITX, LOW);
     /* Set WIFI flag. */
-    wifi_shield_state = false;
+    /* TODO: remove extern pointer */ wifi_shield_state = false;
 }

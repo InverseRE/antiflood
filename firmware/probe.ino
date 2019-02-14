@@ -21,43 +21,26 @@
    For more details see LICENSE file.
 */
 
+#include "probe.h"
+#include "app.h"
 
 
-#include "config.h"
+
+#define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
+#define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
+#define PROBE_TEST_PERIOD       5000        /**< signal reading period, ms */
+#define PROBE_CHECK_PERIOD      10000       /**< connection verifying period, ms */
+#define PROBE_DISCH_DURATION    1           /**< discharge capcitor delay, ms */
+#define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
+#define CG_MIN                  10          /**< minimal voltage on capasitor, normalized */
+#define CG_MAX_FACTOR           0.8         /**< factor of maximal voltage on capasitor */
 
 
 
 /* TODO: let the probes be disabled by hand. */
 
-/** Probe sensor states. */
-typedef enum {
-    PROBE_DRY,                              /**< nothing happens, all is OK */
-    PROBE_WATER                             /**< some activity detected */
-} probe_detector_state_t;
-
-/** Probe connection status. */
-typedef enum {
-    PROBE_OFFLINE,                          /**< disconnected or non-controlled probe */
-    PROBE_ONLINE,                           /**< probe is connected */
-    PROBE_ERROR                             /**< shortcircuit, malfunction or bad readings */
-} probe_live_state_t;
-
-/** Probe. */
-typedef struct {
-    byte port;                              /**< analog input port */
-    byte val;                               /**< readed static value */
-    byte chk;                               /**< readed dynamic value (connection check) */
-    byte elt;                               /**< elapsed time (connection check), normalized */
-    probe_detector_state_t det;             /**< probe detector state */
-    probe_live_state_t con;                 /**< probe connection state */
-    byte led;                               /**< linked LED */
-    led_state_t mode;                       /**< linked LED's status */
-} probe_t;
-
-
-
 /** List of available probes. */
-static probe_t PROBES[] = {
+probe_t PROBES[] = {
     {PROBE0, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED0, LED_OFF},
     {PROBE1, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED1, LED_OFF},
     {PROBE2, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED2, LED_OFF},
@@ -72,7 +55,7 @@ int PROBES_CNT = (sizeof(PROBES) / sizeof(PROBES[0]));
 
 
 /** Configure and fast check for probes. */
-static void probes_configure(void)
+void probes_configure(void)
 {
     int i = PROBES_CNT;
 
@@ -84,7 +67,7 @@ static void probes_configure(void)
 }
 
 /** Perform readings from probes. */
-static void probes_test(void)
+void probes_test(void)
 {
     int i = PROBES_CNT;
 
@@ -100,7 +83,7 @@ static void probes_test(void)
 }
 
 /** Check connection status for probes. */
-static void probes_check(void)
+void probes_check(void)
 {
     int i = PROBES_CNT;
     unsigned long elt, tm1, tm2;
@@ -139,11 +122,11 @@ static void probes_check(void)
 }
 
 /** Calculate probes' states. */
-static void probes_result(void)
+void probes_result(void)
 {
     int i = PROBES_CNT;
 
-    OVERALL_STATE = APP_OK;
+    app_state_t app_state = APP_OK;
 
     while (i--) {
         probe_detector_state_t dst;
@@ -151,7 +134,7 @@ static void probes_result(void)
         byte v = PROBES[i].val;
         byte c = PROBES[i].chk;
         byte t = PROBES[i].elt;
-        app_state_t app_st;
+        app_state_t state;
 
         dst = PROBES[i].det = v < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
         cst = PROBES[i].con =
@@ -169,13 +152,15 @@ static void probes_result(void)
                 : cst == PROBE_OFFLINE ? LED_OFF
                 :                        LED_ON;
 
-        app_st =  cst == PROBE_ERROR   ? APP_MALFUNCTION
+        state =  cst == PROBE_ERROR   ? APP_MALFUNCTION
                 : dst == PROBE_WATER   ? APP_ALARM
                 : cst == PROBE_ONLINE  ? APP_OK
                 : dst == PROBE_DRY     ? APP_OK
                 : cst == PROBE_OFFLINE ? APP_OK
                 :                        APP_MALFUNCTION;
 
-        OVERALL_STATE = app_st > OVERALL_STATE ? app_st : OVERALL_STATE;
+        app_state = state > app_state ? state : app_state;
     }
+
+    app_set_state(app_state);
 }

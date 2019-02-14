@@ -21,19 +21,11 @@
    For more details see LICENSE file.
 */
 
+#include "app.h"
+#include "probe.h"
+#include "valve.h"
 
 
-#include "config.h"
-
-
-
-/** Overall detector states. */
-typedef enum {
-    APP_OK = 0, /**< all is good */
-    APP_ALARM = 1, /**< water detected */
-    APP_SOLVED = 2, /**< valves closed */
-    APP_MALFUNCTION = 3 /**< something is wrong */
-} app_state_t;
 
 /** Application overall state. */
 static app_state_t OVERALL_STATE = APP_MALFUNCTION;
@@ -41,7 +33,7 @@ static app_state_t OVERALL_STATE = APP_MALFUNCTION;
 
 
 /** Choose the next move. */
-static void app_solve(void)
+void app_solve(void)
 {
     valve_state_t gst = VALVE_IGNORE;
 
@@ -68,13 +60,19 @@ static void app_solve(void)
 }
 
 /** Check if app state queals to given state. */
-static bool app_check_state(app_state_t state)
+bool app_check_state(app_state_t state)
 {
     return OVERALL_STATE == state;
 }
 
-/** Check if app state queals to given state. */
-static void app_set_state(app_state_t state)
+/** Set app state. */
+void app_set_state(app_state_t state)
 {
     OVERALL_STATE == state;
+}
+
+/** Get app state. */
+app_state_t app_get_state(void)
+{
+    return OVERALL_STATE;
 }

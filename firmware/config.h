@@ -21,6 +21,8 @@
    For more details see LICENSE file.
 */
 
+#include "debug.h"
+
 
 
 /*
@@ -60,38 +62,6 @@
  * Configures.
  */
 
-/* Probes settings. */
-#define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
-#define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
-#define PROBE_TEST_PERIOD       5000        /**< signal reading period, ms */
-#define PROBE_CHECK_PERIOD      10000       /**< connection verifying period, ms */
-#define PROBE_DISCH_DURATION    1           /**< discharge capcitor delay, ms */
-#define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
-#define CG_MIN                  10          /**< minimal voltage on capasitor, normalized */
-#define CG_MAX_FACTOR           0.8         /**< factor of maximal voltage on capasitor */
-
-/* Valves settings. */
-#define TRIG_LVL                HIGH        /**< action engage level */
-#define IDLE_LVL                LOW         /**< idle level */
-#define VALVE_DURATION_AUTO     6000        /**< given time to perform an action before retry, alarm or halt */
-#define VALVE_DURATION_FORCED   20000       /**< given time to perform a forced action before alarm or halt */
-#define VALVE_CURRENT_MIN       5           /**< normalized value of minimal current of valves */
-#define VALVE_CURRENT_MAX       25          /**< normalized value of maximum current of valves */
-#define VALVE_OPENING_TIME      5000        /**< amount of time to open valve, ms*/
-#define VALVE_CLOSING_TIME      6000        /**< amount of time to close valve, ms*/
-#define VALVE_FORCEOPENING_TIME 10000       /**< amount of time to force valve opening, ms*/
-#define VALVE_FORCECLOSING_TIME 15000       /**< amount of time to force valve closing, ms*/
-#define VALVE_OPENING_ACTION    0           /**< valve opening action identifier */
-#define VALVE_CLOSING_ACTION    1           /**< valve closing action identifier */
-
-/* LED settings. */
-#define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
-#define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
-#define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
-
-/* Overall firmware settings. */
-#define AUX_SOUND                           /**< sound beeper */
-
 /* Communication settings. */
 #define APP_DEFAULT_IP 192, 168, 0, 111     /**< application default IP address */
 #define APP_DEFAULT_IP_S "192.168.0.111"    /**< application default IP address string */
@@ -101,25 +71,8 @@
 #define USE_POWER_SAVE                      /**< use power saving mode between loop cycles */
 
 /* Network interface settings. */
-#define WIFI_STATION
-#define WIFI_DEFAULT_SSID       ">)"        /**< default network identifier */
-#define WIFI_DEFAULT_PASS       "00000000"  /**< default network access password */
-#define WIFI_DEFAULT_CHAN       10          /**< default network channel number */
-#define WIFI_DEFAULT_SECU       ENC_TYPE_WPA2_PSK
-
-#define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
-#define SHIELD_BAUD_RATE        115200      /**< shield's UART baud rate */
-#define SHIELD_PWR_SAVE_ACTION  2           /**< turn off WIFI & activate power save mode action identifier */
-
-#define WIFI_SSID               WIFI_DEFAULT_SSID
-#define WIFI_PASS               WIFI_DEFAULT_PASS
-#define WIFI_CHAN               WIFI_DEFAULT_CHAN
-#define WIFI_SECU               WIFI_DEFAULT_SECU
-
-/* Web-server settings. */
-#define WEB_IP                  APP_DEFAULT_IP
-#define WEB_IP_STR              APP_DEFAULT_IP_S
-#define WEB_PORT                APP_DEFAULT_PORT
-#define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
-#define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
-
+#define WIFI_STATION                        /**< wireless interface mode */
+#define WIFI_DEFAULT_SSID ">)"              /**< default network identifier */
+#define WIFI_DEFAULT_PASS "00000000"        /**< default network access password */
+#define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
+#define WIFI_DEFAULT_SECU ENC_TYPE_WPA2_PSK /**< default authentication type */

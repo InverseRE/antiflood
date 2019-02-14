@@ -21,36 +21,12 @@
    For more details see LICENSE file.
 */
 
-
-
-#include "config.h"
-
-
-
-/** Valve states and controls. */
-typedef enum {
-    VALVE_IGNORE,                           /**< valve disconnected or ignored */
-    VALVE_OPEN,                             /**< 'open' state */
-    VALVE_CLOSE,                            /**< 'close' state */
-    VALVE_MALFUNCTION,                      /**< some malfunction detected */
-} valve_state_t;
-
-/** Valve. */
-typedef struct {
-    valve_state_t exp_state;                /**< valve state to get */
-    valve_state_t act_state;                /**< actual valve state */
-    unsigned long elt;                      /**< duration of a current action, ms */
-    byte chk;                               /**< self check readings */
-    byte fport;                             /**< input port for forced operation */
-    byte vport;                             /**< input self check port */
-    byte oport;                             /**< port to perform an 'open' action */
-    byte cport;                             /**< port to perform a 'close' action */
-} valve_t;
+#include "valve.h"
 
 
 
 /** List of presented valves. */
-static valve_t VALVES[] = {
+valve_t VALVES[] = {
     {VALVE_IGNORE, VALVE_IGNORE, 0, 0, VFOPST, VCONSC, OPEN, CLOSE}
 };
 
@@ -59,8 +35,23 @@ int VALVES_CNT = (sizeof(VALVES) / sizeof(VALVES[0]));
 
 
 
+#define TRIG_LVL                HIGH        /**< action engage level */
+#define IDLE_LVL                LOW         /**< idle level */
+#define VALVE_DURATION_AUTO     6000        /**< given time to perform an action before retry, alarm or halt */
+#define VALVE_DURATION_FORCED   20000       /**< given time to perform a forced action before alarm or halt */
+#define VALVE_CURRENT_MIN       5           /**< normalized value of minimal current of valves */
+#define VALVE_CURRENT_MAX       25          /**< normalized value of maximum current of valves */
+#define VALVE_OPENING_TIME      5000        /**< amount of time to open valve, ms*/
+#define VALVE_CLOSING_TIME      6000        /**< amount of time to close valve, ms*/
+#define VALVE_FORCEOPENING_TIME 10000       /**< amount of time to force valve opening, ms*/
+#define VALVE_FORCECLOSING_TIME 15000       /**< amount of time to force valve closing, ms*/
+#define VALVE_OPENING_ACTION    0           /**< valve opening action identifier */
+#define VALVE_CLOSING_ACTION    1           /**< valve closing action identifier */
+
+
+
 /** Configure and fast check for valves. */
-static void valves_configure(void)
+void valves_configure(void)
 {
     int j = VALVES_CNT;
 
@@ -79,7 +70,7 @@ static void valves_configure(void)
 
 
 /** Perform an action. */
-static void valves_run(void)
+void valves_run(void)
 {
     int j = VALVES_CNT;
 
@@ -124,7 +115,7 @@ static void valves_run(void)
 }
 
 /** Check actual status. */
-static void valves_check(void)
+void valves_check(void)
 {
     int j = VALVES_CNT;
 
@@ -173,7 +164,7 @@ static void valves_check(void)
  * @return 1 - there is some not complete actions
  * @return 0 - there is no uncomplete actions
  */
-static int is_valves_actions(void)
+int is_valves_actions(void)
 {
     int j = VALVES_CNT;
 
@@ -196,7 +187,7 @@ static int is_valves_actions(void)
 }
 
 /** Force valves to open. */
-static void valves_force_open()
+void valves_force_open()
 {
     int j = VALVES_CNT;
 
@@ -223,7 +214,7 @@ static void valves_force_open()
 }
 
 /** Force valves to close. */
-static void valves_force_close()
+void valves_force_close()
 {
     int j = VALVES_CNT;
 

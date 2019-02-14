@@ -21,24 +21,15 @@
    For more details see LICENSE file.
 */
 
-
-
-/** Debug config. */
-#undef  DEBUG_PRINTOUT                      /**< debug printout */
-#define DEBUG_BAUD_RATE 115200              /**< software serial baud rate */
-
-#ifdef DEBUG_PRINTOUT
-#include <SoftwareSerial.h>                 /**< only for debug purpose, conflicts with our version of PCINT1_vect  */
-#endif
+#include "config.h"
 
 
 
-/** Debug printout. */
-#ifdef DEBUG_PRINTOUT
-SoftwareSerial SWS(SW_RX, SW_TX);
-void DP(String str) { SWS.println(F(str)); }
-void DPS(String str) { SWS.println(str); }
-#else
-void DP(String str) {}
-void DPS(String str) {}
-#endif
+/** Turn off unused modules at startup. */
+void peripheral_configure();
+
+/** Signal an error by all means. */
+void halt_on_error(void);
+
+/** Perform reset by watchdog timer. */
+void reset(void);

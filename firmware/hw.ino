@@ -21,14 +21,17 @@
    For more details see LICENSE file.
 */
 
+#include <avr/wdt.h>
+#include <avr/power.h>
 
-
-#include "config.h"
+#include "hw.h"
+#include "net.h"
+#include "probe.h"
 
 
 
 /** Turn off unused modules at startup. */
-static void peripheral_configure()
+void peripheral_configure()
 {
     /* Disable not used timers. */
     power_timer1_disable();
@@ -42,18 +45,13 @@ static void peripheral_configure()
 }
 
 /** Signal an error by all means. */
-static void halt_on_error(void)
+void halt_on_error(void)
 {
     int i = PROBES_CNT;
 
     DP("halt");
 
-    WiFi.disconnect();
-    delay(10);
-    pinMode(WIFIEN, OUTPUT);
-    digitalWrite(WIFIEN, LOW);
-    pinMode(WIFIRS, OUTPUT);
-    digitalWrite(WIFIRS, LOW);
+    web.stop();
 
     while (i--) {
         pinMode(PROBES[i].led, OUTPUT);
@@ -74,7 +72,7 @@ static void halt_on_error(void)
 }
 
 /** Perform reset by watchdog timer. */
-static void reset(void)
+void reset(void)
 {
     /* Ensure WD timer is power up. */
     wdt_enable(WDTO_4S);

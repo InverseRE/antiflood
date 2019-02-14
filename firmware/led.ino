@@ -21,25 +21,19 @@
    For more details see LICENSE file.
 */
 
-
-
-#include "config.h"
-
-
-
-/** LED states. */
-typedef enum {
-    LED_OFF,                                /**< switched off */
-    LED_SPIKE,                              /**< tiny light or rapid single flash */
-    LED_BLINK,                              /**< periodic blinking */
-    LED_ON,                                 /**< constantly on */
-    LED_WARNING                             /**< rapidly flashes */
-} led_state_t;
+#include "led.h"
+#include "probe.h"
 
 
 
-/** Configure and fast check for LEDs. */
-static void leds_configure(void)
+#define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
+#define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
+#define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
+
+
+
+x/** Configure and fast check for LEDs. */
+void leds_configure(void)
 {
     int i = PROBES_CNT;
 
@@ -60,7 +54,7 @@ static void leds_configure(void)
 }
 
 /** Illuminate assigned LEDs. */
-static void leds_display(void)
+void leds_display(void)
 {
     unsigned long tm = millis();
     byte SPIKE = tm % (200 * LED_SPIKE_DURATION) > LED_SPIKE_DURATION ? LOW : HIGH;
