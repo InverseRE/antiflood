@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __NET_H__
+#define __NET_H__
+
 #include "config.h"
 
 
@@ -36,3 +39,7 @@ void web_deactivate(void);
 
 /** Return actual wifi shield state. */
 bool get_wifi_state(void);
+
+
+
+#endif  /* __NET_H__ */

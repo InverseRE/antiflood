@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __POWER_H__
+#define __POWER_H__
+
 #include "config.h"
 
 
@@ -36,3 +39,7 @@ void enter_sleep(boolean adc_off, boolean bod_off);
 
 /** Apply power save mode. */
 void power_save_mode_on(void);
+
+
+
+#endif  /* __POWER_H__ */

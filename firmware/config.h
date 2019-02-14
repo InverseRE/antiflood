@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
 #include "debug.h"
 
 
@@ -76,3 +79,7 @@
 #define WIFI_DEFAULT_PASS "00000000"        /**< default network access password */
 #define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
 #define WIFI_DEFAULT_SECU ENC_TYPE_WPA2_PSK /**< default authentication type */
+
+
+
+#endif  /* __CONFIG_H__ */

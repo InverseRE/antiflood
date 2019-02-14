@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __VALVE_H__
+#define __VALVE_H__
+
 #include "config.h"
 
 
@@ -77,3 +80,7 @@ void valves_force_open();
 
 /** Force valves to close. */
 void valves_force_close();
+
+
+
+#endif  /* __VALVE_H__ */

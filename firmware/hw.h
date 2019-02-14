@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __HW_H__
+#define __HW_H__
+
 #include "config.h"
 
 
@@ -33,3 +36,7 @@ void halt_on_error(void);
 
 /** Perform reset by watchdog timer. */
 void reset(void);
+
+
+
+#endif /* __HW_H__ */

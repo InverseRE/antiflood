@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __APP_H__
+#define __APP_H__
+
 #include "config.h"
 
 
@@ -46,3 +49,7 @@ void app_set_state(app_state_t state);
 
 /** Get app state. */
 app_state_t app_get_state(void);
+
+
+
+#endif  /* __APP_H__ */

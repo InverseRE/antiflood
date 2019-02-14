@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __LED_H__
+#define __LED_H__
+
 #include "config.h"
 
 
@@ -41,3 +44,7 @@ void leds_configure(void);
 
 /** Illuminate assigned LEDs. */
 void leds_display(void);
+
+
+
+#endif  /* __LED_H__ */

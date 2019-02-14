@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __PROBE_H__
+#define __PROBE_H__
+
 #include "config.h"
 
 
@@ -71,3 +74,7 @@ void probes_check(void);
 
 /** Calculate probes' states. */
 void probes_result(void);
+
+
+
+#endif  /* __PROBE_H__ */

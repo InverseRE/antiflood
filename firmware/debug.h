@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __DEBUG_H__
+#define __DEBUG_H__
+
 
 
 /* Debug config. */
@@ -43,3 +46,7 @@ void DPS(String str) { SWS.println(str); }
 void DP(String str) {}
 void DPS(String str) {}
 #endif
+
+
+
+#endif  /* __DEBUG_H__ */

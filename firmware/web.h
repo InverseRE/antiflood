@@ -21,6 +21,9 @@
    For more details see LICENSE file.
 */
 
+#ifndef __WEB_H__
+#define __WEB_H__
+
 #include <WiFiEspClient.h>
 
 
@@ -36,3 +39,7 @@ void http_response(WiFiEspClient client);
 
 /** Simple response for favicon request from browser. */
 void http_response_not_found(WiFiEspClient client);
+
+
+
+#endif  /* __WEB_H__ */
