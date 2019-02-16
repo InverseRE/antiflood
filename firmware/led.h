@@ -24,27 +24,27 @@
 #ifndef __LED_H__
 #define __LED_H__
 
-#include "config.h"
-
-
+#include "ticker.h"
 
 /** LED states. */
-typedef enum {
+enum LedMode {
     LED_OFF,                                /**< switched off */
     LED_SPIKE,                              /**< tiny light or rapid single flash */
     LED_BLINK,                              /**< periodic blinking */
     LED_ON,                                 /**< constantly on */
     LED_WARNING                             /**< rapidly flashes */
-} led_state_t;
+};
 
+/** LED. */
+class Led {
+private:
+    const Ticker& _ticker;
+    const byte _port;
 
-
-/** Configure and fast check for LEDs. */
-void leds_configure(void);
-
-/** Illuminate assigned LEDs. */
-void leds_display(void);
-
-
+public:
+    Led(const Ticker& ticker, byte port);
+    void lit(LedMode mode);
+    void dim(void);
+};
 
 #endif  /* __LED_H__ */

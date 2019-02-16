@@ -21,57 +21,31 @@
    For more details see LICENSE file.
 */
 
+#include <Arduino.h>
 #include "led.h"
-#include "probe.h"
-
-
-
-#define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
-#define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
-#define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
-
-
 
 /** Configure and fast check for LEDs. */
-void leds_configure(void)
+void Led::Led(const Ticker& ticker, byte port)
+         : _ticker(ticker), _port(port)
 {
-    int i = PROBES_CNT;
-
-    while (i--) {
-        pinMode(PROBES[i].led, OUTPUT);
-        digitalWrite(PROBES[i].led, HIGH);
-    }
-
-    /* Light up for a moment. */
-    delay(400);
-
-    i = PROBES_CNT;
-    while (i--) {
-        digitalWrite(PROBES[i].led, LOW);
-    }
-
-    DP("leds configured");
+    pinMode(_port, OUTPUT);
+    digitalWrite(_port, LOW);
 }
 
-/** Illuminate assigned LEDs. */
-void leds_display(void)
+void Led::lit(LedMode mode)
 {
-    unsigned long tm = millis();
-    byte SPIKE = tm % (200 * LED_SPIKE_DURATION) > LED_SPIKE_DURATION ? LOW : HIGH;
-    byte BLINK = tm % (  2 * LED_BLINK_DURATION) > LED_BLINK_DURATION ? LOW : HIGH;
-    byte FLASH = tm % (  2 * LED_FLASH_DURATION) > LED_FLASH_DURATION ? LOW : HIGH;
+    byte sig =
+              mode == LED_OFF     ? _ticker.sig_low()
+            : mode == LED_SPIKE   ? _ticker.sig_spike()
+            : mode == LED_BLINK   ? _ticker.sig_blink()
+            : mode == LED_ON      ? _ticker.sig_high()
+            : mode == LED_WARNING ? _ticker.sig_flash()
+            :                       _ticker.sig_flash();
 
-    int i = PROBES_CNT;
+    digitalWrite(_port, sig);
+}
 
-    while (i--) {
-        byte sig =
-                  PROBES[i].mode == LED_OFF     ? LOW
-                : PROBES[i].mode == LED_SPIKE   ? SPIKE
-                : PROBES[i].mode == LED_BLINK   ? BLINK
-                : PROBES[i].mode == LED_ON      ? HIGH
-                : PROBES[i].mode == LED_WARNING ? FLASH
-                :                                 FLASH;
-
-        digitalWrite(PROBES[i].led, sig);
-    }
+void Led::dim(void)
+{
+    digitalWrite(_port, LOW);
 }
