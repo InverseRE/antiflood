@@ -32,7 +32,11 @@
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
 #define VALVE_OPERATION_LIMIT   15000       /**< amount of time for valve's action, ms*/
 
-/** Ticker to get various signals. */
+/**
+ * Ticker.
+ * Generate signals,
+ * perform timing, time intervals.
+ */
 class Ticker {
 private:
     byte _sig_spike;
