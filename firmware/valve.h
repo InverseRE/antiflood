@@ -34,6 +34,8 @@ enum ValveState {
     VALVE_MALFUNCTION,                      /**< some malfunction detected */
 };
 
+const String& to_string(ValveState state);
+
 /** Valve. */
 class Valve {
 private:
@@ -58,6 +60,10 @@ public:
     bool force_open(void);
     bool force_close(void);
     ValveState run(void);                   /* returns an actual state */
+
+    ValveState state_actual(void) const { return _act_state; }
+    ValveState state_expected(void) const { return _exp_state; }
+    ValveState state_overrided(void) const { return _ovr_state; }
 };
 
 #endif  /* __VALVE_H__ */

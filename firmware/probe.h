@@ -28,9 +28,12 @@
 
 /** Probe sensor states. */
 enum ProbeSensor {
+    PROBE_UNKNOWN,                          /**< undefined yet */
     PROBE_DRY,                              /**< nothing happens, all is OK */
     PROBE_WATER                             /**< some activity detected */
 };
+
+const String& to_string(ProbeSensor state);
 
 /** Probe connection status. */
 enum ProbeConnection{
@@ -38,6 +41,8 @@ enum ProbeConnection{
     PROBE_ONLINE,                           /**< probe is connected */
     PROBE_ERROR                             /**< shortcircuit, malfunction or bad readings */
 };
+
+const String& to_string(ProbeConnection state);
 
 /**
  * Probe.
@@ -62,8 +67,11 @@ public:
 
     void prepare(void);
     void delay(void) const;
-    ProbeConnection test_link(void);
+    ProbeConnection test_connection(void);
     ProbeSensor test_sensor(void);
+
+    ProbeConnection connection(void) const { return _connection; }
+    ProbeSensor sensor(void) const { return _sensor; }
 };
 
 #endif  /* __PROBE_H__ */

@@ -24,11 +24,26 @@
 #include <Arduino.h>
 #include "probe.h"
 
+const String& to_string(ProbeSensor state) {
+    switch (state) {
+    case PROBE_UNKNOWN: return F("UNKNOWN");
+    case PROBE_DRY:     return F("DRY");
+    case PROBE_WATER:   return F("WATER");
+    default:            return F("---");
+    }
+}
+
+const String& to_string(ProbeConnection state) {
+    switch (state) {
+    case PROBE_OFFLINE: return F("OFFLINE");
+    case PROBE_ONLINE:  return F("ONLINE");
+    case PROBE_ERROR:   return F("ERROR");
+    default:            return F("---");
+    }
+}
+
 #define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
 #define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
-#define PROBE_TEST_PERIOD       5000        /**< signal reading period, ms */
-#define PROBE_CHECK_PERIOD      10000       /**< connection verifying period, ms */
-#define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
 #define CG_MIN                  10          /**< minimal voltage on capasitor, normalized */
 #define CG_MAX_FACTOR           0.8         /**< factor of maximal voltage on capasitor */
 
@@ -45,6 +60,8 @@ Probe::Probe(const Ticker& ticker, byte port)
 
 void Probe::prepare(void)
 {
+    _sensor = PROBE_UNKNOWN;
+
     /* should be LOW for the moment */
     _time_mark = _ticker.mark();
     pinMode(_port, INPUT_PULLUP);
@@ -55,7 +72,7 @@ void Probe::delay(void) const
     _ticker.delay_probe();
 }
 
-ProbeConnection Probe::test_link(void)
+ProbeConnection Probe::test_connection(void)
 {
     unsigned long time = _ticker.mark();
     unsigned long elt = (time - _time_mark) / 4;
@@ -64,11 +81,14 @@ ProbeConnection Probe::test_link(void)
 
     byte v = analogRead(_port) >> 2;
 
-    return    v < PROBE_V_SHORT_CIRCUIT ? PROBE_ERROR
+    _connection =
+              v < PROBE_V_SHORT_CIRCUIT ? PROBE_ERROR
             : t == 0                    ? PROBE_OFFLINE
             : c > v * CG_MAX_FACTOR     ? PROBE_OFFLINE
             : c > CG_MIN                ? PROBE_ONLINE
             :                             PROBE_ERROR;
+
+    return _connection;
 }
 
 ProbeSensor Probe::test_sensor(void)
@@ -78,5 +98,7 @@ ProbeSensor Probe::test_sensor(void)
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
 
-    return triggered ? PROBE_WATER : PROBE_DRY;
+    _sensor = triggered ? PROBE_WATER : PROBE_DRY;
+
+    return _sensor;
 }

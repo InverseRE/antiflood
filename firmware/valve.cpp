@@ -24,16 +24,18 @@
 #include <Arduino.h>
 #include "app.h"
 
+const String& to_string(ValveState state) {
+    switch (state) {
+    case VALVE_IGNORE:      return F("IGNORE");
+    case VALVE_OPEN:        return F("OPEN");
+    case VALVE_CLOSE:       return F("CLOSE");
+    case VALVE_MALFUNCTION: return F("ERROR");
+    default:                return F("---");
+    }
+}
+
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
-#define VALVE_DURATION_AUTO     6000        /**< given time to perform an action before retry, alarm or halt */
-#define VALVE_DURATION_FORCED   20000       /**< given time to perform a forced action before alarm or halt */
-#define VALVE_CURRENT_MIN       5           /**< normalized value of minimal current of valves */
-#define VALVE_CURRENT_MAX       25          /**< normalized value of maximum current of valves */
-#define VALVE_OPENING_TIME      5000        /**< amount of time to open valve, ms*/
-#define VALVE_CLOSING_TIME      6000        /**< amount of time to close valve, ms*/
-#define VALVE_FORCEOPENING_TIME 10000       /**< amount of time to force valve opening, ms*/
-#define VALVE_FORCECLOSING_TIME 15000       /**< amount of time to force valve closing, ms*/
 
 Valve::Valve(const Ticker& ticker,
         byte verif_switch_port, byte verif_supply_port,

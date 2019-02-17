@@ -25,14 +25,32 @@
 #define __WEB_H__
 
 #include <WiFiEspClient.h>
+#include "timer.h"
 
+/** User commands. */
+enum WebAction {
+    WEB_UNKNOWN,                            /* unknown */
+    WEB_STATE,                              /* show state */
+    WEB_OPEN,                               /* open valves */
+    WEB_CLOSE,                              /* close valves */
+    WEB_SUSPEND                             /* enter a power-save mode */
+};
 
+class WebPage {
+private:
+    const WiFiEspClient& _client;
 
-/** Checks client request. */
-void http_parse_request(WiFiEspClient client, const String& rbuff);
+public:
+    WebPage(const WiFiEspClient& client);
+
+    WebAction parse(const String& request);
+    void response(void);
+    void response_not_found(void);
+    void heading(WebAction action);
+}
 
 /** Response for valves open/close action with redirection to the main page. */
-void http_action_response(WiFiEspClient client, unsigned char act, unsigned char timeout);
+void http_action_response(WiFiEspClient client, unsigned char act, unsigned char count_down);
 
 /** Construct an HTML-page of an actual status. */
 void http_response(WiFiEspClient client);
