@@ -85,7 +85,7 @@ void web_configure(void)
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 #elif defined WIFI_ACCESS_POINT
     WiFi.configAP(ip_addr);
-    WiFi.beginAP(WIFI_SSID, WIFI_CH, WIFI_PASS, WIFI_SECU);
+    WiFi.beginAP(WIFI_SSID, WIFI_CHAN, WIFI_PASS, WIFI_SECU);
 #else
 #   error WiFi unknown mode
 #endif
