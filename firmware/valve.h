@@ -24,68 +24,40 @@
 #ifndef __VALVE_H__
 #define __VALVE_H__
 
-#include "config.h"
-
-
-
-#define VALVE_OPENING_ACTION    0           /**< valve opening action identifier */
-#define VALVE_CLOSING_ACTION    1           /**< valve closing action identifier */
-
-
+#include "ticker.h"
 
 /** Valve states and controls. */
-typedef enum {
+enum ValveState {
     VALVE_IGNORE,                           /**< valve disconnected or ignored */
     VALVE_OPEN,                             /**< 'open' state */
     VALVE_CLOSE,                            /**< 'close' state */
     VALVE_MALFUNCTION,                      /**< some malfunction detected */
-} valve_state_t;
+};
 
 /** Valve. */
-typedef struct {
-    valve_state_t exp_state;                /**< valve state to get */
-    valve_state_t act_state;                /**< actual valve state */
-    unsigned long elt;                      /**< duration of a current action, ms */
-    byte chk;                               /**< self check readings */
-    byte fport;                             /**< input port for forced operation */
-    byte vport;                             /**< input self check port */
-    byte oport;                             /**< port to perform an 'open' action */
-    byte cport;                             /**< port to perform a 'close' action */
-} valve_t;
+class Valve {
+private:
+    const Ticker& _ticker;
+    const byte _vport_switch;               /**< input self check port (voltage on the switch) */
+    const byte _vport_supply;               /**< input self check port (supply current) */
+    const byte _oport;                      /**< output port to perform an 'open' action */
+    const byte _cport;                      /**< output port to perform a 'close' action */
+    ValveState _exp_state;                  /**< valve state to get */
+    ValveState _act_state;                  /**< actual valve state */
+    ValveState _ovr_state;                  /**< overrided valve state */
+    unsigned long _time_mark;               /**< start of a current action, ms */
 
+public:
+    Valve(const Ticker& ticker,
+            byte verif_switch_port, byte verif_supply_port,
+            byte engage_open_port, byte engage_close_port);
 
-
-/** List of presented valves. */
-extern valve_t VALVES[];
-
-/** Count of valves. */
-extern int VALVES_CNT;
-
-
-
-/** Configure and fast check for valves. */
-void valves_configure(void);
-
-/** Perform an action. */
-void valves_run(void);
-
-/** Check actual status. */
-void valves_check(void);
-
-/**
- * Check if any not complete valves actions.
- *
- * @return 1 - there is some not complete actions
- * @return 0 - there is no uncomplete actions
- */
-int is_valves_actions(void);
-
-/** Force valves to open. */
-void valves_force_open();
-
-/** Force valves to close. */
-void valves_force_close();
-
-
+    bool is_engaged(void) const;
+    bool open(void);
+    bool close(void);
+    bool force_open(void);
+    bool force_close(void);
+    ValveState run(void);                   /* returns an actual state */
+};
 
 #endif  /* __VALVE_H__ */

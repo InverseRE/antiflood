@@ -30,6 +30,7 @@
 #define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
 #define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
+#define VALVE_OPERATION_LIMIT   15000       /**< amount of time for valve's action, ms*/
 
 /** Ticker to get various signals. */
 class Ticker {
@@ -58,6 +59,11 @@ public:
     byte sig_flash(void) const { return _sig_flash; }
 
     void delay_probe(void) const { delay(PROBE_CHECK_DURATION); }
+
+    bool limit_valve(unsigned long mark) {
+        return mark != 0
+                && millis() - mark > VALVE_OPERATION_LIMIT;
+    }
 };
 
 #endif  /* __TICKER_H__ */

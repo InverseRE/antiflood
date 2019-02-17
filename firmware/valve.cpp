@@ -21,20 +21,8 @@
    For more details see LICENSE file.
 */
 
-#include "valve.h"
+#include <Arduino.h>
 #include "app.h"
-
-
-
-/** List of presented valves. */
-valve_t VALVES[] = {
-    {VALVE_IGNORE, VALVE_IGNORE, 0, 0, VFOPST, VCONSC, OPEN, CLOSE}
-};
-
-/** Count of valves. */
-int VALVES_CNT = (sizeof(VALVES) / sizeof(VALVES[0]));
-
-
 
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
@@ -47,200 +35,145 @@ int VALVES_CNT = (sizeof(VALVES) / sizeof(VALVES[0]));
 #define VALVE_FORCEOPENING_TIME 10000       /**< amount of time to force valve opening, ms*/
 #define VALVE_FORCECLOSING_TIME 15000       /**< amount of time to force valve closing, ms*/
 
-
-
-/** Configure and fast check for valves. */
-void valves_configure(void)
+Valve::Valve(const Ticker& ticker,
+        byte verif_switch_port, byte verif_supply_port,
+        byte engage_open_port, byte engage_close_port)
+        : _ticker(ticker),
+          _vport_switch(verif_switch_port), _vport_supply(verif_supply_port),
+          _oport(engage_open_port), _cport(engage_close_port)
 {
-    int j = VALVES_CNT;
+    _exp_state = VALVE_IGNORE;
+    _act_state = VALVE_IGNORE;
+    _ovr_state = VALVE_IGNORE;
 
-    while (j--) {
-        pinMode(VALVES[j].fport, INPUT);
-        pinMode(VALVES[j].vport, INPUT);
-        pinMode(VALVES[j].oport, OUTPUT);
-        pinMode(VALVES[j].cport, OUTPUT);
+    pinMode(_vport_switch, INPUT);
+    pinMode(_vport_supply, INPUT);
+    pinMode(_oport, OUTPUT);
+    pinMode(_cport, OUTPUT);
+    digitalWrite(_oport, IDLE_LVL);
+    digitalWrite(_cport, IDLE_LVL);
 
-        digitalWrite(VALVES[j].oport, IDLE_LVL);
-        digitalWrite(VALVES[j].cport, IDLE_LVL);
-    }
-
-    DP("valves control lines configured");
+    _time_mark = 0;
 }
 
-
-/** Perform an action. */
-void valves_run(void)
+bool Valve::is_engaged(void) const
 {
-    int j = VALVES_CNT;
 
-    while (j--) {
-        const valve_state_t act = VALVES[j].act_state;
-        const valve_state_t exp = VALVES[j].exp_state;
-        const byte open = VALVES[j].oport;
-        const byte close = VALVES[j].cport;
-
-        switch (exp) {
-
-        case VALVE_IGNORE:
-            /* Do nothing. */
-            break;
-
-        case VALVE_OPEN:
-            /* If actual state should be ignored, or malfunction happened,
-               or already opened then do stop
-               but at first power down the other line. */
-            digitalWrite(close, IDLE_LVL);
-            digitalWrite(open, act == VALVE_CLOSE ? TRIG_LVL : IDLE_LVL);
-            break;
-
-        case VALVE_CLOSE:
-            /* If actual state should be ignored, or malfunction happened,
-               or already closed then do stop
-               but at first power down the other line. */
-            digitalWrite(open, IDLE_LVL);
-            digitalWrite(close, act == VALVE_OPEN ? TRIG_LVL : IDLE_LVL);
-            break;
-
-        case VALVE_MALFUNCTION:
-        default:
-            app_set_state(APP_MALFUNCTION);
-            DP("valves fail");
-
-            /* Stop operations. */
-            digitalWrite(open, IDLE_LVL);
-            digitalWrite(close, IDLE_LVL);
-        }
+    /* Skip bad states. */
+    if (_exp_state == VALVE_IGNORE || _exp_state == VALVE_MALFUNCTION) {
+        return false;
     }
+
+    /* Valve has a uncompleted action. */
+    return _exp_state != _act_state;
 }
 
-/** Check actual status. */
-void valves_check(void)
+bool Valve::open(void)
 {
-    int j = VALVES_CNT;
-
-    while (j--) {
-        const valve_state_t exp = VALVES[j].exp_state;
-        const valve_state_t act = VALVES[j].act_state;
-        const unsigned long elt = VALVES[j].elt;
-        const unsigned long limit = exp == VALVE_OPEN ? VALVE_OPENING_TIME : VALVE_CLOSING_TIME;
-        unsigned long tm = millis();
-
-        /* TODO: supply current readings are unused for now */
-        /* byte val = analogRead(VALVES[j].vport) >> 2; */
-        /* bool is_idle = val < VALVE_CURRENT_MIN; */
-        /* bool is_high = val > VALVE_CURRENT_MAX; */
-
-        /* VALVES[j].act_state = */
-        /*           is_high ? VALVE_MALFUNCTION */
-        /*         : is_idle ? exp */
-        /*         :           VALVE_IGNORE; */
-
-        /* If action completed. */
-        if (exp == act) {
-            app_state_t app_st = app_get_state();
-            app_state_t st = exp == VALVE_CLOSE ? APP_SOLVED : app_st;
-            app_st = st > app_st ? st : app_st;
-            app_set_state(app_st);
-        }
-
-        /* Skip completed or bad states. */
-        if (exp == act || exp == VALVE_IGNORE || exp == VALVE_MALFUNCTION) {
-            continue;
-        }
-
-        /* Start or limit the operation time. */
-        if (elt == 0) {
-            VALVES[j].act_state = exp == VALVE_OPEN ? VALVE_CLOSE : VALVE_OPEN;
-            VALVES[j].elt = tm;
-        } else if (tm - elt > limit) {
-            VALVES[j].act_state = exp;
-            VALVES[j].elt = 0;
-        }
+    if (_ovr_state != VALVE_IGNORE) {
+        return false;
     }
+
+    _exp_state = VALVE_OPEN;
+
+    return true;
 }
 
-/**
- * Check if any not complete valves actions.
- *
- * @return 1 - there is some not complete actions
- * @return 0 - there is no uncomplete actions
- */
-int is_valves_actions(void)
+void Valve::close(void)
 {
-    int j = VALVES_CNT;
-
-    while (j--) {
-        const valve_state_t exp = VALVES[j].exp_state;
-        const valve_state_t act = VALVES[j].act_state;
-
-        /* Skip completed or bad states. */
-        if (exp == act || exp == VALVE_IGNORE || exp == VALVE_MALFUNCTION) {
-            continue;
-        }
-
-        /* Valve not complete action. */
-        if (exp != act) {
-            return 1;
-        }
+    if (_ovr_state != VALVE_IGNORE) {
+        return false;
     }
 
-    return 0;
+    _exp_state = VALVE_CLOSE;
+
+    return true;
 }
 
-/** Force valves to open. */
-void valves_force_open()
+bool Valve::force_open(void)
 {
-    int j = VALVES_CNT;
-
-    while (j--) {
-        VALVES[j].act_state = VALVE_IGNORE;
-        VALVES[j].exp_state = VALVE_OPEN;
-        VALVES[j].elt = 0;
-
-        digitalWrite(VALVES[j].cport, IDLE_LVL);
-        digitalWrite(VALVES[j].oport, TRIG_LVL);
+    if (_ovr_state != VALVE_IGNORE) {
+        return false;
     }
 
-    delay(VALVE_FORCEOPENING_TIME);
+    _ovr_state = VALVE_OPEN;
 
-    j = VALVES_CNT;
-    while (j--) {
-        digitalWrite(VALVES[j].oport, IDLE_LVL);
-
-        VALVES[j].act_state = VALVE_OPEN;
-        VALVES[j].exp_state = VALVE_OPEN;
-    }
-
-    if (!app_check_state(APP_MALFUNCTION)) {
-        app_set_state(APP_OK);
-    }
+    return true;
 }
 
-/** Force valves to close. */
-void valves_force_close()
+void Valve::force_close(void)
 {
-    int j = VALVES_CNT;
-
-    while (j--) {
-        VALVES[j].act_state = VALVE_IGNORE;
-        VALVES[j].exp_state = VALVE_CLOSE;
-        VALVES[j].elt = 0;
-
-        digitalWrite(VALVES[j].oport, IDLE_LVL);
-        digitalWrite(VALVES[j].cport, TRIG_LVL);
+    if (_ovr_state != VALVE_IGNORE) {
+        return false;
     }
 
-    delay(VALVE_FORCECLOSING_TIME);
+    _ovr_state = VALVE_CLOSE;
 
-    j = VALVES_CNT;
-    while (j--) {
-        digitalWrite(VALVES[j].cport, IDLE_LVL);
+    return true;
+}
 
-        VALVES[j].act_state = VALVE_CLOSE;
-        VALVES[j].exp_state = VALVE_CLOSE;
+void Valve::run(void)
+{
+    /* TODO: read a hand-override signal to protect a hardware */
+    // if (...) {
+    //     _ovr_state = ...;
+    //     _time_mark = 0; /* reset timer */
+    // }
+
+    /* Overrided action? */
+    if (_ovr_state != VALVE_IGNORE) {
+        _exp_state = _ovr_state;
     }
 
-    if (!app_check_state(APP_MALFUNCTION)) {
-        app_set_state(APP_OK);
+    /* An action start-mark. */
+    if (_act_state != _exp_state && _time_mark != 0) {
+        _time_mark = _ticker.mark();
     }
+
+    /* Engage controls. */
+    switch (_exp_state) {
+
+    case VALVE_IGNORE:
+        /* Do nothing. */
+        _time_mark = 0;
+        break;
+
+    case VALVE_OPEN:
+        /* If actual state should be ignored, or malfunction happened,
+           or already opened then do stop
+           but at first power down the other line. */
+        digitalWrite(_cport, IDLE_LVL);
+        digitalWrite(_oport, _act_state != VALVE_OPEN ? TRIG_LVL : IDLE_LVL);
+        break;
+
+    case VALVE_CLOSE:
+        /* If actual state should be ignored, or malfunction happened,
+           or already closed then do stop
+           but at first power down the other line. */
+        digitalWrite(_oport, IDLE_LVL);
+        digitalWrite(_cport, _act_state != VALVE_CLOSE ? TRIG_LVL : IDLE_LVL);
+        break;
+
+    case VALVE_MALFUNCTION:
+    default:
+        /* Stop operations. */
+        digitalWrite(_oport, IDLE_LVL);
+        digitalWrite(_cport, IDLE_LVL);
+        _act_state = VALVE_MALFUNCTION;
+        _exp_state = VALVE_IGNORE;
+    }
+
+    /* TODO: read a supply current to adjust _time_mark and/or _act_state */
+    // {
+    //     _act_state = ...;
+    //     _time_mark = ...;
+    // }
+
+    /* Time limits. */
+    if (_ticker.limit_valve(_time_mark)) {
+        _act_state = _exp_state;
+        _time_mark = 0;
+    }
+
+    return _act_state;
 }
