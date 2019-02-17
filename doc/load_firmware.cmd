@@ -2,7 +2,7 @@
 :: path to hex folder
 set target_dir=firmware
 :: firmware hex file name
-set target_file=sketch_may30a.ino
+set target_file=firmware.ino
 
 :: Erase chip
 avrdude.exe -p m328p -c usbasp -P usb -e

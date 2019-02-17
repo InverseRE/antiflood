@@ -3,7 +3,7 @@
 # path to hex folder
 target_dir="firmware"
 # firmware file name
-target_file="sketch_may30a.ino"
+target_file="firmware.ino"
 
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
