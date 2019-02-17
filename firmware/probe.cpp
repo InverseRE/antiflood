@@ -24,7 +24,8 @@
 #include <Arduino.h>
 #include "probe.h"
 
-const String& to_string(ProbeSensor state) {
+const String& to_string(ProbeSensor state)
+{
     switch (state) {
     case PROBE_UNKNOWN: return F("UNKNOWN");
     case PROBE_DRY:     return F("DRY");
@@ -33,7 +34,8 @@ const String& to_string(ProbeSensor state) {
     }
 }
 
-const String& to_string(ProbeConnection state) {
+const String& to_string(ProbeConnection state)
+{
     switch (state) {
     case PROBE_OFFLINE: return F("OFFLINE");
     case PROBE_ONLINE:  return F("ONLINE");

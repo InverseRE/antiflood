@@ -24,7 +24,18 @@
 #include <Arduino.h>
 #include "led.h"
 
-/** Configure and fast check for LEDs. */
+const String& to_string(LedMode mode)
+{
+    switch (mode) {
+    case LED_OFF:     return F("OFF");
+    case LED_SPIKE:   return F("SPIKE");
+    case LED_BLINK:   return F("BLINK");
+    case LED_ON:      return F("ON");
+    case LED_WARNING: return F("WARNING");
+    default:          return F("---");
+    }
+}
+
 void Led::Led(const Ticker& ticker, byte port)
          : _ticker(ticker), _port(port)
 {

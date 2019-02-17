@@ -62,8 +62,8 @@ public:
     ValveState run(void);                   /* returns an actual state */
 
     ValveState state_actual(void) const { return _act_state; }
-    ValveState state_expected(void) const { return _exp_state; }
-    ValveState state_overrided(void) const { return _ovr_state; }
+    ValveState state_expect(void) const { return _exp_state; }
+    ValveState state_override(void) const { return _ovr_state; }
 };
 
 #endif  /* __VALVE_H__ */

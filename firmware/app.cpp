@@ -22,57 +22,92 @@
 */
 
 #include "app.h"
-#include "probe.h"
-#include "valve.h"
 
-
-
-/** Application overall state. */
-static app_state_t OVERALL_STATE = APP_MALFUNCTION;
-
-
-
-/** Choose the next move. */
-void app_solve(void)
+const String& to_string(AppState state)
 {
-    valve_state_t gst = VALVE_IGNORE;
-
-    int i = PROBES_CNT;
-    int j = VALVES_CNT;
-
-    while (i--) {
-        const probe_live_state_t cst = PROBES[i].con;
-        const probe_detector_state_t dst = PROBES[i].det;
-        const valve_state_t vst =
-                  cst == PROBE_ERROR   ? VALVE_CLOSE
-                : dst == PROBE_WATER   ? VALVE_CLOSE
-                : cst == PROBE_ONLINE  ? VALVE_IGNORE
-                : dst == PROBE_DRY     ? VALVE_IGNORE
-                : cst == PROBE_OFFLINE ? VALVE_IGNORE
-                :                        VALVE_CLOSE;
-
-        gst = gst == VALVE_IGNORE ? vst : gst;
-    }
-
-    while (j--) {
-        VALVES[j].exp_state = gst == VALVE_IGNORE ? VALVES[j].exp_state : gst;
+    switch (mode) {
+    case APP_OK:          return F("OK");
+    case APP_ALARM:       return F("ALARM");
+    case APP_SOLVED:      return F("SECURED");
+    case APP_STANDBY:     return F("STANDING BY");
+    case APP_MALFUNCTION: return F("MALFUNCTION");
+    default:              return F("---");
     }
 }
 
-/** Check if app state queals to given state. */
-bool app_check_state(app_state_t state)
+App::App(const Ticker& ticker,
+        Led* leds, byte leds_cnt,
+        Probe* probes, byte probes_cnt,
+        Valve* valves, byte valves_cnt)
+        : _ticker(ticker),
+          _leds(leds), _probes(probes), _valves(valves),
+          _leds_cnt(leds_cnt), _probes_cnt(probes_cnt), _valves_cnt(valves_cnt)
 {
-    return OVERALL_STATE == state;
+    _state = _probes_cnt == _leds_cnt && _probes_cnt > 0
+            ? APP_OK : APP_MALFUNCTION;
 }
 
-/** Set app state. */
-void app_set_state(app_state_t state)
+AppState App::solve(void)
 {
-    OVERALL_STATE == state;
-}
+    /* in case of hard error */
+    if (_state == APP_MALFUNCTION) {
+        for (int i = 0; i < _leds_cnt; ++i) {
+            _leds[i].lit(LED_WARNING);
+        }
+        return _state;
+    }
 
-/** Get app state. */
-app_state_t app_get_state(void)
-{
-    return OVERALL_STATE;
+    /* read data */
+    bool is_triggered = false;
+    bool is_resolved = false;
+    bool is_overrided = false;
+
+    for (int i = 0; i < _probes_cnt; ++i) {
+        _probes[i].prepare();
+    }
+
+    _probes[0].delay();
+
+    for (int i = 0; i < _probes_cnt; ++i) {
+        is_triggered |= PROBE_ERROR == _probes[i].test_connection();
+    }
+    for (int i = 0; i < _probes_cnt; ++i) {
+        is_triggered |= PROBE_WATER == _probes[i].test_sensor();
+    }
+
+    /* resolve */
+    for (int i = 0; is_triggered && i < _valves_cnt; ++i) {
+        _valves[i].close();
+    }
+    for (int i = 0; i < _valves_cnt; ++i) {
+        is_resolved |= VALVE_CLOSE == _valves[i].run();
+        is_overrided |= VALVE_IGNORE != _valves[i].state_override();
+    }
+
+    /* summary */
+    for (int i = 0; i < _probes_cnt && i < _leds_cnt; ++i) {
+        switch (_probes[i].connection()) {
+        case PROBE_OFFLINE: _leds[i].lit(LED_OFF);     break;
+        case PROBE_ONLINE:  _leds[i].lit(LED_SPIKE);   break;
+        case PROBE_ERROR:   _leds[i].lit(LED_WARNING); break;
+        }
+
+        switch (_probes[i].sensor()) {
+        case PROBE_UNKNOWN:                            break;
+        case PROBE_DRY:                                break;
+        case PROBE_WATER:   _leds[i].lit(LED_BLINK);   break;
+        }
+    }
+
+    if (is_overrided) {
+        _state = APP_STANDBY;
+    } else if (!is_triggered && !is_resolved) {
+        _state = APP_OK;
+    } else if (is_triggered && !is_resolved) {
+        _state = APP_ALARM;
+    } else if (!is_triggered && is_resolved) {
+        _state = APP_OK;
+    } else {
+        _state = APP_SOLVED;
+    }
 }

@@ -35,6 +35,8 @@ enum LedMode {
     LED_WARNING                             /**< rapidly flashes */
 };
 
+const String& to_string(LedMode mode);
+
 /** LED. */
 class Led {
 private:

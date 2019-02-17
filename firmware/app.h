@@ -24,32 +24,41 @@
 #ifndef __APP_H__
 #define __APP_H__
 
-#include "config.h"
+#include "ticker.h"
+#include "led.h"
+#include "probe.h"
+#include "valve.h"
 
+/** Overall states. */
+enum AppState {
+    APP_OK,                                 /**< all is good */
+    APP_ALARM,                              /**< water detected */
+    APP_SOLVED,                             /**< valves closed */
+    APP_STANDBY,                            /**< controls override */
+    APP_MALFUNCTION                         /**< something is wrong */
+};
 
+const String& to_string(AppState state);
 
-/** Overall detector states. */
-typedef enum {
-    APP_OK = 0, /**< all is good */
-    APP_ALARM = 1, /**< water detected */
-    APP_SOLVED = 2, /**< valves closed */
-    APP_MALFUNCTION = 3 /**< something is wrong */
-} app_state_t;
+/** Basic logic. */
+class App {
+private:
+    const Ticker& _ticker;
+    Led* const _leds;
+    Probe* const _probes;
+    Valve* const _valves;
+    const byte _leds_cnt;
+    const byte _probes_cnt;
+    const byte _valves_cnt;
+    AppState _state;
 
+public:
+    App(const Ticker& ticker,
+            Led* leds, byte leds_cnt,
+            Probe* probes, byte probes_cnt,
+            Valve* valves, byte valves_cnt);
 
-
-/** Choose the next move. */
-void app_solve(void);
-
-/** Check if app state queals to given state. */
-bool app_check_state(app_state_t state);
-
-/** Set app state. */
-void app_set_state(app_state_t state);
-
-/** Get app state. */
-app_state_t app_get_state(void);
-
-
+    AppState solve(void);
+};
 
 #endif  /* __APP_H__ */

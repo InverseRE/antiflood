@@ -44,20 +44,12 @@ public:
     WebPage(const WiFiEspClient& client);
 
     WebAction parse(const String& request);
-    void response(void);
+    void response_state(AppState app_state,
+            const Led* leds, byte leds_cnt,
+            const Probe* probes, byte probes_cnt,
+            const Valve* valves, byte valves_cnt);
     void response_not_found(void);
-    void heading(WebAction action);
+    void heading(WebAction action, byte count_down);
 }
-
-/** Response for valves open/close action with redirection to the main page. */
-void http_action_response(WiFiEspClient client, unsigned char act, unsigned char count_down);
-
-/** Construct an HTML-page of an actual status. */
-void http_response(WiFiEspClient client);
-
-/** Simple response for favicon request from browser. */
-void http_response_not_found(WiFiEspClient client);
-
-
 
 #endif  /* __WEB_H__ */

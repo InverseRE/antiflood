@@ -24,7 +24,8 @@
 #include <Arduino.h>
 #include "app.h"
 
-const String& to_string(ValveState state) {
+const String& to_string(ValveState state)
+{
     switch (state) {
     case VALVE_IGNORE:      return F("IGNORE");
     case VALVE_OPEN:        return F("OPEN");
