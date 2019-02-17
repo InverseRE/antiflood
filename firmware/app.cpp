@@ -26,10 +26,8 @@
 #include "valve.h"
 
 
-
 /** Application overall state. */
 static app_state_t OVERALL_STATE = APP_MALFUNCTION;
-
 
 
 /** Choose the next move. */
@@ -68,7 +66,7 @@ bool app_check_state(app_state_t state)
 /** Set app state. */
 void app_set_state(app_state_t state)
 {
-    OVERALL_STATE == state;
+    OVERALL_STATE = state;
 }
 
 /** Get app state. */
