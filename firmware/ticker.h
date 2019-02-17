@@ -26,9 +26,10 @@
 
 #include <Arduino.h>
 
-#define SPIKE_DURATION      30          /**< spike on duration, ms */
-#define FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
-#define BLINK_DURATION      1000        /**< blink on/off duration, ms */
+#define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
+#define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
+#define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
+#define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
 
 /** Ticker to get various signals. */
 class Ticker {
@@ -43,16 +44,20 @@ public:
     void tick(void)
     {
         unsigned long tm = millis();
-        _sig_spike = tm % (200 * SPIKE_DURATION) > SPIKE_DURATION ? LOW : HIGH;
-        _sig_blink = tm % (  2 * BLINK_DURATION) > BLINK_DURATION ? LOW : HIGH;
-        _sig_flash = tm % (  2 * FLASH_DURATION) > FLASH_DURATION ? LOW : HIGH;
+        _sig_spike = tm % (200 * LED_SPIKE_DURATION) > LED_SPIKE_DURATION ? LOW : HIGH;
+        _sig_blink = tm % (  2 * LED_BLINK_DURATION) > LED_BLINK_DURATION ? LOW : HIGH;
+        _sig_flash = tm % (  2 * LED_FLASH_DURATION) > LED_FLASH_DURATION ? LOW : HIGH;
     }
+
+    unsigned long mark(void) const { return millis(); }
 
     byte sig_low(void) const { return LOW; }
     byte sig_high(void) const { return HIGH; }
     byte sig_spike(void) const { return _sig_spike; }
     byte sig_blink(void) const { return _sig_blink; }
     byte sig_flash(void) const { return _sig_flash; }
+
+    void delay_probe(void) const { delay(PROBE_CHECK_DURATION); }
 };
 
 #endif  /* __TICKER_H__ */

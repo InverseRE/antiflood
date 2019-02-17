@@ -21,146 +21,62 @@
    For more details see LICENSE file.
 */
 
+#include <Arduino.h>
 #include "probe.h"
-#include "app.h"
-
-
 
 #define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
 #define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
 #define PROBE_TEST_PERIOD       5000        /**< signal reading period, ms */
 #define PROBE_CHECK_PERIOD      10000       /**< connection verifying period, ms */
-#define PROBE_DISCH_DURATION    1           /**< discharge capcitor delay, ms */
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
 #define CG_MIN                  10          /**< minimal voltage on capasitor, normalized */
 #define CG_MAX_FACTOR           0.8         /**< factor of maximal voltage on capasitor */
 
-
-
-/* TODO: let the probes be disabled by hand. */
-
-/** List of available probes. */
-probe_t PROBES[] = {
-    {PROBE0, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED0, LED_OFF},
-    {PROBE1, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED1, LED_OFF},
-    {PROBE2, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED2, LED_OFF},
-    {PROBE3, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED3, LED_OFF},
-    {PROBE4, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED4, LED_OFF},
-    {PROBE5, 0, 0, 0, PROBE_DRY, PROBE_OFFLINE, LED5, LED_OFF}
-};
-
-/** Count of probes. */
-int PROBES_CNT = (sizeof(PROBES) / sizeof(PROBES[0]));
-
-
-
-/** Configure and fast check for probes. */
-void probes_configure(void)
+Probe::Probe(const Ticker& ticker, byte port)
+        : _ticker(ticker), _port(port)
 {
-    int i = PROBES_CNT;
+    _time_mark = 0;
+    _sensor = PROBE_DRY;
+    _connection = PROBE_OFFLINE;
 
-    while (i--) {
-        pinMode(PROBES[i].port, INPUT_PULLUP);
-    }
-
-    DP("input lines configured");
+    pinMode(_port, OUTPUT);
+    digitalWrite(_port, LOW);
 }
 
-/** Perform readings from probes. */
-void probes_test(void)
+void Probe::prepare(void)
 {
-    int i = PROBES_CNT;
-
-    /*
-     * Perhaps some delay needed,
-     * in case this procedure is beign called right after probes_check().
-     */
-
-    /* Normalize to a byte-range value. */
-    while (i--) {
-        PROBES[i].val = analogRead(PROBES[i].port) >> 2;
-    }
+    /* should be LOW for the moment */
+    _time_mark = _ticker.mark();
+    pinMode(_port, INPUT_PULLUP);
 }
 
-/** Check connection status for probes. */
-void probes_check(void)
+void Probe::delay(void) const
 {
-    int i = PROBES_CNT;
-    unsigned long elt, tm1, tm2;
+    _ticker.delay_probe();
+}
 
-    /* Start discharging capacitors. */
-    while (i--) {
-        pinMode(PROBES[i].port, OUTPUT);
-        digitalWrite(PROBES[i].port, LOW);
-    }
-
-    /* Fully discharge capasitors. */
-    delay(PROBE_DISCH_DURATION);
-
-    /* Prepare to read values. */
-    tm1 = millis();
-
-    i = PROBES_CNT;
-    while (i--) {
-        pinMode(PROBES[i].port, INPUT_PULLUP);
-    }
-
-    /* Perform some delay to partially charge back. */
-    delay(PROBE_CHECK_DURATION);
-
-    /* Get voltage at the moment. */
-    tm2 = millis();
-    elt = (tm2 - tm1) / 4;
+ProbeConnection Probe::test_link(void)
+{
+    unsigned long time = _ticker.mark();
+    unsigned long elt = (time - _time_mark) / 4;
     elt = elt == 0 ? 1 : elt;
     elt = elt < 255 ? elt : 255;
 
-    i = PROBES_CNT;
-    while (i--) {
-        PROBES[i].chk = analogRead(PROBES[i].port) >> 2;
-        PROBES[i].elt = (byte)elt;
-    }
+    byte v = analogRead(_port) >> 2;
+
+    return    v < PROBE_V_SHORT_CIRCUIT ? PROBE_ERROR
+            : t == 0                    ? PROBE_OFFLINE
+            : c > v * CG_MAX_FACTOR     ? PROBE_OFFLINE
+            : c > CG_MIN                ? PROBE_ONLINE
+            :                             PROBE_ERROR;
 }
 
-/** Calculate probes' states. */
-void probes_result(void)
+ProbeSensor Probe::test_sensor(void)
 {
-    int i = PROBES_CNT;
+    bool triggered = (analogRead(_port) >> 2) < PROBE_V_FLOOD_TRIGGER;
 
-    app_state_t app_state = APP_OK;
+    pinMode(_port, OUTPUT);
+    digitalWrite(_port, LOW);
 
-    while (i--) {
-        probe_detector_state_t dst;
-        probe_live_state_t cst;
-        byte v = PROBES[i].val;
-        byte c = PROBES[i].chk;
-        byte t = PROBES[i].elt;
-        app_state_t state;
-
-        dst = PROBES[i].det = v < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
-        cst = PROBES[i].con =
-                  v < PROBE_V_SHORT_CIRCUIT ? PROBE_ERROR
-                : t == 0                    ? PROBE_OFFLINE
-                : c > v * CG_MAX_FACTOR     ? PROBE_OFFLINE
-                : c > CG_MIN                ? PROBE_ONLINE
-                :                             PROBE_ERROR;
-
-        PROBES[i].mode =
-                  cst == PROBE_ERROR   ? LED_WARNING
-                : dst == PROBE_WATER   ? LED_BLINK
-                : cst == PROBE_ONLINE  ? LED_SPIKE
-                : dst == PROBE_DRY     ? LED_OFF
-                : cst == PROBE_OFFLINE ? LED_OFF
-                :                        LED_ON;
-
-        state =  cst == PROBE_ERROR   ? APP_MALFUNCTION
-                : dst == PROBE_WATER   ? APP_ALARM
-                : cst == PROBE_ONLINE  ? APP_OK
-                : dst == PROBE_DRY     ? APP_OK
-                : cst == PROBE_OFFLINE ? APP_OK
-                :                        APP_MALFUNCTION;
-
-        app_state = state > app_state ? state : app_state;
-    }
-
-    app_set_state(app_state);
+    return triggered ? PROBE_WATER : PROBE_DRY;
 }

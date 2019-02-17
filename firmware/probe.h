@@ -24,58 +24,46 @@
 #ifndef __PROBE_H__
 #define __PROBE_H__
 
-#include "config.h"
-#include "led.h"
-
-
+#include "ticker.h"
 
 /** Probe sensor states. */
-typedef enum {
+enum ProbeSensor {
     PROBE_DRY,                              /**< nothing happens, all is OK */
     PROBE_WATER                             /**< some activity detected */
-} probe_detector_state_t;
+};
 
 /** Probe connection status. */
-typedef enum {
+enum ProbeConnection{
     PROBE_OFFLINE,                          /**< disconnected or non-controlled probe */
     PROBE_ONLINE,                           /**< probe is connected */
     PROBE_ERROR                             /**< shortcircuit, malfunction or bad readings */
-} probe_live_state_t;
+};
 
-/** Probe. */
-typedef struct {
-    byte port;                              /**< analog input port */
-    byte val;                               /**< readed static value */
-    byte chk;                               /**< readed dynamic value (connection check) */
-    byte elt;                               /**< elapsed time (connection check), normalized */
-    probe_detector_state_t det;             /**< probe detector state */
-    probe_live_state_t con;                 /**< probe connection state */
-    byte led;                               /**< linked LED */
-    led_state_t mode;                       /**< linked LED's status */
-} probe_t;
+/**
+ * Probe.
+ *
+ * Sequence follows:
+ * .prepare [i]
+ * .delay (only once)
+ * .test_link [i]
+ * .test_sensor [i]
+ * loop again with some delay to discharge capacitor
+ */
+class Probe {
+private:
+    const Ticker& _ticker;
+    const byte _port;                       /**< analog input port */
+    unsigned long _time_mark;               /**< an engage time mark */
+    ProbeSensor _sensor;                    /**< probe's detector state */
+    ProbeConnection _connection;            /**< probe's connection state */
 
+public:
+    Probe(const Ticker& ticker, byte port);
 
-
-/** List of available probes. */
-extern probe_t PROBES[];
-
-/** Count of probes. */
-extern  int PROBES_CNT;
-
-
-
-/** Configure and fast check for probes. */
-void probes_configure(void);
-
-/** Perform readings from probes. */
-void probes_test(void);
-
-/** Check connection status for probes. */
-void probes_check(void);
-
-/** Calculate probes' states. */
-void probes_result(void);
-
-
+    void prepare(void);
+    void delay(void) const;
+    ProbeConnection test_link(void);
+    ProbeSensor test_sensor(void);
+};
 
 #endif  /* __PROBE_H__ */
