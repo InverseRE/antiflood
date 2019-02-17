@@ -25,23 +25,27 @@
 #define __WEB_H__
 
 #include <WiFiEspClient.h>
-#include "timer.h"
+#include "ticker.h"
+#include "app.h"
 
 /** User commands. */
 enum WebAction {
     WEB_UNKNOWN,                            /* unknown */
+    WEB_NOT_FOUND,                          /* not found */
     WEB_STATE,                              /* show state */
     WEB_OPEN,                               /* open valves */
     WEB_CLOSE,                              /* close valves */
     WEB_SUSPEND                             /* enter a power-save mode */
 };
 
+/** HTML page constructor. */
 class WebPage {
 private:
+    const Ticker& _ticker;
     const WiFiEspClient& _client;
 
 public:
-    WebPage(const WiFiEspClient& client);
+    WebPage(const Ticker& ticker, const WiFiEspClient& client);
 
     WebAction parse(const String& request);
     void response_state(AppState app_state,

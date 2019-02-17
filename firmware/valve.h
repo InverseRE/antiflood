@@ -34,8 +34,6 @@ enum ValveState {
     VALVE_MALFUNCTION,                      /**< some malfunction detected */
 };
 
-const String& to_string(ValveState state);
-
 /** Valve. */
 class Valve {
 private:

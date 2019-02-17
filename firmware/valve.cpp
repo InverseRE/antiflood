@@ -24,17 +24,6 @@
 #include <Arduino.h>
 #include "app.h"
 
-const String& to_string(ValveState state)
-{
-    switch (state) {
-    case VALVE_IGNORE:      return F("IGNORE");
-    case VALVE_OPEN:        return F("OPEN");
-    case VALVE_CLOSE:       return F("CLOSE");
-    case VALVE_MALFUNCTION: return F("ERROR");
-    default:                return F("---");
-    }
-}
-
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
 

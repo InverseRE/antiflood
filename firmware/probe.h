@@ -33,16 +33,12 @@ enum ProbeSensor {
     PROBE_WATER                             /**< some activity detected */
 };
 
-const String& to_string(ProbeSensor state);
-
 /** Probe connection status. */
 enum ProbeConnection{
     PROBE_OFFLINE,                          /**< disconnected or non-controlled probe */
     PROBE_ONLINE,                           /**< probe is connected */
     PROBE_ERROR                             /**< shortcircuit, malfunction or bad readings */
 };
-
-const String& to_string(ProbeConnection state);
 
 /**
  * Probe.

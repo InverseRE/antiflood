@@ -38,8 +38,6 @@ enum AppState {
     APP_MALFUNCTION                         /**< something is wrong */
 };
 
-const String& to_string(AppState state);
-
 /** Basic logic. */
 class App {
 private:

@@ -24,26 +24,6 @@
 #include <Arduino.h>
 #include "probe.h"
 
-const String& to_string(ProbeSensor state)
-{
-    switch (state) {
-    case PROBE_UNKNOWN: return F("UNKNOWN");
-    case PROBE_DRY:     return F("DRY");
-    case PROBE_WATER:   return F("WATER");
-    default:            return F("---");
-    }
-}
-
-const String& to_string(ProbeConnection state)
-{
-    switch (state) {
-    case PROBE_OFFLINE: return F("OFFLINE");
-    case PROBE_ONLINE:  return F("ONLINE");
-    case PROBE_ERROR:   return F("ERROR");
-    default:            return F("---");
-    }
-}
-
 #define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
 #define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
 #define CG_MIN                  10          /**< minimal voltage on capasitor, normalized */

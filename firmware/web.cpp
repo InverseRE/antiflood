@@ -21,14 +21,8 @@
    For more details see LICENSE file.
 */
 
+#include <Arduino.h>
 #include "web.h"
-#include "probe.h"
-#include "valve.h"
-#include "app.h"
-#include "power.h"
-#include "net.h"
-
-
 
 #define ACTION_OPEN_ALL       "/open_valves"
 #define ACTION_CLOSE_ALL      "/close_valves"
@@ -71,6 +65,7 @@
 #define HTML_HEADING_OK       "<h2 style=\"color:green\">OK</h2>"
 #define HTML_HEADING_ALARM    "<h2 style=\"color:blue\">WATER DETECTED</h2>"
 #define HTML_HEADING_SOLVED   "<h2 style=\"color:cyan\">AREA SECURED</h2>"
+#define HTML_HEADING_STANDBY  "<h2 style=\"color:orange\">STANDING BY...</h2>"
 #define HTML_HEADING_BAD      "<h2 style=\"color:red\">MALFUNCTION</h2>"
 #define HTML_HEADING_PROBES   "<p>Probes</p>"
 #define HTML_HEADING_VALVES   "<p>Valves</p>"
@@ -102,42 +97,35 @@
 #define HTML_ACT_POWER_SAVE   "<form action=\"" ACTION_PWR_SAVE  "\">"\
                               "<input type=\"submit\" value=\"turn on power save\"> </form>"
 
+WebPage::WebPage(const Ticker& ticker, const WiFiEspClient& client)
+        : _ticker(ticker), _clien(client)
+{
+}
 
-
-/** Checks client request. */
-void http_parse_request(WiFiEspClient client, const String& rbuff)
+WebAction WebPage::parse(const String& request)
 {
     /* Main page request. */
-    if (rbuff.endsWith("/")) {
-        http_response(client);
-        return;
+    if (request.endsWith("/")) {
+        return WEB_STATE;
     }
 
     /* TODO: favicon request. */
-    if (rbuff.indexOf("/favicon.ico") >= 0) {
-        http_response_not_found(client);
-        return;
+    if (request.indexOf("/favicon.ico") >= 0) {
+        return WEB_NOT_FOUND;
     }
 
-    /* Check for valves action. Action blocks http server for a long time. Send answer to user before perform action. */
-    if (rbuff.indexOf(ACTION_OPEN_ALL) >= 0 || rbuff.indexOf(ACTION_OPEN_ALL "?") >= 0) {
-        http_action_response(client, VALVE_OPENING_ACTION, 1);
-        valves_force_open();
-    } else if (rbuff.indexOf(ACTION_CLOSE_ALL) >= 0 || rbuff.indexOf(ACTION_CLOSE_ALL "?") >= 0) {
-        http_action_response(client, VALVE_CLOSING_ACTION, 1);
-        valves_force_close();
-    } else if (rbuff.indexOf(ACTION_PWR_SAVE) >= 0 || rbuff.indexOf(ACTION_PWR_SAVE "?") >= 0) {
-        http_action_response(client, SHIELD_PWR_SAVE_ACTION, 1);
-        delay(100); /* Some delay to finish trunsmit. */
-        power_save_mode_on();
+    if (request.indexOf(ACTION_OPEN_ALL) >= 0) {
+        return WEB_OPEN;
+    } else if (request.indexOf(ACTION_CLOSE_ALL) >= 0) {
+        return WEB_CLOSE;
+    } else if (request.indexOf(ACTION_PWR_SAVE) >= 0) {
+        return WEB_SUSPEND;
     } else {
-        /* TODO: will be removed after debug. Let me know if GET request not parsed. */
-        http_action_response(client, -1, 1);
+        return WEB_UNKNOWN;
     }
 }
 
-/** Response for valves open/close action with redirection to the main page. */
-void http_action_response(WiFiEspClient client, unsigned char act, unsigned char timeout)
+void WebPage::heading(WebAction action, byte count_down)
 {
     client.println(F(
                     HTTP_RESPONSE
@@ -146,7 +134,7 @@ void http_action_response(WiFiEspClient client, unsigned char act, unsigned char
                     HTML_HEAD
                     HTML_STYLE
                     HTML_HEAD_META));
-    client.println(timeout);
+    client.println(count_down);
     client.println(F(";url=http://"));
     client.println(F(
                     WEB_IP_STR
@@ -155,28 +143,32 @@ void http_action_response(WiFiEspClient client, unsigned char act, unsigned char
                     HTML_BODY
                     HTML_HEADING
                     HTML_LN_BR));
-    if (VALVE_OPENING_ACTION == act) {
-        client.println(F(HTML_HEADING_OPEN));
-    } else if (VALVE_CLOSING_ACTION == act) {
-        client.println(F(HTML_HEADING_CLOSE));
-    } else if (SHIELD_PWR_SAVE_ACTION == act) {
-        client.println(F(HTML_HEADING_PWR_SAVE));
-    } else {
-        client.println(F(HTML_HEADING_UNKNOWN));
+
+    switch (action) {
+    case WEB_OPEN:    client.println(F(HTML_HEADING_OPEN));     break;
+    case WEB_CLOSE:   client.println(F(HTML_HEADING_CLOSE));    break;
+    case WEB_SUSPEND: client.println(F(HTML_HEADING_PWR_SAVE)); break;
+    default:          client.println(F(HTML_HEADING_UNKNOWN));
     }
+
     client.println(F(
                     HTML_BODY_BR
                     HTML_BR
                     HTTP_BR));
 }
 
-/** Construct an HTML-page of an actual status. */
-void http_response(WiFiEspClient client)
+void WebPage::response_not_found(void)
 {
-    app_state_t state = app_get_state();
-    int i = PROBES_CNT;
-    int j = VALVES_CNT;
+    client.println(F(
+                    HTTP_NOT_FOUND
+                    HTTP_BR));
+}
 
+void WebPage::response_state(AppState app_state,
+        const Led* leds, byte leds_cnt,
+        const Probe* probes, byte probes_cnt,
+        const Valve* valves, byte valves_cnt);
+{
     client.print(F(
                     /* Preambule. */
                     HTTP_RESPONSE
@@ -191,11 +183,12 @@ void http_response(WiFiEspClient client)
                     HTML_HEADING
                     HTML_LN_BR));
     client.print(
-              state == APP_OK          ? HTML_HEADING_OK
-            : state == APP_ALARM       ? HTML_HEADING_ALARM
-            : state == APP_SOLVED      ? HTML_HEADING_SOLVED
-            : state == APP_MALFUNCTION ? HTML_HEADING_BAD
-            :                                    HTML_HEADING_BAD);
+              app_state == APP_OK          ? HTML_HEADING_OK
+            : app_state == APP_ALARM       ? HTML_HEADING_ALARM
+            : app_state == APP_SOLVED      ? HTML_HEADING_SOLVED
+            : app_state == APP_STANDBY     ? HTML_HEADING_STANDBY
+            : app_state == APP_MALFUNCTION ? HTML_HEADING_BAD
+            :                                HTML_HEADING_BAD);
 
     client.print(F(
                     /* State of probes. */
@@ -204,50 +197,36 @@ void http_response(WiFiEspClient client)
                     HTML_HEADING_PROBES
                     HTML_TABLE
                     HTML_TABLE_LN
-                    HTML_TABLE_CAP "PORT"  HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "VALUE" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "dU"    HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "dt"    HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "CON"   HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "DET"   HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "LED"   HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "MODE"  HTML_TABLE_CAP_BR
+                    HTML_TABLE_CAP "CON" HTML_TABLE_CAP_BR
+                    HTML_TABLE_CAP "DET" HTML_TABLE_CAP_BR
+                    HTML_TABLE_CAP "LED" HTML_TABLE_CAP_BR
                     HTML_TABLE_LN_BR));
 
-    while (i--) {
-        probe_live_state_t cst = PROBES[i].con;
-        probe_detector_state_t dst = PROBES[i].det;
-        led_state_t lm = PROBES[i].mode;
+    for (int i = 0; i < probes_cnt && i < leds_cnt; ++i) {
+        ProbeConnection con = probes[i].connection();
+        ProbeSensor det = probes[i].sensor();
+        LedMode led = leds[i].mode;
 
         client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
-        client.print(String(PROBES[i].port));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(PROBES[i].val));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(PROBES[i].chk));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(PROBES[i].elt));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
         client.print(
-                  cst == PROBE_OFFLINE ? F("OFFLINE")
-                : cst == PROBE_ONLINE  ? F("ONLINE")
-                : cst == PROBE_ERROR   ? F("ERROR")
+                  con == PROBE_OFFLINE ? F("OFFLINE")
+                : con == PROBE_ONLINE  ? F("ONLINE")
+                : con == PROBE_ERROR   ? F("ERROR")
                 :                        F("---"));
         client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
         client.print(
-                  dst == PROBE_DRY   ? F("DRY")
-                : dst == PROBE_WATER ? F("WATER")
-                :                      F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(PROBES[i].led));
+                  det == PROBE_UNKNOWN ? F("UNKNOWN")
+                : det == PROBE_DRY     ? F("DRY")
+                : det == PROBE_WATER   ? F("WATER")
+                :                        F("---"));
         client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
         client.print(
-                  lm == LED_OFF     ? F("OFF")
-                : lm == LED_SPIKE   ? F("SPIKE")
-                : lm == LED_BLINK   ? F("BLINK")
-                : lm == LED_ON      ? F("ON")
-                : lm == LED_WARNING ? F("WARNING")
-                :                     F("---"));
+                  led == LED_OFF     ? F("OFF")
+                : led == LED_SPIKE   ? F("SPIKE")
+                : led == LED_BLINK   ? F("BLINK")
+                : led == LED_ON      ? F("ON")
+                : led == LED_WARNING ? F("WARNING")
+                :                      F("---"));
         client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_LN_BR));
     }
 
@@ -258,46 +237,37 @@ void http_response(WiFiEspClient client)
                     HTML_HEADING_VALVES
                     HTML_TABLE
                     HTML_TABLE_LN
-                    HTML_TABLE_CAP "EXP ST" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "ACT ST" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "T"      HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "U(I)"   HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "A PORT" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "I PORT" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "O PORT" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "C PORT" HTML_TABLE_CAP_BR
+                    HTML_TABLE_CAP "EXP" HTML_TABLE_CAP_BR
+                    HTML_TABLE_CAP "OVR" HTML_TABLE_CAP_BR
+                    HTML_TABLE_CAP "ACT" HTML_TABLE_CAP_BR
                     HTML_TABLE_LN_BR));
 
-    while (j--) {
-        valve_state_t ves = VALVES[j].exp_state;
-        valve_state_t vas = VALVES[j].act_state;
+    for (int i = 0; i < valves_cnt; ++i) {
+        ValveState exp = valves[i].state_expect();
+        ValveState ovr = valves[i].state_override();
+        ValveState act = valves[i].state_actual();
 
         client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
         client.print(
-                  ves == VALVE_IGNORE      ? F("IGNORE")
-                : ves == VALVE_OPEN        ? F("OPEN")
-                : ves == VALVE_CLOSE       ? F("CLOSE")
-                : ves == VALVE_MALFUNCTION ? F("MALFUNCTION")
+                  exp == VALVE_IGNORE      ? F("IGNORE")
+                : exp == VALVE_OPEN        ? F("OPEN")
+                : exp == VALVE_CLOSE       ? F("CLOSE")
+                : exp == VALVE_MALFUNCTION ? F("MALFUNCTION")
                 :                            F("---"));
         client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
         client.print(
-                  vas == VALVE_IGNORE      ? F("IGNORE")
-                : vas == VALVE_OPEN        ? F("OPEN")
-                : vas == VALVE_CLOSE       ? F("CLOSE")
-                : vas == VALVE_MALFUNCTION ? F("MALFUNCTION")
+                  ovr == VALVE_IGNORE      ? F("IGNORE")
+                : ovr == VALVE_OPEN        ? F("OPEN")
+                : ovr == VALVE_CLOSE       ? F("CLOSE")
+                : ovr == VALVE_MALFUNCTION ? F("MALFUNCTION")
                 :                            F("---"));
         client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(VALVES[j].elt));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(VALVES[j].chk));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(VALVES[j].fport));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(VALVES[j].vport));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(VALVES[j].oport));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(String(VALVES[j].cport));
+        client.print(
+                  act == VALVE_IGNORE      ? F("IGNORE")
+                : act == VALVE_OPEN        ? F("OPEN")
+                : act == VALVE_CLOSE       ? F("CLOSE")
+                : act == VALVE_MALFUNCTION ? F("MALFUNCTION")
+                :                            F("---"));
         client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_LN_BR));
     }
 

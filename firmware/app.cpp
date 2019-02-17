@@ -23,18 +23,6 @@
 
 #include "app.h"
 
-const String& to_string(AppState state)
-{
-    switch (mode) {
-    case APP_OK:          return F("OK");
-    case APP_ALARM:       return F("ALARM");
-    case APP_SOLVED:      return F("SECURED");
-    case APP_STANDBY:     return F("STANDING BY");
-    case APP_MALFUNCTION: return F("MALFUNCTION");
-    default:              return F("---");
-    }
-}
-
 App::App(const Ticker& ticker,
         Led* leds, byte leds_cnt,
         Probe* probes, byte probes_cnt,
