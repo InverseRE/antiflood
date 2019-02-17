@@ -34,10 +34,8 @@
 
 /** Startup procedure. */
 void setup() {
-#ifdef DEBUG_PRINTOUT
-    SWS.begin(DEBUG_BAUD_RATE);
-#endif
-    DP("setup");
+    start_db_print();
+    DP(F("setup"));
 
     peripheral_configure();
     web_configure();
@@ -47,16 +45,16 @@ void setup() {
 
     app_set_state(APP_OK);
 
-    DP("ready to go...");
+    DP(F("ready to go..."));
 }
 
 /** Main procedure. */
 void loop() {
     /* Application should restart once per month.
      Check this out. */
-    unsigned long tm = millis();
+    unsigned long tm = millis() + millis_in_sleep();
     if (tm & 0x80000000) {
-        DP("application life time expired");
+        DP(F("application life time expired"));
         web_run();
         reset();
         return;

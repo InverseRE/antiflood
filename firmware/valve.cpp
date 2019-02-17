@@ -23,6 +23,7 @@
 
 #include "valve.h"
 #include "app.h"
+#include "power.h"
 
 
 
@@ -62,7 +63,7 @@ void valves_configure(void)
         digitalWrite(VALVES[j].cport, IDLE_LVL);
     }
 
-    DP("valves control lines configured");
+    DP(F("valves control lines configured"));
 }
 
 
@@ -102,7 +103,7 @@ void valves_run(void)
         case VALVE_MALFUNCTION:
         default:
             app_set_state(APP_MALFUNCTION);
-            DP("valves fail");
+            DP(F("valves fail"));
 
             /* Stop operations. */
             digitalWrite(open, IDLE_LVL);
@@ -121,7 +122,7 @@ void valves_check(void)
         const valve_state_t act = VALVES[j].act_state;
         const unsigned long elt = VALVES[j].elt;
         const unsigned long limit = exp == VALVE_OPEN ? VALVE_OPENING_TIME : VALVE_CLOSING_TIME;
-        unsigned long tm = millis();
+        unsigned long tm = millis() + millis_in_sleep();
 
         /* TODO: supply current readings are unused for now */
         /* byte val = analogRead(VALVES[j].vport) >> 2; */

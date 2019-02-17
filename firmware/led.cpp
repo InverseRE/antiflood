@@ -23,6 +23,7 @@
 
 #include "led.h"
 #include "probe.h"
+#include "power.h"
 
 
 
@@ -50,13 +51,13 @@ void leds_configure(void)
         digitalWrite(PROBES[i].led, LOW);
     }
 
-    DP("leds configured");
+    DP(F("leds configured"));
 }
 
 /** Illuminate assigned LEDs. */
 void leds_display(void)
 {
-    unsigned long tm = millis();
+    unsigned long tm = millis() + millis_in_sleep();
     byte SPIKE = tm % (200 * LED_SPIKE_DURATION) > LED_SPIKE_DURATION ? LOW : HIGH;
     byte BLINK = tm % (  2 * LED_BLINK_DURATION) > LED_BLINK_DURATION ? LOW : HIGH;
     byte FLASH = tm % (  2 * LED_FLASH_DURATION) > LED_FLASH_DURATION ? LOW : HIGH;

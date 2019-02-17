@@ -54,7 +54,7 @@ void halt_on_error(void)
 {
     int i = PROBES_CNT;
 
-    DP("halt");
+    DP(F("halt"));
 
     web_stop();
 

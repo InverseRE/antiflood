@@ -21,23 +21,25 @@
    For more details see LICENSE file.
 */
 
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#include "debug.h"
 
-#include <Arduino.h>
+#ifdef DEBUG_PRINTOUT
+#include <SoftwareSerial.h>                 /* only for debug purpose,
+                                               conflicts with our version of PCINT1_vect */
+#endif
 
-#define SW_RX     4                         /**< software serial rx (debug printout) */
-#define SW_TX     5                         /**< software serial tx (debug printout) */
+/* Debug printout. */
+#ifdef DEBUG_PRINTOUT
+SoftwareSerial SWS(SW_RX, SW_TX);
+void DP(const __FlashStringHelper* str) { SWS.println(str); }
+void DPS(String str) { SWS.println(str); }
+#else
+void DP(const __FlashStringHelper* str) { }
+void DPS(String str) { }
+#endif
 
-/* Debug config. */
-#undef  DEBUG_PRINTOUT                      /* debug printout */
-#define DEBUG_BAUD_RATE 115200              /* software serial baud rate */
-
-/* Init serial for debug print. */
-void start_db_print(void);
-/* Print string from code. */
-void DP(const __FlashStringHelper* str);
-/* Print string from stack. */
-void DPS(String str);
-
-#endif  /* __DEBUG_H__ */
+void start_db_print(void) {
+#ifdef DEBUG_PRINTOUT
+    SWS.begin(DEBUG_BAUD_RATE);
+#endif
+}

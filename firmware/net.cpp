@@ -71,11 +71,11 @@ void web_configure(void)
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
     if (WiFi.status() == WL_NO_SHIELD) {
-        DP("esp8266 shield is not responsive");
+        DP(F("esp8266 shield is not responsive"));
         power_save_mode_on();
         return;
     }
-    DP("esp8266 online");
+    DP(F("esp8266 online"));
 
     /* Configure network. */
     IPAddress ip_addr(WEB_IP);
@@ -89,13 +89,13 @@ void web_configure(void)
 #else
 #   error WiFi unknown mode
 #endif
-    DP("wifi configured");
+    DP(F("wifi configured"));
 
     /* Start server. */
     Server.begin();
     /* Set WIFI flag. */
     wifi_shield_state = true;
-    DP("web-server started");
+    DP(F("web-server started"));
 }
 
 /** Process web-server events. */
@@ -108,7 +108,7 @@ void web_run(void)
         bool stage_1 = true;
         bool stage_2 = false;
 
-        DP("client appears");
+        DP(F("client appears"));
 
         ibuff.init();
 
@@ -136,20 +136,20 @@ void web_run(void)
 
                 /* Two newline characters in a row is the end of the HTTP request. */
                 if (ibuff.endsWith("\r\n\r\n")) {
-                    DP("data received");
+                    DP(F("data received"));
                     if (!stage_1 && !stage_2) {
                         http_parse_request(client, rcv_url);
                     } else {
                         /* Let me know if GET request not parsed. Back to the main page in 1 second. */
                         http_action_response(client, -2, 1);
                     }
-                    DP("data sent");
+                    DP(F("data sent"));
                     break;
                 }
             }
         }
         if (!client.connected()) {
-            DP("client disconnected");
+            DP(F("client disconnected"));
             delay(1);
         }
 
@@ -158,7 +158,7 @@ void web_run(void)
 
         /* Disconnect. */
         client.stop();
-        DP("client dropped");
+        DP(F("client dropped"));
     }
 }
 

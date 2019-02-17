@@ -63,7 +63,7 @@ void probes_configure(void)
         pinMode(PROBES[i].port, INPUT_PULLUP);
     }
 
-    DP("input lines configured");
+    DP(F("input lines configured"));
 }
 
 /** Perform readings from probes. */

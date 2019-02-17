@@ -30,15 +30,26 @@
 #include "probe.h"
 #include "net.h"
 
+/* Number of enter_seep() calls. */
+static unsigned long sleep_counter = 0;
 
+/* Return number of milliseconds wasted in deep sleep. */
+unsigned long millis_in_sleep(void) {
+     /* WDT oscillator works on 128kHz frequency */
+     /* WDT configured on 2^20 waiting cycles    */
+     /* Each sleep duration will be about 8192ms */
+     return sleep_counter << 13;
+}
 
 /** Pin change Interrupt Service. This is executed when pin form A0 to A5 changed. */
+#ifndef DEBUG_PRINTOUT /* Turn off pin change interrupts when debug print used. */
 ISR (PCINT1_vect) {
     /* Turn off WDT. */
     wdt_disable();
     /* Disable pin change interrupts for A0 to A5 */
     PCICR  &= ~bit(PCIE1);
 }
+#endif
 
 /** Watchdog Interrupt Service. This is executed when watchdog timed out. */
 ISR (WDT_vect) {
@@ -85,6 +96,9 @@ void enter_sleep(boolean adc_off, boolean bod_off)
         digitalWrite(PROBES[i].port, HIGH);
     }
 
+    /* Increase sleep counter. */
+    sleep_counter++;
+
     /* Disable interrupts. */
     noInterrupts();
 
@@ -109,6 +123,7 @@ void enter_sleep(boolean adc_off, boolean bod_off)
 
     /* Disable interrupts. */
     noInterrupts();
+
     sleep_enable();
 
     /* Disable peripherals. */

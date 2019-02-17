@@ -39,9 +39,6 @@
 #define WIFIEN    2                         /**< enable WiFi-shield (active high) */
 #define WIFIRS    3                         /**< reset WiFi-shield (active low) */
 
-#define SW_RX     4                         /**< software serial rx (debug printout) */
-#define SW_TX     5                         /**< software serial tx (debug printout) */
-
 #define CLOSE     6                         /**< close valves */
 #define OPEN      7                         /**< open valves */
 

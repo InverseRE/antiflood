@@ -40,6 +40,8 @@ void enter_sleep(boolean adc_off, boolean bod_off);
 /** Apply power save mode. */
 void power_save_mode_on(void);
 
+/** Return number of milliseconds wasted in deep sleep. */
+unsigned long millis_in_sleep(void);
 
 
 #endif  /* __POWER_H__ */
