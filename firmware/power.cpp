@@ -145,11 +145,8 @@ void enter_sleep(boolean adc_off, boolean bod_off)
     ADCSRA = previousADCSRA;
 }
 
-/* TODO: remove extern pointer */ extern bool wifi_shield_state;
-
-
 /** Apply power save mode. */
 void power_save_mode_on(void)
 {
-    web_suspend();
+    /* TODO: engage power save */
 }

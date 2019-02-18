@@ -42,8 +42,8 @@
 #define SW_RX     4                         /**< software serial rx (debug printout) */
 #define SW_TX     5                         /**< software serial tx (debug printout) */
 
-#define CLOSE     6                         /**< close valves */
-#define OPEN      7                         /**< open valves */
+#define VCLOSE    6                         /**< close valves */
+#define VOPEN     7                         /**< open valves */
 
 #define LED0      8                         /**< LED 0 */
 #define LED1      9                         /**< LED 1 */
@@ -58,6 +58,7 @@
 #define PROBE3    A3                        /**< probe 3 */
 #define PROBE4    A4                        /**< probe 4 */
 #define PROBE5    A5                        /**< probe 5 */
+
 #define VFOPST    A6                        /**< valve's forced state */
 #define VCONSC    A7                        /**< valve supply current */
 

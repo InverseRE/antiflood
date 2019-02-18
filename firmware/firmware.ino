@@ -29,66 +29,123 @@
 #include "power.h"
 #include "probe.h"
 #include "valve.h"
+#include "ticker.h"
 
+static Ticker ticker();
 
+static Led leds[] = {
+    (ticker, LED0),
+    (ticker, LED1),
+    (ticker, LED2),
+    (ticker, LED3),
+    (ticker, LED4),
+    (ticker, LED5)};
+
+static const byte leds_cnt = sizeof(leds) / sizeof(leds[0]);
+
+static Probe probes[] = {
+    (ticker, PROBE0),
+    (ticker, PROBE1),
+    (ticker, PROBE2),
+    (ticker, PROBE3),
+    (ticker, PROBE4),
+    (ticker, PROBE5)};
+
+static const byte probes_cnt = sizeof(probes) / sizeof(probes[0]);
+
+static Valve valves[] = {
+    (ticker, VFOPST, VCONSC, VOPEN, VCLOSE)};
+
+static const byte valves_cnt = sizeof(valves) / sizeof(valves[0]);
+
+static App app(ticker,
+        leds, leds_cnt,
+        probes, probes_cnt,
+        valves, valves_cnt);
+
+static NetServer* p_server = null;
 
 /** Startup procedure. */
-void setup() {
-#ifdef DEBUG_PRINTOUT
-    SWS.begin(DEBUG_BAUD_RATE);
-#endif
-    DP("setup");
-
+void setup()
+{
+    /* Setup HW devices */
     peripheral_configure();
-    web_configure();
-    probes_configure();
-    leds_configure();
-    valves_configure();
 
-    app_set_state(APP_OK);
+    /* TODO: read and apply user's settings */
+    IPAddress ip_addr(APP_DEFAULT_IP);
+    unsigned short ip_port = APP_DEFAULT_PORT;
+    String ssid = WIFI_DEFAULT_SSID;
+    String password = WIFI_DEFAULT_PASS;
+    byte channel = WIFI_DEFAULT_CHAN;
+    int auth_type = WIFI_DEFAULT_SECU;
 
-    DP("ready to go...");
+    // static NetServer server(ticker, id_addr, ip_port, ssid, password); // STATION
+    static NetServer server(ticker, id_addr, ip_port, ssid, password, channel, auth_type); // AP
+    p_server = &server;
 }
 
 /** Main procedure. */
-void loop() {
-    /* Application should restart once per month.
-     Check this out. */
-    unsigned long tm = millis();
+void loop()
+ {
+    unsigned long tm = ticker.tick();
+
+    /* Application should restart once per month. */
     if (tm & 0x80000000) {
-        DP("application life time expired");
-        web_run();
         reset();
         return;
     }
 
-    /* Check detectors. */
-    probes_test();
-    probes_check();
-    probes_result();
+    AppState app_state = app.solve();
 
-    /* Control valves. */
-    app_solve();
-
-    valves_run();
-    valves_check();
-
-    /* Display info. */
-    leds_display();
-    if (get_wifi_state()) {
-        web_run();
+    if (p_server->is_offline) {
+        ticker.delay_loop();
+        return;
     }
 
-#ifdef USE_POWER_SAVE
-    /* Power save. */
-    if (!get_wifi_state() && !is_valves_actions() && app_check_state(APP_OK)) {
+    WiFiEspClient client;
+    const String& request = p_server->run(&client);
+    WebPage page(ticker, client);
+    WebAction response = page.parse(request);
+
+    switch (response) {
+
+    case WEB_STATE:
+        page.response_state(app_state,
+                leds, leds_cnt,
+                probes, probes_cnt,
+                valves, valves_cnt);
+        break;
+
+    case WEB_OPEN:
+        heading(WEB_OPEN, ticker.web_heading_count());
+        for (int i = 0; i < valves_cnt; ++i) {
+            valves[i].force_open();
+        }
+        break;
+
+    case WEB_CLOSE:
+        heading(WEB_CLOSE, ticker.web_heading_count());
+        for (int i = 0; i < valves_cnt; ++i) {
+            valves[i].force_close();
+        }
+        break;
+
+    case WEB_SUSPEND:
+        heading(WEB_SUSPEND, ticker.web_heading_count());
+        delay(WEB_TRX_LATENCY);
         enter_sleep(true, true);
-    } else {
-        delay(10);
-    }
-#else
-    /* Debug stub. */
-    delay(10);
-#endif
+        break;
 
+    case WEB_UNKNOWN:
+    case WEB_NOT_FOUND:
+    default:
+        page.response_not_found();
+    };
+
+    if (!client.connected()) {
+        delay(WEB_TRX_LATENCY);
+    }
+    client.stop();
+
+    ticker.delay_loop();
 }

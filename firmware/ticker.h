@@ -34,6 +34,8 @@
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_SHUTDOWN_TIME    100         /**< shutdown time for ESP8266, ms */
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
+#define LOOP_POLLING_LATENCY    100         /**< basic loop period, ms */
+#define WEB_HEADING_COUNT       3           /**< basic loop period, s */
 
 /**
  * Ticker.
@@ -49,12 +51,13 @@ private:
 public:
     Ticker() : _sig_spike(LOW), _sig_blink(LOW), _sig_flash(LOW) {}
 
-    void tick(void)
+    unsigned long tick(void)
     {
         unsigned long tm = millis();
         _sig_spike = tm % (200 * LED_SPIKE_DURATION) > LED_SPIKE_DURATION ? LOW : HIGH;
         _sig_blink = tm % (  2 * LED_BLINK_DURATION) > LED_BLINK_DURATION ? LOW : HIGH;
         _sig_flash = tm % (  2 * LED_FLASH_DURATION) > LED_FLASH_DURATION ? LOW : HIGH;
+        return tm;
     }
 
     unsigned long mark(void) const { return millis(); }
@@ -69,6 +72,9 @@ public:
     void delay_shield_down(void) const { delay(SHIELD_SHUTDOWN_TIME); }
     void delay_shield_trx(void) const { delay(SHIELD_TRX_LATENCY); }
     void delay_probe(void) const { delay(PROBE_CHECK_DURATION); }
+    void delay_loop(void) const { delay(LOOP_POLLING_LATENCY); }
+
+    byte web_heading_count(void) const { delay(WEB_HEADING_COUNT); }
 
     bool limit_valve(unsigned long mark) {
         return mark != 0
