@@ -53,8 +53,8 @@ NetServer::NetServer(const Ticker& ticker,
     }
 
     /* Register in a network. */
-    WiFi.config(ip_addr);
-    WiFi.begin(ssid, password);
+    WiFi.config(ip);
+    WiFi.begin(ssid.c_str(), password.c_str());
 
     /* Start server. */
     _server.begin();
@@ -64,7 +64,7 @@ NetServer::NetServer(const Ticker& ticker,
 NetServer::NetServer(const Ticker& ticker,
         IPAddress ip, short port,
         const String& ssid, const String& password,
-        int channel, int auth_type);
+        int channel, int auth_type)
         : _ticker(ticker),
           _mode(WIFI_ACCESS_POINT),
           _server(port),
@@ -88,8 +88,8 @@ NetServer::NetServer(const Ticker& ticker,
     }
 
     /* Register in a network. */
-    WiFi.configAP(ip_addr);
-    WiFi.beginAP(ssid, channel, password, auth_type);
+    WiFi.configAP(ip);
+    WiFi.beginAP(ssid.c_str(), channel, password.c_str(), auth_type);
 
     /* Start server. */
     _server.begin();
@@ -116,7 +116,7 @@ const String& NetServer::run(WiFiEspClient& client)
     bool stage_2 = false;
     _request = "";
 
-    client = Server.available();
+    client = _server.available();
     if (!client) {
         return _request;
     }
@@ -150,7 +150,7 @@ const String& NetServer::run(WiFiEspClient& client)
         }
 
         /* Two newline characters in a row are the end of the HTTP request. */
-        if (ibuff.endsWith("\r\n\r\n")) {
+        if (_ibuff.endsWith("\r\n\r\n")) {
             return !stage_1 && !stage_2 ? _request : _request = "";
         }
     }

@@ -22,6 +22,7 @@
 */
 
 #include <Arduino.h>
+#include "config.h" // FIXME: remove
 #include "web.h"
 
 #define ACTION_OPEN_ALL       "/open_valves"
@@ -98,7 +99,7 @@
                               "<input type=\"submit\" value=\"turn on power save\"> </form>"
 
 WebPage::WebPage(const Ticker& ticker, const WiFiEspClient& client)
-        : _ticker(ticker), _clien(client)
+        : _ticker(ticker), _client(client)
 {
 }
 
@@ -127,49 +128,49 @@ WebAction WebPage::parse(const String& request)
 
 void WebPage::heading(WebAction action, byte count_down)
 {
-    client.println(F(
-                    HTTP_RESPONSE
-                    HTTP_BR
-                    HTML
-                    HTML_HEAD
-                    HTML_STYLE
-                    HTML_HEAD_META));
-    client.println(count_down);
-    client.println(F(";url=http://"));
-    client.println(F(
-                    WEB_IP_STR
-                    HTML_HEAD_META_BR
-                    HTML_HEAD_BR
-                    HTML_BODY
-                    HTML_HEADING
-                    HTML_LN_BR));
+    _client.println(F(
+                      HTTP_RESPONSE
+                      HTTP_BR
+                      HTML
+                      HTML_HEAD
+                      HTML_STYLE
+                      HTML_HEAD_META));
+    _client.println(count_down);
+    _client.println(F(";url=http://"));
+    _client.println(F(
+                      APP_DEFAULT_IP_S // FIXME: replace with an actual String
+                      HTML_HEAD_META_BR
+                      HTML_HEAD_BR
+                      HTML_BODY
+                      HTML_HEADING
+                      HTML_LN_BR));
 
     switch (action) {
-    case WEB_OPEN:    client.println(F(HTML_HEADING_OPEN));     break;
-    case WEB_CLOSE:   client.println(F(HTML_HEADING_CLOSE));    break;
-    case WEB_SUSPEND: client.println(F(HTML_HEADING_PWR_SAVE)); break;
-    default:          client.println(F(HTML_HEADING_UNKNOWN));
+    case WEB_OPEN:    _client.println(F(HTML_HEADING_OPEN));     break;
+    case WEB_CLOSE:   _client.println(F(HTML_HEADING_CLOSE));    break;
+    case WEB_SUSPEND: _client.println(F(HTML_HEADING_PWR_SAVE)); break;
+    default:          _client.println(F(HTML_HEADING_UNKNOWN));
     }
 
-    client.println(F(
-                    HTML_BODY_BR
-                    HTML_BR
-                    HTTP_BR));
+    _client.println(F(
+                      HTML_BODY_BR
+                      HTML_BR
+                      HTTP_BR));
 }
 
 void WebPage::response_not_found(void)
 {
-    client.println(F(
-                    HTTP_NOT_FOUND
-                    HTTP_BR));
+    _client.println(F(
+                      HTTP_NOT_FOUND
+                      HTTP_BR));
 }
 
 void WebPage::response_state(AppState app_state,
         const Led* leds, byte leds_cnt,
         const Probe* probes, byte probes_cnt,
-        const Valve* valves, byte valves_cnt);
+        const Valve* valves, byte valves_cnt)
 {
-    client.print(F(
+    _client.print(F(
                     /* Preambule. */
                     HTTP_RESPONSE
                     HTTP_BR
@@ -182,7 +183,7 @@ void WebPage::response_state(AppState app_state,
                     HTML_BODY
                     HTML_HEADING
                     HTML_LN_BR));
-    client.print(
+    _client.print(
               app_state == APP_OK          ? HTML_HEADING_OK
             : app_state == APP_ALARM       ? HTML_HEADING_ALARM
             : app_state == APP_SOLVED      ? HTML_HEADING_SOLVED
@@ -190,47 +191,47 @@ void WebPage::response_state(AppState app_state,
             : app_state == APP_MALFUNCTION ? HTML_HEADING_BAD
             :                                HTML_HEADING_BAD);
 
-    client.print(F(
-                    /* State of probes. */
-                    HTML_LN_BR
-                    HTML_LN_BR
-                    HTML_HEADING_PROBES
-                    HTML_TABLE
-                    HTML_TABLE_LN
-                    HTML_TABLE_CAP "CON" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "DET" HTML_TABLE_CAP_BR
-                    HTML_TABLE_CAP "LED" HTML_TABLE_CAP_BR
-                    HTML_TABLE_LN_BR));
+    _client.print(F(
+                     /* State of probes. */
+                     HTML_LN_BR
+                     HTML_LN_BR
+                     HTML_HEADING_PROBES
+                     HTML_TABLE
+                     HTML_TABLE_LN
+                     HTML_TABLE_CAP "CON" HTML_TABLE_CAP_BR
+                     HTML_TABLE_CAP "DET" HTML_TABLE_CAP_BR
+                     HTML_TABLE_CAP "LED" HTML_TABLE_CAP_BR
+                     HTML_TABLE_LN_BR));
 
     for (int i = 0; i < probes_cnt && i < leds_cnt; ++i) {
         ProbeConnection con = probes[i].connection();
         ProbeSensor det = probes[i].sensor();
-        LedMode led = leds[i].mode;
+        LedMode led = leds[i].mode();
 
-        client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
-        client.print(
+        _client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
+        _client.print(
                   con == PROBE_OFFLINE ? F("OFFLINE")
                 : con == PROBE_ONLINE  ? F("ONLINE")
                 : con == PROBE_ERROR   ? F("ERROR")
                 :                        F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(
+        _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
+        _client.print(
                   det == PROBE_UNKNOWN ? F("UNKNOWN")
                 : det == PROBE_DRY     ? F("DRY")
                 : det == PROBE_WATER   ? F("WATER")
                 :                        F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(
+        _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
+        _client.print(
                   led == LED_OFF     ? F("OFF")
                 : led == LED_SPIKE   ? F("SPIKE")
                 : led == LED_BLINK   ? F("BLINK")
                 : led == LED_ON      ? F("ON")
                 : led == LED_WARNING ? F("WARNING")
                 :                      F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_LN_BR));
+        _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_LN_BR));
     }
 
-    client.print(F(
+    _client.print(F(
                     HTML_TABLE_BR
                     /* State of valves. */
                     HTML_LN_BR
@@ -247,48 +248,41 @@ void WebPage::response_state(AppState app_state,
         ValveState ovr = valves[i].state_override();
         ValveState act = valves[i].state_actual();
 
-        client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
-        client.print(
+        _client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
+        _client.print(
                   exp == VALVE_IGNORE      ? F("IGNORE")
                 : exp == VALVE_OPEN        ? F("OPEN")
                 : exp == VALVE_CLOSE       ? F("CLOSE")
                 : exp == VALVE_MALFUNCTION ? F("MALFUNCTION")
                 :                            F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(
+        _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
+        _client.print(
                   ovr == VALVE_IGNORE      ? F("IGNORE")
                 : ovr == VALVE_OPEN        ? F("OPEN")
                 : ovr == VALVE_CLOSE       ? F("CLOSE")
                 : ovr == VALVE_MALFUNCTION ? F("MALFUNCTION")
                 :                            F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
-        client.print(
+        _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
+        _client.print(
                   act == VALVE_IGNORE      ? F("IGNORE")
                 : act == VALVE_OPEN        ? F("OPEN")
                 : act == VALVE_CLOSE       ? F("CLOSE")
                 : act == VALVE_MALFUNCTION ? F("MALFUNCTION")
                 :                            F("---"));
-        client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_LN_BR));
+        _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_LN_BR));
     }
 
-    client.println(F(
-                    HTML_TABLE_BR
-                    HTML_LN_BR
-                    HTML_ACT_OPEN_ALL
-                    HTML_LN_BR
-                    HTML_ACT_CLOSE_ALL
-                    HTML_LN_BR
-                    HTML_ACT_POWER_SAVE
-                    /* Conclusion. */
-                    HTML_BODY_BR
-                    HTML_BR
-                    HTTP_BR));
+    _client.println(F(
+                      HTML_TABLE_BR
+                      HTML_LN_BR
+                      HTML_ACT_OPEN_ALL
+                      HTML_LN_BR
+                      HTML_ACT_CLOSE_ALL
+                      HTML_LN_BR
+                      HTML_ACT_POWER_SAVE
+                      /* Conclusion. */
+                      HTML_BODY_BR
+                      HTML_BR
+                      HTTP_BR));
 }
 
-/** Simple response for favicon request from browser. */
-void http_response_not_found(WiFiEspClient client)
-{
-    client.println(F(
-                    HTTP_NOT_FOUND
-                    HTTP_BR));
-}

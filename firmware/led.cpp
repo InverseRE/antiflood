@@ -24,8 +24,8 @@
 #include <Arduino.h>
 #include "led.h"
 
-void Led::Led(const Ticker& ticker, byte port)
-         : _ticker(ticker), _port(port)
+Led::Led(const Ticker& ticker, byte port)
+         : _ticker(ticker), _port(port), _mode(LED_OFF)
 {
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
@@ -33,6 +33,8 @@ void Led::Led(const Ticker& ticker, byte port)
 
 void Led::lit(LedMode mode)
 {
+    _mode = mode;
+
     byte sig =
               mode == LED_OFF     ? _ticker.sig_low()
             : mode == LED_SPIKE   ? _ticker.sig_spike()
@@ -46,5 +48,7 @@ void Led::lit(LedMode mode)
 
 void Led::dim(void)
 {
+    _mode = LED_OFF;
+
     digitalWrite(_port, LOW);
 }

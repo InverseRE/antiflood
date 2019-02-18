@@ -71,7 +71,7 @@ bool Valve::open(void)
     return true;
 }
 
-void Valve::close(void)
+bool Valve::close(void)
 {
     if (_ovr_state != VALVE_IGNORE) {
         return false;
@@ -93,7 +93,7 @@ bool Valve::force_open(void)
     return true;
 }
 
-void Valve::force_close(void)
+bool Valve::force_close(void)
 {
     if (_ovr_state != VALVE_IGNORE) {
         return false;
@@ -104,7 +104,7 @@ void Valve::force_close(void)
     return true;
 }
 
-void Valve::run(void)
+ValveState Valve::run(void)
 {
     /* TODO: read a hand-override signal to protect a hardware */
     // if (...) {

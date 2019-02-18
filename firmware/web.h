@@ -54,6 +54,6 @@ public:
             const Valve* valves, byte valves_cnt);
     void response_not_found(void);
     void heading(WebAction action, byte count_down);
-}
+};
 
 #endif  /* __WEB_H__ */

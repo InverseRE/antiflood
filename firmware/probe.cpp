@@ -57,17 +57,17 @@ void Probe::delay(void) const
 ProbeConnection Probe::test_connection(void)
 {
     unsigned long time = _ticker.mark();
-    unsigned long elt = (time - _time_mark) / 4;
-    elt = elt == 0 ? 1 : elt;
-    elt = elt < 255 ? elt : 255;
+    unsigned long t = (time - _time_mark) / 4;
+    t = t == 0 ? 1 : t;
+    t = t < 255 ? t : 255;
 
     byte v = analogRead(_port) >> 2;
 
     _connection =
               v < PROBE_V_SHORT_CIRCUIT ? PROBE_ERROR
             : t == 0                    ? PROBE_OFFLINE
-            : c > v * CG_MAX_FACTOR     ? PROBE_OFFLINE
-            : c > CG_MIN                ? PROBE_ONLINE
+            : v <= CG_MIN               ? PROBE_OFFLINE
+            : v > CG_MIN                ? PROBE_ONLINE
             :                             PROBE_ERROR;
 
     return _connection;

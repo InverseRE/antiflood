@@ -29,32 +29,33 @@
 #include "power.h"
 #include "probe.h"
 #include "valve.h"
+#include "web.h"
 #include "ticker.h"
 
-static Ticker ticker();
+static Ticker ticker;
 
 static Led leds[] = {
-    (ticker, LED0),
-    (ticker, LED1),
-    (ticker, LED2),
-    (ticker, LED3),
-    (ticker, LED4),
-    (ticker, LED5)};
+    {ticker, LED0},
+    {ticker, LED1},
+    {ticker, LED2},
+    {ticker, LED3},
+    {ticker, LED4},
+    {ticker, LED5}};
 
 static const byte leds_cnt = sizeof(leds) / sizeof(leds[0]);
 
 static Probe probes[] = {
-    (ticker, PROBE0),
-    (ticker, PROBE1),
-    (ticker, PROBE2),
-    (ticker, PROBE3),
-    (ticker, PROBE4),
-    (ticker, PROBE5)};
+    {ticker, PROBE0},
+    {ticker, PROBE1},
+    {ticker, PROBE2},
+    {ticker, PROBE3},
+    {ticker, PROBE4},
+    {ticker, PROBE5}};
 
 static const byte probes_cnt = sizeof(probes) / sizeof(probes[0]);
 
 static Valve valves[] = {
-    (ticker, VFOPST, VCONSC, VOPEN, VCLOSE)};
+    {ticker, VFOPST, VCONSC, VOPEN, VCLOSE}};
 
 static const byte valves_cnt = sizeof(valves) / sizeof(valves[0]);
 
@@ -63,7 +64,7 @@ static App app(ticker,
         probes, probes_cnt,
         valves, valves_cnt);
 
-static NetServer* p_server = null;
+static NetServer* p_server = nullptr;
 
 /** Startup procedure. */
 void setup()
@@ -79,8 +80,8 @@ void setup()
     byte channel = WIFI_DEFAULT_CHAN;
     int auth_type = WIFI_DEFAULT_SECU;
 
-    // static NetServer server(ticker, id_addr, ip_port, ssid, password); // STATION
-    static NetServer server(ticker, id_addr, ip_port, ssid, password, channel, auth_type); // AP
+    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
     p_server = &server;
 }
 
@@ -97,13 +98,13 @@ void loop()
 
     AppState app_state = app.solve();
 
-    if (p_server->is_offline) {
+    if (p_server->is_offline()) {
         ticker.delay_loop();
         return;
     }
 
     WiFiEspClient client;
-    const String& request = p_server->run(&client);
+    const String& request = p_server->run(client);
     WebPage page(ticker, client);
     WebAction response = page.parse(request);
 
@@ -117,22 +118,22 @@ void loop()
         break;
 
     case WEB_OPEN:
-        heading(WEB_OPEN, ticker.web_heading_count());
+        page.heading(WEB_OPEN, ticker.web_heading_count());
         for (int i = 0; i < valves_cnt; ++i) {
             valves[i].force_open();
         }
         break;
 
     case WEB_CLOSE:
-        heading(WEB_CLOSE, ticker.web_heading_count());
+        page.heading(WEB_CLOSE, ticker.web_heading_count());
         for (int i = 0; i < valves_cnt; ++i) {
             valves[i].force_close();
         }
         break;
 
     case WEB_SUSPEND:
-        heading(WEB_SUSPEND, ticker.web_heading_count());
-        delay(WEB_TRX_LATENCY);
+        page.heading(WEB_SUSPEND, ticker.web_heading_count());
+        ticker.delay_shield_trx();
         enter_sleep(true, true);
         break;
 
@@ -143,7 +144,7 @@ void loop()
     };
 
     if (!client.connected()) {
-        delay(WEB_TRX_LATENCY);
+        ticker.delay_shield_trx();
     }
     client.stop();
 

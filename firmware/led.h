@@ -40,11 +40,13 @@ class Led {
 private:
     const Ticker& _ticker;
     const byte _port;
+    LedMode _mode;
 
 public:
     Led(const Ticker& ticker, byte port);
     void lit(LedMode mode);
     void dim(void);
+    LedMode mode(void) const { return _mode; }
 };
 
 #endif  /* __LED_H__ */

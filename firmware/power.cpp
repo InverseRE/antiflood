@@ -80,10 +80,7 @@ void enter_sleep(boolean adc_off, boolean bod_off)
     wdt_setup();
 
     /* Prepare probes. */
-    int i = PROBES_CNT;
-    while (i--) {
-        digitalWrite(PROBES[i].port, HIGH);
-    }
+    // TODO
 
     /* Disable interrupts. */
     noInterrupts();

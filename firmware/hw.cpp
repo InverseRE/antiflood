@@ -52,27 +52,8 @@ void peripheral_configure()
 /** Signal an error by all means. */
 void halt_on_error(void)
 {
-    int i = PROBES_CNT;
-
-    DP("halt");
-
-    web_stop();
-
-    while (i--) {
-        pinMode(PROBES[i].led, OUTPUT);
-    }
-
-    do {
-        unsigned long tm = millis();
-        byte sig = tm % (  2 * LED_HALT_DURATION) > LED_HALT_DURATION ? LOW : HIGH;
-
-        i += tm % (  2 * LED_SWITCH_LATENCY) > LED_SWITCH_LATENCY ? 0 : 1;
-        i %= PROBES_CNT;
-        digitalWrite(PROBES[i].led, sig);
-
-        delay(10);
-
-    } while (true); /* here may be placed an option to unstack */
+    // TODO
+    do { } while (true); /* here may be placed an option to unstack */
 }
 
 /** Perform reset by watchdog timer. */

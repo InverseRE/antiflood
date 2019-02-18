@@ -29,7 +29,7 @@
 #include <WiFiEspClient.h>
 #include "ticker.h"
 
-enum WiFIMode {
+enum WiFiMode {
     WIFI_DUAL,
     WIFI_ACCESS_POINT,
     WIFI_STATION
