@@ -21,180 +21,160 @@
    For more details see LICENSE file.
 */
 
-#include <WiFiEspClient.h>
-#include <WiFiEspServer.h>
-
+#include "config.h"
 #include "net.h"
-#include "web.h"
-#include "valve.h"
-#include "app.h"
-#include "power.h"
 
+#define SHIELD_BAUD_RATE     115200         /**< shield's UART baud rate */
+#define WEB_IN_CACHE_SIZE    32             /**< size of input buffer */
 
-
-#define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
-#define SHIELD_BAUD_RATE        115200      /**< shield's UART baud rate */
-
-#define WIFI_SSID               WIFI_DEFAULT_SSID
-#define WIFI_PASS               WIFI_DEFAULT_PASS
-#define WIFI_CHAN               WIFI_DEFAULT_CHAN
-#define WIFI_SECU               WIFI_DEFAULT_SECU
-
-#define WEB_IP                  APP_DEFAULT_IP
-#define WEB_PORT                APP_DEFAULT_PORT
-#define WEB_TRX_LATENCY         10          /**< some delays in web communication, ms */
-#define WEB_IN_CACHE_SIZE       32          /**< size of input buffer for http */
-
-
-
-/** WEB server. */
-static WiFiEspServer Server(WEB_PORT);
-
-/** Buffered reading for Web-requests. */
-static RingBuffer ibuff(WEB_IN_CACHE_SIZE);
-
-/** WIFI shield state. true - running, false - stoped */
-bool wifi_shield_state = false; /* TODO: should be static,
-                                         but there is extern reference from power.ino */
-
-/** Configure web-server. */
-void web_configure(void)
+NetServer::NetServer(const Ticker& ticker,
+        IPAddress ip, short port,
+        const String& ssid, const String& password)
+        : _ticker(ticker),
+          _mode(WIFI_STATION),
+          _server(port),
+          _ibuff(WEB_IN_CACHE_SIZE),
+          _request("")
 {
-    /* Start shield. */
+    /* Start shield HW. */
     pinMode(WIFIEN, OUTPUT);
-    digitalWrite(WIFIEN, HIGH);
     pinMode(WIFIRS, OUTPUT);
+    digitalWrite(WIFIEN, HIGH);
     digitalWrite(WIFIRS, HIGH);
 
-    delay(SHIELD_STARTUP_TIME);
+    _ticker.delay_shield_up();
 
+    /* Establish connection. */
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
     if (WiFi.status() == WL_NO_SHIELD) {
-        DP("esp8266 shield is not responsive");
-        power_save_mode_on();
+        _is_online = false;
         return;
     }
-    DP("esp8266 online");
 
-    /* Configure network. */
-    IPAddress ip_addr(WEB_IP);
-
-#if defined WIFI_STATION
+    /* Register in a network. */
     WiFi.config(ip_addr);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-#elif defined WIFI_ACCESS_POINT
-    WiFi.configAP(ip_addr);
-    WiFi.beginAP(WIFI_SSID, WIFI_CH, WIFI_PASS, WIFI_SECU);
-#else
-#   error WiFi unknown mode
-#endif
-    DP("wifi configured");
+    WiFi.begin(ssid, password);
 
     /* Start server. */
-    Server.begin();
-    /* Set WIFI flag. */
-    wifi_shield_state = true;
-    DP("web-server started");
+    _server.begin();
+    _is_online = true;
 }
 
-/** Process web-server events. */
-void web_run(void)
+NetServer::NetServer(const Ticker& ticker,
+        IPAddress ip, short port,
+        const String& ssid, const String& password,
+        int channel, int auth_type);
+        : _ticker(ticker),
+          _mode(WIFI_ACCESS_POINT),
+          _server(port),
+          _ibuff(WEB_IN_CACHE_SIZE),
+          _request("")
 {
-    WiFiEspClient client = Server.available();
-
-    if (client) {
-        String rcv_url = "";
-        bool stage_1 = true;
-        bool stage_2 = false;
-
-        DP("client appears");
-
-        ibuff.init();
-
-        while (client.connected()) {
-            if (client.available()) {
-                char c = client.read();
-
-                ibuff.push(c);
-
-                /* Search for GET request. */
-                if (stage_1 && ibuff.endsWith("GET ")) {
-                    stage_1 = false;
-                    stage_2 = true;
-                    continue;
-                }
-
-                /* Store requested URL. */
-                if (stage_2) {
-                    rcv_url += c;
-                    if (c == ' ') {
-                        stage_2 = false;
-                        rcv_url.trim();
-                    }
-                }
-
-                /* Two newline characters in a row is the end of the HTTP request. */
-                if (ibuff.endsWith("\r\n\r\n")) {
-                    DP("data received");
-                    if (!stage_1 && !stage_2) {
-                        http_parse_request(client, rcv_url);
-                    } else {
-                        /* Let me know if GET request not parsed. Back to the main page in 1 second. */
-                        http_action_response(client, -2, 1);
-                    }
-                    DP("data sent");
-                    break;
-                }
-            }
-        }
-        if (!client.connected()) {
-            DP("client disconnected");
-            delay(1);
-        }
-
-        /* Time to complete transmission. */
-        delay(WEB_TRX_LATENCY);
-
-        /* Disconnect. */
-        client.stop();
-        DP("client dropped");
-    }
-}
-
-/** Stop communications. */
-void web_stop(void)
-{
-    WiFi.disconnect();
-    delay(10);
+    /* Start shield HW. */
     pinMode(WIFIEN, OUTPUT);
-    digitalWrite(WIFIEN, LOW);
     pinMode(WIFIRS, OUTPUT);
-    digitalWrite(WIFIRS, LOW);
+    digitalWrite(WIFIEN, HIGH);
+    digitalWrite(WIFIRS, HIGH);
+
+    _ticker.delay_shield_up();
+
+    /* Establish connection. */
+    Serial.begin(SHIELD_BAUD_RATE);
+    WiFi.init(&Serial);
+    if (WiFi.status() == WL_NO_SHIELD) {
+        _is_online = false;
+        return;
+    }
+
+    /* Register in a network. */
+    WiFi.configAP(ip_addr);
+    WiFi.beginAP(ssid, channel, password, auth_type);
+
+    /* Start server. */
+    _server.begin();
+    _is_online = true;
 }
 
-/** Suspend interface. */
-void web_suspend(void)
+void NetServer::disconnect(void)
 {
     /* Turn off WIFI library. */
     WiFi.disconnect();
-    delay(10);
+
+    _ticker.delay_shield_down();
+
     /* Turn off WIFI shield. */
-    pinMode(WIFIEN, OUTPUT);
     digitalWrite(WIFIEN, LOW);
-    /* Set low on all WIFI shield pins. */
-    pinMode(WIFIRS, OUTPUT);
     digitalWrite(WIFIRS, LOW);
-    pinMode(WIFIRX, OUTPUT);
-    digitalWrite(WIFIRX, LOW);
-    pinMode(WIFITX, OUTPUT);
-    digitalWrite(WIFITX, LOW);
-    /* Set WIFI flag. */
-    wifi_shield_state = false;
+
+    _is_online = false;
 }
 
-/** Return actual wifi shield state. */
-bool get_wifi_state(void)
+const String& NetServer::run(WiFiEspClient& client)
 {
-    return wifi_shield_state;
+    bool stage_1 = true;
+    bool stage_2 = false;
+    _request = "";
+
+    client = Server.available();
+    if (!client) {
+        return _request;
+    }
+
+    _ibuff.init();
+
+    while (client.connected()) {
+
+        /* Wait till data appears. */
+        if (!client.available()) {
+            continue;
+        }
+
+        char c = client.read();
+        _ibuff.push(c);
+
+        /* Search for GET request. */
+        if (stage_1 && _ibuff.endsWith("GET ")) {
+            stage_1 = false;
+            stage_2 = true;
+            continue;
+        }
+
+        /* Store requested URL. */
+        if (stage_2) {
+            _request += c;
+            if (c == ' ') {
+                stage_2 = false;
+                _request.trim();
+            }
+        }
+
+        /* Two newline characters in a row are the end of the HTTP request. */
+        if (ibuff.endsWith("\r\n\r\n")) {
+            return !stage_1 && !stage_2 ? _request : _request = "";
+        }
+    }
+
+    return _request = "";
+}
+
+void NetServer::suspend(void)
+{
+    /* Turn off WIFI library. */
+    WiFi.disconnect();
+
+    _ticker.delay_shield_down();
+
+    /* Turn off WIFI shield. */
+    /* TODO: keep ESP8266 operational */
+    digitalWrite(WIFIEN, LOW);
+    digitalWrite(WIFIRS, LOW);
+
+    _is_online = false;
+}
+
+void NetServer::resume(void)
+{
+    /* TODO: restore ESP8266 operations */
+    _is_online = true;
 }

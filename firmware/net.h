@@ -24,30 +24,43 @@
 #ifndef __NET_H__
 #define __NET_H__
 
-#include "config.h"
+#include <Arduino.h>
+#include <WiFiEspServer.h>
+#include <WiFiEspClient.h>
+#include "ticker.h"
 
+enum WiFIMode {
+    WIFI_DUAL,
+    WIFI_ACCESS_POINT,
+    WIFI_STATION
+};
 
+class NetServer {
+private:
+    const Ticker& _ticker;
+    const WiFiMode _mode;
+    WiFiEspServer _server;
+    RingBuffer _ibuff;
+    String _request;
+    bool _is_online;
 
-#define SHIELD_PWR_SAVE_ACTION  2           /**< turn off WIFI & activate power save mode action identifier */
-#define WEB_IP_STR              APP_DEFAULT_IP_S
+public:
+    NetServer(const Ticker& ticker,
+            IPAddress ip, short port,
+            const String& ssid, const String& password);
+    NetServer(const Ticker& ticker,
+            IPAddress ip, short port,
+            const String& ssid, const String& password,
+            int channel, int auth_type);
 
+    bool is_online(void) const { return _is_online; }
+    bool is_offline(void) const { return !_is_online; }
+    WiFiMode mode(void) const { return _mode; }
 
-
-/** Configure web-server. */
-void web_configure(void);
-
-/** Process web-server events. */
-void web_run(void);
-
-/** Stop communications. */
-void web_stop(void);
-
-/** Suspend interface. */
-void web_suspend(void);
-
-/** Return actual wifi shield state. */
-bool get_wifi_state(void);
-
-
+    void disconnect(void);
+    const String& run(WiFiEspClient& client);
+    void suspend(void);
+    void resume(void);
+};
 
 #endif  /* __NET_H__ */
