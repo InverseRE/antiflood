@@ -34,7 +34,7 @@
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_SHUTDOWN_TIME    100         /**< shutdown time for ESP8266, ms */
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
-#define LOOP_POLLING_LATENCY    100         /**< basic loop period, ms */
+#define LOOP_POLLING_LATENCY    10          /**< basic loop period, ms */
 #define WEB_HEADING_COUNT       3           /**< basic loop period, s */
 
 /**
