@@ -21,39 +21,32 @@
    For more details see LICENSE file.
 */
 
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
-
-/* Debug config configure. */
-#define DEBUG_PRINTOUT                      /* debug printout */
+#include "debug.h"
+#include "config.h"
 
 #ifdef DEBUG_PRINTOUT
 
 
 
-#include <Arduino.h>
+#include <SoftwareSerial.h>
 
-/** Debug printout initialization. */
-void DPI(void);
+#define DEBUG_BAUD_RATE 115200              /* software serial baud rate */
 
-/** Debug printout from code section. */
-void DPC(const __FlashStringHelper* const str);
+static SoftwareSerial SWS(SW_RX, SW_TX);
 
-/** Debug printout from stack section. */
-void DPV(const String& str);
+void DPI(void)
+{
+    SWS.begin(DEBUG_BAUD_RATE);
+}
 
+void DPC(const __FlashStringHelper* const str)
+{
+    SWS.println(str);
+}
 
-
-#else  /* DEBUG_PRINTOUT */
-
-
-
-#define DPI(x)
-#define DPC(x)
-#define DPV(x)
-
-
+void DPV(const String& str)
+{
+    SWS.println(str);
+}
 
 #endif  /* DEBUG_PRINTOUT */
-
-#endif  /* __DEBUG_H__ */

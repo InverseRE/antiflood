@@ -143,6 +143,7 @@ void loop()
 
     case WEB_UNKNOWN:
     default:
+        break;
     };
 
     if (!client.connected()) {

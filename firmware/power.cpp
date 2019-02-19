@@ -31,7 +31,7 @@
 #include "net.h"
 
 
-
+#ifndef DEBUG_PRINTOUT
 /** Pin change Interrupt Service. This is executed when pin form A0 to A5 changed. */
 ISR (PCINT1_vect) {
     /* Turn off WDT. */
@@ -39,6 +39,7 @@ ISR (PCINT1_vect) {
     /* Disable pin change interrupts for A0 to A5 */
     PCICR  &= ~bit(PCIE1);
 }
+#endif /* DEBUG_PRINTOUT */
 
 /** Watchdog Interrupt Service. This is executed when watchdog timed out. */
 ISR (WDT_vect) {
