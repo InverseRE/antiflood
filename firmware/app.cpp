@@ -90,19 +90,14 @@ AppState App::solve(void)
     }
 
     if (is_overrided) {
-        DPC("App::solve() APP_STANDBY");
         _state = APP_STANDBY;
     } else if (!is_triggered && !is_resolved) {
-        DPC("App::solve() APP_OK");
         _state = APP_OK;
     } else if (is_triggered && !is_resolved) {
-        DPC("App::solve() APP_ALARM");
         _state = APP_ALARM;
     } else if (!is_triggered && is_resolved) {
-        DPC("App::solve() APP_OK");
         _state = APP_OK;
     } else {
-        DPC("App::solve() APP_SOLVED");
         _state = APP_SOLVED;
     }
 }
