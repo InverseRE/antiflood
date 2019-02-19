@@ -42,12 +42,14 @@ NetServer::NetServer(const Ticker& ticker,
     digitalWrite(WIFIEN, HIGH);
     digitalWrite(WIFIRS, HIGH);
 
+    DPC("power on ESP8266");
     _ticker.delay_shield_up();
 
     /* Establish connection. */
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
     if (WiFi.status() == WL_NO_SHIELD) {
+        DPC("...not responding");
         _is_online = false;
         return;
     }
@@ -55,6 +57,7 @@ NetServer::NetServer(const Ticker& ticker,
     /* Register in a network. */
     WiFi.config(ip);
     WiFi.begin(ssid.c_str(), password.c_str());
+    DPV(ssid);
 
     /* Start server. */
     _server.begin();
@@ -77,12 +80,14 @@ NetServer::NetServer(const Ticker& ticker,
     digitalWrite(WIFIEN, HIGH);
     digitalWrite(WIFIRS, HIGH);
 
+    DPC("power on ESP8266");
     _ticker.delay_shield_up();
 
     /* Establish connection. */
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
     if (WiFi.status() == WL_NO_SHIELD) {
+        DPC("...not responding");
         _is_online = false;
         return;
     }
@@ -90,6 +95,7 @@ NetServer::NetServer(const Ticker& ticker,
     /* Register in a network. */
     WiFi.configAP(ip);
     WiFi.beginAP(ssid.c_str(), channel, password.c_str(), auth_type);
+    DPV(ssid);
 
     /* Start server. */
     _server.begin();
@@ -98,6 +104,8 @@ NetServer::NetServer(const Ticker& ticker,
 
 void NetServer::disconnect(void)
 {
+    DPC("shutdown network");
+
     /* Turn off WIFI library. */
     WiFi.disconnect();
 
@@ -152,15 +160,20 @@ const String& NetServer::run(WiFiEspClient& client)
 
         /* Two newline characters in a row are the end of the HTTP request. */
         if (_ibuff.endsWith("\r\n\r\n")) {
+            DPC("client requested something");
             return !stage_1 && !stage_2 ? _request : _request = "";
         }
     }
+
+    DPC("client dropped");
 
     return _request = "";
 }
 
 void NetServer::suspend(void)
 {
+    DPC("suspend network");
+
     /* Turn off WIFI library. */
     WiFi.disconnect();
 
@@ -176,6 +189,8 @@ void NetServer::suspend(void)
 
 void NetServer::resume(void)
 {
+    DPC("resume network");
+
     /* TODO: restore ESP8266 operations */
     _is_online = true;
 }

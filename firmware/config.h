@@ -25,7 +25,6 @@
 #define __CONFIG_H__
 
 #include <Arduino.h>
-
 #include "debug.h"
 
 

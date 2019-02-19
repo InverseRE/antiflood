@@ -69,8 +69,13 @@ static NetServer* p_server = nullptr;
 /** Startup procedure. */
 void setup()
 {
+    /* Debug printout. */
+    DPI();
+    DPC("setup");
+
     /* Setup HW devices */
     peripheral_configure();
+    DPC("peripheral configured");
 
     /* TODO: read and apply user's settings */
     IPAddress ip_addr(APP_DEFAULT_IP);
@@ -79,10 +84,13 @@ void setup()
     String password = WIFI_DEFAULT_PASS;
     byte channel = WIFI_DEFAULT_CHAN;
     int auth_type = WIFI_DEFAULT_SECU;
+    DPC("custom configuration engaged");
 
     // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
     static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
     p_server = &server;
+
+    DPC("go...");
 }
 
 /** Main procedure. */
@@ -111,6 +119,7 @@ void loop()
     switch (response) {
 
     case WEB_STATE:
+        DPC("WEB_STATE");
         page.response_state(app_state,
                 leds, leds_cnt,
                 probes, probes_cnt,
@@ -118,6 +127,7 @@ void loop()
         break;
 
     case WEB_OPEN:
+        DPC("WEB_OPEN");
         page.heading(WEB_OPEN, ticker.web_heading_count());
         for (int i = 0; i < valves_cnt; ++i) {
             valves[i].force_open();
@@ -125,6 +135,7 @@ void loop()
         break;
 
     case WEB_CLOSE:
+        DPC("WEB_CLOSE");
         page.heading(WEB_CLOSE, ticker.web_heading_count());
         for (int i = 0; i < valves_cnt; ++i) {
             valves[i].force_close();
@@ -132,12 +143,14 @@ void loop()
         break;
 
     case WEB_SUSPEND:
+        DPC("WEB_SUSPEND");
         page.heading(WEB_SUSPEND, ticker.web_heading_count());
         ticker.delay_shield_trx();
         enter_sleep(true, true);
         break;
 
     case WEB_NOT_FOUND:
+        DPC("WEB_NOT_FOUND");
         page.response_not_found();
         break;
 
@@ -146,9 +159,7 @@ void loop()
         break;
     };
 
-    if (!client.connected()) {
-        ticker.delay_shield_trx();
-    }
+    ticker.delay_shield_trx();
     client.stop();
 
     ticker.delay_loop();

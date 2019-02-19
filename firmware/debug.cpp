@@ -39,7 +39,7 @@ void DPI(void)
     SWS.begin(DEBUG_BAUD_RATE);
 }
 
-void DPC(const __FlashStringHelper* const str)
+void DPC_(const __FlashStringHelper* const str)
 {
     SWS.println(str);
 }

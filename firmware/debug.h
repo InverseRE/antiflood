@@ -37,7 +37,8 @@
 void DPI(void);
 
 /** Debug printout from code section. */
-void DPC(const __FlashStringHelper* const str);
+#define DPC(str) DPC_(F(str))
+void DPC_(const __FlashStringHelper* const str);
 
 /** Debug printout from stack section. */
 void DPV(const String& str);
