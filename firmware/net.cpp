@@ -123,6 +123,7 @@ const String& NetServer::run(WiFiEspClient& client)
 
     _ibuff.init();
 
+    /* TODO: break by timeout to prevent stuck */
     while (client.connected()) {
 
         /* Wait till data appears. */

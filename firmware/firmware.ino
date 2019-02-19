@@ -137,10 +137,12 @@ void loop()
         enter_sleep(true, true);
         break;
 
-    case WEB_UNKNOWN:
     case WEB_NOT_FOUND:
-    default:
         page.response_not_found();
+        break;
+
+    case WEB_UNKNOWN:
+    default:
     };
 
     if (!client.connected()) {
