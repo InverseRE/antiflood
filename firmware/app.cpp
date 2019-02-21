@@ -36,6 +36,10 @@ App::App(const Ticker& ticker,
             ? APP_OK : APP_MALFUNCTION;
 }
 
+void App::setup(void)
+{
+}
+
 AppState App::solve(void)
 {
     /* in case of hard error */

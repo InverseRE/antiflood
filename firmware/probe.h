@@ -60,6 +60,7 @@ private:
 
 public:
     Probe(const Ticker& ticker, byte port);
+    void setup(void);
 
     void prepare(void);
     void delay(void) const;

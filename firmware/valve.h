@@ -51,6 +51,7 @@ public:
     Valve(const Ticker& ticker,
             byte verif_switch_port, byte verif_supply_port,
             byte engage_open_port, byte engage_close_port);
+    void setup(void);
 
     bool is_engaged(void) const;
     bool open(void);

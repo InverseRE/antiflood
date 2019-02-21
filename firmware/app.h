@@ -55,6 +55,7 @@ public:
             Led* leds, byte leds_cnt,
             Probe* probes, byte probes_cnt,
             Valve* valves, byte valves_cnt);
+    void setup(void);
 
     AppState solve(void);
 };

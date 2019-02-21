@@ -37,15 +37,17 @@ Valve::Valve(const Ticker& ticker,
     _exp_state = VALVE_IGNORE;
     _act_state = VALVE_IGNORE;
     _ovr_state = VALVE_IGNORE;
+    _time_mark = 0;
+}
 
+void Valve::setup(void)
+{
     pinMode(_vport_switch, INPUT);
     pinMode(_vport_supply, INPUT);
     pinMode(_oport, OUTPUT);
     pinMode(_cport, OUTPUT);
     digitalWrite(_oport, IDLE_LVL);
     digitalWrite(_cport, IDLE_LVL);
-
-    _time_mark = 0;
 }
 
 bool Valve::is_engaged(void) const

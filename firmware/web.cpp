@@ -103,6 +103,10 @@ WebPage::WebPage(const Ticker& ticker, const WiFiEspClient& client)
 {
 }
 
+void WebPage::setup(void)
+{
+}
+
 WebAction WebPage::parse(const String& request)
 {
     /* Main page request. */

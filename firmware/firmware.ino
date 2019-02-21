@@ -84,13 +84,28 @@ void setup()
     String password = WIFI_DEFAULT_PASS;
     byte channel = WIFI_DEFAULT_CHAN;
     int auth_type = WIFI_DEFAULT_SECU;
-    DPC("custom configuration engaged");
+    DPC("custom configuration readed");
+
+    /* Setup local data. */
+    ticker.setup();
 
     // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
     static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+    server.setup();
     p_server = &server;
 
-    DPC("go...");
+    for (int i = 0; i < leds_cnt; ++i) {
+        leds[i].setup();
+    }
+    for (int i = 0; i < probes_cnt; ++i) {
+        probes[i].setup();
+    }
+    for (int i = 0; i < valves_cnt; ++i) {
+        valves[i].setup();
+    }
+    app.setup();
+
+    DPC("data inited");
 }
 
 /** Main procedure. */

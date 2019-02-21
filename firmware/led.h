@@ -44,6 +44,8 @@ private:
 
 public:
     Led(const Ticker& ticker, byte port);
+    void setup(void);
+
     void lit(LedMode mode);
     void dim(void);
     LedMode mode(void) const { return _mode; }

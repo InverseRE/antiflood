@@ -29,16 +29,22 @@
 #include <WiFiEspClient.h>
 #include "ticker.h"
 
-enum WiFiMode {
-    WIFI_DUAL,
-    WIFI_ACCESS_POINT,
-    WIFI_STATION
+enum WiFiType {
+    STYPE_DUAL,
+    STYPE_ACCESS_POINT,
+    STYPE_STATION
 };
 
 class NetServer {
 private:
     const Ticker& _ticker;
-    const WiFiMode _mode;
+    const WiFiType _mode;
+    const IPAddress _ip;
+    const short _port;
+    const String _ssid;
+    const String _password;
+    const int _channel;
+    const int _auth_type;
     WiFiEspServer _server;
     RingBuffer _ibuff;
     String _request;
@@ -52,10 +58,11 @@ public:
             IPAddress ip, short port,
             const String& ssid, const String& password,
             int channel, int auth_type);
+    void setup(void);
 
     bool is_online(void) const { return _is_online; }
     bool is_offline(void) const { return !_is_online; }
-    WiFiMode mode(void) const { return _mode; }
+    WiFiType mode(void) const { return _mode; }
 
     void disconnect(void);
     const String& run(WiFiEspClient& client);

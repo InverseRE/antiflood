@@ -27,6 +27,10 @@
 Led::Led(const Ticker& ticker, byte port)
          : _ticker(ticker), _port(port), _mode(LED_OFF)
 {
+}
+
+void Led::setup(void)
+{
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
 }

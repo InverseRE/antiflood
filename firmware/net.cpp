@@ -31,37 +31,15 @@ NetServer::NetServer(const Ticker& ticker,
         IPAddress ip, short port,
         const String& ssid, const String& password)
         : _ticker(ticker),
-          _mode(WIFI_STATION),
+          _mode(STYPE_STATION),
+          _ip(ip),
+          _port(port),
+          _ssid(ssid),
+          _password(password),
           _server(port),
           _ibuff(WEB_IN_CACHE_SIZE),
           _request("")
 {
-    /* Start shield HW. */
-    pinMode(WIFIEN, OUTPUT);
-    pinMode(WIFIRS, OUTPUT);
-    digitalWrite(WIFIEN, HIGH);
-    digitalWrite(WIFIRS, HIGH);
-
-    DPC("power on ESP8266");
-    _ticker.delay_shield_up();
-
-    /* Establish connection. */
-    Serial.begin(SHIELD_BAUD_RATE);
-    WiFi.init(&Serial);
-    if (WiFi.status() == WL_NO_SHIELD) {
-        DPC("...not responding");
-        _is_online = false;
-        return;
-    }
-
-    /* Register in a network. */
-    WiFi.config(ip);
-    WiFi.begin(ssid.c_str(), password.c_str());
-    DPV(ssid);
-
-    /* Start server. */
-    _server.begin();
-    _is_online = true;
 }
 
 NetServer::NetServer(const Ticker& ticker,
@@ -69,10 +47,20 @@ NetServer::NetServer(const Ticker& ticker,
         const String& ssid, const String& password,
         int channel, int auth_type)
         : _ticker(ticker),
-          _mode(WIFI_ACCESS_POINT),
+          _mode(STYPE_ACCESS_POINT),
+          _ip(ip),
+          _port(port),
+          _ssid(ssid),
+          _password(password),
+          _channel(channel),
+          _auth_type(auth_type),
           _server(port),
           _ibuff(WEB_IN_CACHE_SIZE),
           _request("")
+{
+}
+
+void NetServer::setup(void)
 {
     /* Start shield HW. */
     pinMode(WIFIEN, OUTPUT);
@@ -93,9 +81,20 @@ NetServer::NetServer(const Ticker& ticker,
     }
 
     /* Register in a network. */
-    WiFi.configAP(ip);
-    WiFi.beginAP(ssid.c_str(), channel, password.c_str(), auth_type);
-    DPV(ssid);
+    if (STYPE_STATION == _mode) {
+        DPC("WIFI_STATION");
+        WiFi.config(_ip);
+        WiFi.begin(_ssid.c_str(), _password.c_str());
+    }
+    if (STYPE_ACCESS_POINT == _mode) {
+        DPC("WIFI_ACCESS_POINT");
+        WiFi.configAP(_ip);
+        WiFi.beginAP(_ssid.c_str(), _channel, _password.c_str(), _auth_type);
+    }
+    if (STYPE_DUAL == _mode) {
+        DPC("WIFI_DUAL");
+    }
+    DPV(_ssid);
 
     /* Start server. */
     _server.begin();

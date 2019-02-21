@@ -35,7 +35,10 @@ Probe::Probe(const Ticker& ticker, byte port)
     _time_mark = 0;
     _sensor = PROBE_DRY;
     _connection = PROBE_OFFLINE;
+}
 
+void Probe::setup(void)
+{
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
 }

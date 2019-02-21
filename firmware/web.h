@@ -46,6 +46,7 @@ private:
 
 public:
     WebPage(const Ticker& ticker, const WiFiEspClient& client);
+    void setup(void);
 
     WebAction parse(const String& request);
     void response_state(AppState app_state,

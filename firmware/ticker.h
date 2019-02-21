@@ -50,6 +50,7 @@ private:
 
 public:
     Ticker() : _sig_spike(LOW), _sig_blink(LOW), _sig_flash(LOW) {}
+    void setup(void) {}
 
     unsigned long tick(void)
     {
