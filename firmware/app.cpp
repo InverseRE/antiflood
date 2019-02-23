@@ -75,8 +75,7 @@ AppState App::solve(void)
     }
     for (int i = 0; i < _valves_cnt; ++i) {
         is_resolved |= VALVE_CLOSE == _valves[i].run();
-        // TODO: VALVE::_ovr_state is dropped
-        // is_overrided |= VALVE_IGNORE != _valves[i].state_override();
+        is_overrided |= VALVE_IGNORE != _valves[i].state_override();
     }
 
     /* summary */

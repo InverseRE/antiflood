@@ -116,12 +116,12 @@ ValveState Valve::run(void)
     // }
 
     /* Overrided action? */
-    if (_ovr_state != VALVE_IGNORE) {
-        _exp_state = _ovr_state;
-    }
+    _exp_state = _ovr_state != VALVE_IGNORE ? _ovr_state : _exp_state;
 
     /* An action start-mark. */
-    if (_act_state != _exp_state && _time_mark != 0) {
+    if (_act_state != _exp_state && _time_mark == 0) {
+
+        /* Operation starts. */
         _time_mark = _ticker.mark();
     }
 
@@ -151,11 +151,13 @@ ValveState Valve::run(void)
 
     case VALVE_MALFUNCTION:
     default:
-        /* Stop operations. */
+        /* Operation aborts. */
         digitalWrite(_oport, IDLE_LVL);
         digitalWrite(_cport, IDLE_LVL);
         _act_state = VALVE_MALFUNCTION;
         _exp_state = VALVE_IGNORE;
+        _ovr_state = VALVE_IGNORE;
+        _time_mark = 0;
     }
 
     /* TODO: read a supply current to adjust _time_mark and/or _act_state */
@@ -166,7 +168,10 @@ ValveState Valve::run(void)
 
     /* Time limits. */
     if (_ticker.limit_valve(_time_mark)) {
+
+        /* Operation completes. */
         _act_state = _exp_state;
+        _ovr_state = VALVE_IGNORE;
         _time_mark = 0;
     }
 
