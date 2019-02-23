@@ -28,7 +28,6 @@
 
 /** Probe sensor states. */
 enum ProbeSensor {
-    PROBE_UNKNOWN,                          /**< undefined yet */
     PROBE_DRY,                              /**< nothing happens, all is OK */
     PROBE_WATER                             /**< some activity detected */
 };
@@ -44,16 +43,16 @@ enum ProbeConnection{
  * Probe.
  *
  * Sequence follows:
- * .prepare [i]
+ * .test_sensor [i]
  * .delay (only once)
  * .test_link [i]
- * .test_sensor [i]
  * loop again with some delay to discharge capacitor
  */
 class Probe {
 private:
     const Ticker& _ticker;
     const byte _port;                       /**< analog input port */
+    byte _value;                            /**< normalized sensor value */
     unsigned long _time_mark;               /**< an engage time mark */
     ProbeSensor _sensor;                    /**< probe's detector state */
     ProbeConnection _connection;            /**< probe's connection state */
@@ -62,10 +61,9 @@ public:
     Probe(const Ticker& ticker, byte port);
     void setup(void);
 
-    void prepare(void);
+    ProbeSensor test_sensor(void);
     void delay(void) const;
     ProbeConnection test_connection(void);
-    ProbeSensor test_sensor(void);
 
     ProbeConnection connection(void) const { return _connection; }
     ProbeSensor sensor(void) const { return _sensor; }

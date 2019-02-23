@@ -57,16 +57,13 @@ AppState App::solve(void)
     bool is_overrided = false;
 
     for (int i = 0; i < _probes_cnt; ++i) {
-        _probes[i].prepare();
+        is_triggered |= PROBE_WATER == _probes[i].test_sensor();
     }
 
     _probes[0].delay();
 
     for (int i = 0; i < _probes_cnt; ++i) {
         is_triggered |= PROBE_ERROR == _probes[i].test_connection();
-    }
-    for (int i = 0; i < _probes_cnt; ++i) {
-        is_triggered |= PROBE_WATER == _probes[i].test_sensor();
     }
 
     /* resolve */
@@ -87,7 +84,6 @@ AppState App::solve(void)
         }
 
         switch (_probes[i].sensor()) {
-        case PROBE_UNKNOWN:                            break;
         case PROBE_DRY:                                break;
         case PROBE_WATER:   _leds[i].lit(LED_BLINK);   break;
         }

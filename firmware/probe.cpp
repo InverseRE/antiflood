@@ -32,6 +32,7 @@
 Probe::Probe(const Ticker& ticker, byte port)
         : _ticker(ticker), _port(port)
 {
+    _value = 0;
     _time_mark = 0;
     _sensor = PROBE_DRY;
     _connection = PROBE_OFFLINE;
@@ -39,17 +40,20 @@ Probe::Probe(const Ticker& ticker, byte port)
 
 void Probe::setup(void)
 {
-    pinMode(_port, OUTPUT);
-    digitalWrite(_port, LOW);
+    pinMode(_port, INPUT_PULLUP);
 }
 
-void Probe::prepare(void)
+ProbeSensor Probe::test_sensor(void)
 {
-    _sensor = PROBE_UNKNOWN;
-
-    /* should be LOW for the moment */
-    _time_mark = _ticker.mark();
     pinMode(_port, INPUT_PULLUP);
+    _value = analogRead(_port) >> 2;
+    _sensor = _value < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
+
+    pinMode(_port, OUTPUT);
+    digitalWrite(_port, LOW);
+    _time_mark = _ticker.mark();
+
+    return _sensor;
 }
 
 void Probe::delay(void) const
@@ -59,31 +63,22 @@ void Probe::delay(void) const
 
 ProbeConnection Probe::test_connection(void)
 {
-    unsigned long time = _ticker.mark();
-    unsigned long t = (time - _time_mark) / 4;
-    t = t == 0 ? 1 : t;
-    t = t < 255 ? t : 255;
+    pinMode(_port, INPUT_PULLUP);
 
-    byte v = analogRead(_port) >> 2;
+    if (_sensor == PROBE_WATER) {
+        return _connection = PROBE_ONLINE;
+    }
+
+    unsigned long t = (_ticker.mark() - _time_mark) / 4;
+    t = t < 255 ? t : 255;
+    byte c = analogRead(_port) >> 2;
 
     _connection =
-              v < PROBE_V_SHORT_CIRCUIT ? PROBE_ERROR
-            : t == 0                    ? PROBE_OFFLINE
-            : v <= CG_MIN               ? PROBE_OFFLINE
-            : v > CG_MIN                ? PROBE_ONLINE
-            :                             PROBE_ERROR;
+              c < PROBE_V_SHORT_CIRCUIT  ? PROBE_ERROR
+            : t == 255                   ? PROBE_OFFLINE
+            : c > _value * CG_MAX_FACTOR ? PROBE_OFFLINE
+            : c > CG_MIN                 ? PROBE_ONLINE
+            :                              PROBE_ERROR;
 
     return _connection;
-}
-
-ProbeSensor Probe::test_sensor(void)
-{
-    bool triggered = (analogRead(_port) >> 2) < PROBE_V_FLOOD_TRIGGER;
-
-    pinMode(_port, OUTPUT);
-    digitalWrite(_port, LOW);
-
-    _sensor = triggered ? PROBE_WATER : PROBE_DRY;
-
-    return _sensor;
 }

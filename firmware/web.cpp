@@ -220,8 +220,7 @@ void WebPage::response_state(AppState app_state,
                 :                        F("---"));
         _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
         _client.print(
-                  det == PROBE_UNKNOWN ? F("UNKNOWN")
-                : det == PROBE_DRY     ? F("DRY")
+                  det == PROBE_DRY     ? F("DRY")
                 : det == PROBE_WATER   ? F("WATER")
                 :                        F("---"));
         _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
