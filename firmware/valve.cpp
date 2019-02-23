@@ -42,8 +42,9 @@ Valve::Valve(const Ticker& ticker,
 
 void Valve::setup(void)
 {
-    pinMode(_vport_switch, INPUT);
-    pinMode(_vport_supply, INPUT);
+    /* FIXME: some interference with other pins mode (leds) */
+    /* pinMode(_vport_switch, INPUT); */
+    /* pinMode(_vport_supply, INPUT); */
     pinMode(_oport, OUTPUT);
     pinMode(_cport, OUTPUT);
     digitalWrite(_oport, IDLE_LVL);
