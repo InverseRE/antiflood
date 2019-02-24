@@ -35,12 +35,12 @@
 static Ticker ticker;
 
 static Led leds[] = {
-    {ticker, LED0},
-    {ticker, LED1},
-    {ticker, LED2},
-    {ticker, LED3},
+    {ticker, LED5},
     {ticker, LED4},
-    {ticker, LED5}};
+    {ticker, LED3},
+    {ticker, LED2},
+    {ticker, LED1},
+    {ticker, LED0}};
 
 static const byte leds_cnt = sizeof(leds) / sizeof(leds[0]);
 
