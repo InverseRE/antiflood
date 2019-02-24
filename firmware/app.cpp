@@ -100,4 +100,6 @@ AppState App::solve(void)
     } else {
         _state = APP_SOLVED;
     }
+
+    return _state;
 }
