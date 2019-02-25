@@ -56,12 +56,14 @@ AppState App::solve(void)
     bool is_resolved = false;
     bool is_overrided = false;
 
+    /* TODO: perform checks from time to time, use Probe::sensor() if bypass */
     for (int i = 0; i < _probes_cnt; ++i) {
         is_triggered |= PROBE_WATER == _probes[i].test_sensor();
     }
 
     _probes[0].delay();
 
+    /* TODO: perform checks from time to time, use Probe::connection() if bypass */
     for (int i = 0; i < _probes_cnt; ++i) {
         is_triggered |= PROBE_ERROR == _probes[i].test_connection();
     }
@@ -80,7 +82,7 @@ AppState App::solve(void)
         switch (_probes[i].connection()) {
         case PROBE_OFFLINE: _leds[i].lit(LED_OFF);     break;
         case PROBE_ONLINE:  _leds[i].lit(LED_SPIKE);   break;
-        case PROBE_ERROR:   _leds[i].lit(LED_WARNING); break;
+        case PROBE_ERROR:   _leds[i].lit(LED_WARNING); continue;
         }
 
         switch (_probes[i].sensor()) {

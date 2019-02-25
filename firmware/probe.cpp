@@ -50,8 +50,9 @@ ProbeSensor Probe::test_sensor(void)
 
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
-    _time_mark = _ticker.mark();
+
     _sensor = _value < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
+    _time_mark = _ticker.mark();
     pinMode(_port, INPUT_PULLUP);
 
     return _sensor;
@@ -66,20 +67,14 @@ ProbeConnection Probe::test_connection(void)
 {
     pinMode(_port, INPUT_PULLUP);
 
-    if (_sensor == PROBE_WATER) {
-        return _connection = PROBE_ONLINE;
-    }
-
     unsigned long t = (_ticker.mark() - _time_mark) / 4;
     t = t < 255 ? t : 255;
     byte c = analogRead(_port) >> 2;
 
-    _connection =
+    return _connection =
               c < PROBE_V_SHORT_CIRCUIT  ? PROBE_ERROR
             : t == 255                   ? PROBE_OFFLINE
             : c > _value * CG_MAX_FACTOR ? PROBE_OFFLINE
             : c > CG_MIN                 ? PROBE_ONLINE
             :                              PROBE_ERROR;
-
-    return _connection;
 }
