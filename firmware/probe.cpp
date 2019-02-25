@@ -47,11 +47,12 @@ ProbeSensor Probe::test_sensor(void)
 {
     pinMode(_port, INPUT_PULLUP);
     _value = analogRead(_port) >> 2;
-    _sensor = _value < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
 
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
     _time_mark = _ticker.mark();
+    _sensor = _value < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
+    pinMode(_port, INPUT_PULLUP);
 
     return _sensor;
 }
