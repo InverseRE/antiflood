@@ -46,6 +46,7 @@ private:
     ValveState _act_state;                  /**< actual valve state */
     ValveState _ovr_state;                  /**< overrided valve state */
     unsigned long _time_mark;               /**< start of a current action, ms */
+    unsigned long _extra_time;              /**< additional time for uncompleted action, ms */
 
 public:
     Valve(const Ticker& ticker,

@@ -26,6 +26,7 @@
 
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
+#define ACTIVE_OP_TRIGGER       20
 
 Valve::Valve(const Ticker& ticker,
         byte verif_switch_port, byte verif_supply_port,
@@ -38,13 +39,19 @@ Valve::Valve(const Ticker& ticker,
     _act_state = VALVE_IGNORE;
     _ovr_state = VALVE_IGNORE;
     _time_mark = 0;
+    _extra_time = 0;
 }
 
 void Valve::setup(void)
 {
-    /* FIXME: some interference with other pins mode (leds) */
-    /* pinMode(_vport_switch, INPUT); */
-    /* pinMode(_vport_supply, INPUT); */
+    /* pinMode() should be ommited for A6/A7*/
+    if (_vport_switch != A6 && _vport_switch != A7) {
+        pinMode(_vport_switch, INPUT);
+    }
+    if (_vport_supply != A6 && _vport_supply != A7) {
+        pinMode(_vport_supply, INPUT);
+    }
+
     pinMode(_oport, OUTPUT);
     pinMode(_cport, OUTPUT);
     digitalWrite(_oport, IDLE_LVL);
@@ -123,6 +130,7 @@ ValveState Valve::run(void)
 
         /* Operation starts. */
         _time_mark = _ticker.mark();
+        _extra_time = VALVE_OPERATION_EXTRA;
     }
 
     /* Engage controls. */
@@ -160,19 +168,22 @@ ValveState Valve::run(void)
         _time_mark = 0;
     }
 
-    /* TODO: read a supply current to adjust _time_mark and/or _act_state */
-    // {
-    //     _act_state = ...;
-    //     _time_mark = ...;
-    // }
-
     /* Time limits. */
     if (_ticker.limit_valve(_time_mark)) {
+        if (analogRead(_vport_supply) > ACTIVE_OP_TRIGGER
+                && _extra_time > 0) {
 
-        /* Operation completes. */
-        _act_state = _exp_state;
-        _ovr_state = VALVE_IGNORE;
-        _time_mark = 0;
+            /* Extra time needed? (apply only once) */
+            _time_mark += _extra_time;
+            _extra_time = 0;
+
+        } else {
+
+            /* Operation stops. */
+            _act_state = _exp_state;
+            _ovr_state = VALVE_IGNORE;
+            _time_mark = 0;
+        }
     }
 
     return _act_state;

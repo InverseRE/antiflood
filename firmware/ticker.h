@@ -30,7 +30,8 @@
 #define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
 #define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
-#define VALVE_OPERATION_LIMIT   20000       /**< amount of time for valve's action, ms*/
+#define VALVE_OPERATION_LIMIT   10000       /**< amount of time for valve's action, ms*/
+#define VALVE_OPERATION_EXTRA   10000       /**< extra time for an ongoing action, ms*/
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_SHUTDOWN_TIME    100         /**< shutdown time for ESP8266, ms */
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
