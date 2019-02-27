@@ -27,6 +27,7 @@
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
 #define ACTIVE_OP_TRIGGER       20
+#define MANUAL_OP_TRIGGER       800         /* TODO: should be calculated */
 
 Valve::Valve(const Ticker& ticker,
         byte verif_switch_port, byte verif_supply_port,
@@ -116,11 +117,16 @@ bool Valve::force_close(void)
 
 ValveState Valve::run(void)
 {
-    /* TODO: read a hand-override signal to protect a hardware */
-    // if (...) {
-    //     _ovr_state = ...;
-    //     _time_mark = 0; /* reset timer */
-    // }
+    /* /\* Take into account a manualy overridden signals. *\/ */
+    /* if (analogRead(_vport_switch) < MANUAL_OP_TRIGGER) { */
+
+    /*     /\* TODO: ongoing action should be compute on *\/ */
+    /*     _ovr_state = */
+    /*               _act_state == VALVE_OPEN  ? VALVE_CLOSE */
+    /*             : _act_state == VALVE_CLOSE ? VALVE_OPEN */
+    /*             :                             VALVE_IGNORE; */
+    /*     _time_mark = 0; /\* reset timer *\/ */
+    /* } */
 
     /* Overrided action? */
     _exp_state = _ovr_state != VALVE_IGNORE ? _ovr_state : _exp_state;
