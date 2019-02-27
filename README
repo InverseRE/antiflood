@@ -80,3 +80,44 @@ cont  - returnoing to normal operations
                         +----------------------+
 
 
+
+================================================================================
+ VALVE'S ROUTINE
+================================================================================
+
+S/W => EXP: by conditions
+S/W => OVR: by user
+H/W => OVR: by buttons
+
+OVR => EXP: if OVR != IGNORE
+
+time mark: if no action is ongoing and some action is pending
+
++--------+--------+--------+--------+--------+
+|   \ EXP|        |        |        |        |
+|    \   | IGNORE |  OPEN  |  CLOSE | MALFUN |
+| ACT \  |        |        |        |        |
++--------+--------+--------+--------+--------+
+|        | stop   | do     | do     | stop   |
+| IGNORE |  timer |   open |  close |  timer |
+|        |        |        |        |restate |
++--------+--------+--------+--------+--------+
+|        | stop   | do     | do     | stop   |
+|  OPEN  |  timer | nothing|  close |  timer |
+|        |        |        |        |restate |
++--------+--------+--------+--------+--------+
+|        | stop   | do     | do     | stop   |
+|  CLOSE |  timer |   open | nothing|  timer |
+|        |        |        |        |restate |
++--------+--------+--------+--------+--------+
+|        | stop   | do     | do     | stop   |
+| MALFUN |  timer |   open |  close |  timer |
+|        |        |        |        |restate |
++--------+--------+--------+--------+--------+
+
+H/W => ACT: by supply current
+H/W => time mark: by supply current (to prolong an action)
+
+time limits: if an action is ongoing
+
+signal with ACT
