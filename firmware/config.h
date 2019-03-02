@@ -58,8 +58,8 @@
 #define PROBE4    A4                        /**< probe 4 */
 #define PROBE5    A5                        /**< probe 5 */
 
-#define VFOPST    A6                        /**< valve's forced state */
-#define VCONSC    A7                        /**< valve supply current */
+#define VCONSC    A6                        /**< valve supply current */
+#define VFOPST    A7                        /**< valve's forced state */
 
 
 

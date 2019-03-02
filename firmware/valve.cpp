@@ -26,8 +26,8 @@
 
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
-#define ACTIVE_OP_TRIGGER       20
-#define MANUAL_OP_TRIGGER       800         /* TODO: should be calculated */
+#define ACTIVE_OP_TRIGGER       2
+#define MANUAL_OP_TRIGGER       450         /* TODO: should be calculated */
 
 Valve::Valve(const Ticker& ticker,
         byte verif_switch_port, byte verif_supply_port,
@@ -46,13 +46,6 @@ Valve::Valve(const Ticker& ticker,
 void Valve::setup(void)
 {
     /* pinMode() should be ommited for A6/A7*/
-    if (_vport_switch != A6 && _vport_switch != A7) {
-        pinMode(_vport_switch, INPUT);
-    }
-    if (_vport_supply != A6 && _vport_supply != A7) {
-        pinMode(_vport_supply, INPUT);
-    }
-
     pinMode(_oport, OUTPUT);
     pinMode(_cport, OUTPUT);
     digitalWrite(_oport, IDLE_LVL);
@@ -117,16 +110,16 @@ bool Valve::force_close(void)
 
 ValveState Valve::run(void)
 {
-    /* /\* Take into account a manualy overridden signals. *\/ */
-    /* if (analogRead(_vport_switch) < MANUAL_OP_TRIGGER) { */
+    /* Take into account a manualy overridden signals. */
+    if (analogRead(_vport_switch) < MANUAL_OP_TRIGGER) {
 
-    /*     /\* TODO: ongoing action should be compute on *\/ */
-    /*     _ovr_state = */
-    /*               _act_state == VALVE_OPEN  ? VALVE_CLOSE */
-    /*             : _act_state == VALVE_CLOSE ? VALVE_OPEN */
-    /*             :                             VALVE_IGNORE; */
-    /*     _time_mark = 0; /\* reset timer *\/ */
-    /* } */
+        /* TODO: ongoing action should be compute on */
+        _ovr_state =
+                  _act_state == VALVE_OPEN  ? VALVE_CLOSE
+                : _act_state == VALVE_CLOSE ? VALVE_OPEN
+                :                             VALVE_IGNORE;
+        _time_mark = 0; /* reset timer */
+    }
 
     /* Overrided action? */
     _exp_state = _ovr_state != VALVE_IGNORE ? _ovr_state : _exp_state;
