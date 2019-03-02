@@ -110,7 +110,7 @@ void setup()
 
 /** Main procedure. */
 void loop()
- {
+{
     unsigned long tm = ticker.tick();
 
     /* Application should restart once per month. */
