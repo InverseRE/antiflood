@@ -89,11 +89,6 @@ void setup()
     /* Setup local data. */
     ticker.setup();
 
-    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
-    server.setup();
-    p_server = &server;
-
     for (int i = 0; i < leds_cnt; ++i) {
         leds[i].setup();
     }
@@ -104,6 +99,15 @@ void setup()
         valves[i].setup();
     }
     app.setup();
+
+    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+    server.setup();
+    p_server = &server;
+
+    // some delay is needed for setup take effect
+    // (for example, charging detector's capacitors)
+    ticker.delay_setup();
 
     DPC("data inited");
 }
