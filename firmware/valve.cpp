@@ -142,11 +142,11 @@ ValveState Valve::run(void)
         _ovr_state = VALVE_IGNORE;
         _time_mark = 0;
     } else {
-        _is_ovr = _ovr_state != VALVE_IGNORE;
+        _is_ovr = false;
     }
 
     /* Overrided action? */
-    if (_is_ovr) {
+    if (_ovr_state != VALVE_IGNORE) {
         _exp_state = _ovr_state;
         _ovr_state = VALVE_IGNORE;
         _time_mark = 0;
