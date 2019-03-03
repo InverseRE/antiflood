@@ -32,6 +32,7 @@
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
 #define VALVE_OPERATION_LIMIT   10000       /**< amount of time for valve's action, ms*/
 #define VALVE_OPERATION_EXTRA   10000       /**< extra time for an ongoing action, ms*/
+#define SETUP_DELAY             1000        /**< startup time for the device, ms */
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_SHUTDOWN_TIME    100         /**< shutdown time for ESP8266, ms */
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
@@ -70,6 +71,7 @@ public:
     byte sig_blink(void) const { return _sig_blink; }
     byte sig_flash(void) const { return _sig_flash; }
 
+    void delay_setup(void) const { delay(SETUP_DELAY); }
     void delay_shield_up(void) const { delay(SHIELD_STARTUP_TIME); }
     void delay_shield_down(void) const { delay(SHIELD_SHUTDOWN_TIME); }
     void delay_shield_trx(void) const { delay(SHIELD_TRX_LATENCY); }

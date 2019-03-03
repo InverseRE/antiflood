@@ -32,21 +32,30 @@
 
 #define DEBUG_BAUD_RATE 115200              /* software serial baud rate */
 
-static SoftwareSerial SWS(SW_RX, SW_TX);
+SoftwareSerial SWS(SW_RX, SW_TX);
 
 void DPI(void)
 {
     SWS.begin(DEBUG_BAUD_RATE);
 }
 
-void DPC_(const __FlashStringHelper* const str)
+void DPC_(const __FlashStringHelper* const msg)
 {
-    SWS.println(str);
+    SWS.println(msg);
 }
 
-void DPV(const String& str)
+void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt)
 {
-    SWS.println(str);
+    byte c = cnt < 255 ? cnt : 255;
+    String size(cnt);
+
+    SWS.print(msg);
+    SWS.print(": [" + size + "] ");
+    while (c--) {
+        String s(*ptr, HEX);
+        SWS.print(s);
+    }
+    SWS.println("");
 }
 
 #endif  /* DEBUG_PRINTOUT */

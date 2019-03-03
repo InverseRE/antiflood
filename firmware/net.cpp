@@ -82,19 +82,23 @@ void NetServer::setup(void)
 
     /* Register in a network. */
     if (STYPE_STATION == _mode) {
-        DPC("WIFI_STATION");
+        DPC("WiFi mode: station");
         WiFi.config(_ip);
         WiFi.begin(_ssid.c_str(), _password.c_str());
+        DPV("SSID", _ssid);
+        DPV("IP", _ip);
     }
     if (STYPE_ACCESS_POINT == _mode) {
-        DPC("WIFI_ACCESS_POINT");
+        DPC("WiFi mode: access point");
         WiFi.configAP(_ip);
         WiFi.beginAP(_ssid.c_str(), _channel, _password.c_str(), _auth_type);
+        DPV("SSID", _ssid);
+        DPV("channel", _channel);
+        DPV("IP", _ip);
     }
     if (STYPE_DUAL == _mode) {
-        DPC("WIFI_DUAL");
+        DPC("WiFi mode: dual");
     }
-    DPV(_ssid);
 
     /* Start server. */
     _server.begin();
@@ -103,7 +107,7 @@ void NetServer::setup(void)
 
 void NetServer::disconnect(void)
 {
-    DPC("shutdown network");
+    DPC("network shutdown");
 
     /* Turn off WIFI library. */
     WiFi.disconnect();
@@ -159,7 +163,7 @@ const String& NetServer::run(WiFiEspClient& client)
 
         /* Two newline characters in a row are the end of the HTTP request. */
         if (_ibuff.endsWith("\r\n\r\n")) {
-            DPC("client requested something");
+            DPC("client requests");
             return !stage_1 && !stage_2 ? _request : _request = "";
         }
     }
@@ -171,7 +175,7 @@ const String& NetServer::run(WiFiEspClient& client)
 
 void NetServer::suspend(void)
 {
-    DPC("suspend network");
+    DPC("network suspend");
 
     /* Turn off WIFI library. */
     WiFi.disconnect();
@@ -188,7 +192,7 @@ void NetServer::suspend(void)
 
 void NetServer::resume(void)
 {
-    DPC("resume network");
+    DPC("network resume");
 
     /* TODO: restore ESP8266 operations */
     _is_online = true;

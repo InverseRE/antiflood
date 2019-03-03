@@ -36,12 +36,27 @@
 /** Debug printout initialization. */
 void DPI(void);
 
-/** Debug printout from code section. */
-#define DPC(str) DPC_(F(str))
-void DPC_(const __FlashStringHelper* const str);
+/** Debug printout a message. */
+#define DPC(msg) DPC_(F(msg))
+void DPC_(const __FlashStringHelper* const msg);
 
-/** Debug printout from stack section. */
-void DPV(const String& str);
+/** Debug printout a variable value. */
+#define DPV(msg, val) DPV_(F(msg), val)
+
+/* XXX: separating declarations and definitions doesn't work for templates */
+#include <SoftwareSerial.h>
+extern SoftwareSerial SWS;
+template <typename T> void DPV_(const __FlashStringHelper* const msg, const T& val)
+{
+    String v(val);
+    SWS.print(msg);
+    SWS.print(": ");
+    SWS.println(v);
+}
+
+/** Debug printout an array value. */
+#define DPA(msg, ptr, cnt) DPA_(F(msg), (byte*)&(ptr), cnt)
+void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt);
 
 
 
@@ -49,9 +64,10 @@ void DPV(const String& str);
 
 
 
-#define DPI(x)
+#define DPI()
 #define DPC(x)
-#define DPV(x)
+#define DPV(x, y)
+#define DPA(x, y, z)
 
 
 

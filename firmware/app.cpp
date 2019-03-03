@@ -44,7 +44,7 @@ AppState App::solve(void)
 {
     /* in case of hard error */
     if (_state == APP_MALFUNCTION) {
-        DPC("App::solve() APP_MALFUNCTION");
+        DPC("app: malfunction");
         for (int i = 0; i < _leds_cnt; ++i) {
             _leds[i].lit(LED_WARNING);
         }

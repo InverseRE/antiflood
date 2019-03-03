@@ -109,7 +109,7 @@ void setup()
     // (for example, charging detector's capacitors)
     ticker.delay_setup();
 
-    DPC("data inited");
+    DPC("setup complete");
 }
 
 /** Main procedure. */
@@ -138,7 +138,7 @@ void loop()
     switch (response) {
 
     case WEB_STATE:
-        DPC("WEB_STATE");
+        DPC("web response: state");
         page.response_state(app_state,
                 leds, leds_cnt,
                 probes, probes_cnt,
@@ -146,7 +146,7 @@ void loop()
         break;
 
     case WEB_OPEN:
-        DPC("WEB_OPEN");
+        DPC("web response: open");
         page.heading(WEB_OPEN, ticker.web_heading_count());
         for (int i = 0; i < valves_cnt; ++i) {
             valves[i].force_open();
@@ -154,7 +154,7 @@ void loop()
         break;
 
     case WEB_CLOSE:
-        DPC("WEB_CLOSE");
+        DPC("web response: close");
         page.heading(WEB_CLOSE, ticker.web_heading_count());
         for (int i = 0; i < valves_cnt; ++i) {
             valves[i].force_close();
@@ -162,14 +162,14 @@ void loop()
         break;
 
     case WEB_SUSPEND:
-        DPC("WEB_SUSPEND");
+        DPC("web response: suspend");
         page.heading(WEB_SUSPEND, ticker.web_heading_count());
         ticker.delay_shield_trx();
         enter_sleep(true, true);
         break;
 
     case WEB_NOT_FOUND:
-        DPC("WEB_NOT_FOUND");
+        DPC("web response: not found");
         page.response_not_found();
         break;
 

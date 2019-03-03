@@ -23,6 +23,7 @@
 
 #include <Arduino.h>
 #include "probe.h"
+#include "debug.h"
 
 #define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
 #define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
@@ -41,6 +42,7 @@ Probe::Probe(const Ticker& ticker, byte port)
 void Probe::setup(void)
 {
     pinMode(_port, INPUT_PULLUP);
+    DPV("probe on port", _port);
 }
 
 ProbeSensor Probe::test_sensor(void)
@@ -54,6 +56,11 @@ ProbeSensor Probe::test_sensor(void)
     _sensor = _value < PROBE_V_FLOOD_TRIGGER ? PROBE_WATER : PROBE_DRY;
     _time_mark = _ticker.mark();
     pinMode(_port, INPUT_PULLUP);
+
+    if (_sensor == PROBE_WATER) {
+        DPV("readings", _value);
+        DPV("water on port", _port);
+    }
 
     return _sensor;
 }
@@ -71,10 +78,17 @@ ProbeConnection Probe::test_connection(void)
     t = t < 255 ? t : 255;
     byte c = analogRead(_port) >> 2;
 
-    return _connection =
+    _connection =
               c < PROBE_V_SHORT_CIRCUIT  ? PROBE_ERROR
             : t == 255                   ? PROBE_OFFLINE
             : c > _value * CG_MAX_FACTOR ? PROBE_OFFLINE
             : c > CG_MIN                 ? PROBE_ONLINE
             :                              PROBE_ERROR;
+
+    if (_connection == PROBE_ERROR) {
+        DPV("readings", c);
+        DPV("error on port", _port);
+    }
+
+    return _connection;
 }
