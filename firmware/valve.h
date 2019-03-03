@@ -47,6 +47,7 @@ private:
     ValveState _ovr_state;                  /**< overrided valve state */
     unsigned long _time_mark;               /**< start of a current action, ms */
     unsigned long _extra_time;              /**< additional time for uncompleted action, ms */
+    bool _is_ovr;                           /**< is ops overrided? */
 
 public:
     Valve(const Ticker& ticker,
@@ -55,6 +56,7 @@ public:
     void setup(void);
 
     bool is_engaged(void) const;
+    bool is_overrided(void) const;
     bool open(void);
     bool close(void);
     bool force_open(void);

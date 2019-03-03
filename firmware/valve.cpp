@@ -28,7 +28,8 @@
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
 #define ACTIVE_OP_TRIGGER       2           /**< minimum supply readings for an active op */
-#define MANUAL_OP_TRIGGER_BOTH  50          /**< both signals active! */
+#define MANUAL_OP_TRIGGER       800         /**< some signal is active */
+#define MANUAL_OP_TRIGGER_BOTH  50          /**< both signals are active */
 
 Valve::Valve(const Ticker& ticker,
         byte verif_switch_port, byte verif_supply_port,
@@ -42,6 +43,7 @@ Valve::Valve(const Ticker& ticker,
     _ovr_state = VALVE_IGNORE;
     _time_mark = 0;
     _extra_time = 0;
+    _is_ovr = false;
 }
 
 void Valve::setup(void)
@@ -51,6 +53,7 @@ void Valve::setup(void)
     pinMode(_cport, OUTPUT);
     digitalWrite(_oport, IDLE_LVL);
     digitalWrite(_cport, IDLE_LVL);
+    _is_ovr = false;
 }
 
 bool Valve::is_engaged(void) const
@@ -65,9 +68,14 @@ bool Valve::is_engaged(void) const
     return _exp_state != _act_state;
 }
 
+bool Valve::is_overrided(void) const
+{
+    return _is_ovr;
+}
+
 bool Valve::open(void)
 {
-    if (_ovr_state != VALVE_IGNORE) {
+    if (_is_ovr) {
         return false;
     }
 
@@ -78,7 +86,7 @@ bool Valve::open(void)
 
 bool Valve::close(void)
 {
-    if (_ovr_state != VALVE_IGNORE) {
+    if (_is_ovr) {
         return false;
     }
 
@@ -89,7 +97,7 @@ bool Valve::close(void)
 
 bool Valve::force_open(void)
 {
-    if (_ovr_state != VALVE_IGNORE) {
+    if (_is_ovr) {
         return false;
     }
 
@@ -100,7 +108,7 @@ bool Valve::force_open(void)
 
 bool Valve::force_close(void)
 {
-    if (_ovr_state != VALVE_IGNORE) {
+    if (_is_ovr) {
         return false;
     }
 
@@ -126,10 +134,19 @@ ValveState Valve::run(void)
         _exp_state = VALVE_IGNORE;
         _ovr_state = VALVE_IGNORE;
         _time_mark = 0;
+        _is_ovr = true;
+    } else if (switch_readings < MANUAL_OP_TRIGGER && _is_ovr) {
+        DPV("valve overrided, switch readings", switch_readings);
+        _act_state = VALVE_IGNORE;
+        _exp_state = VALVE_IGNORE;
+        _ovr_state = VALVE_IGNORE;
+        _time_mark = 0;
+    } else {
+        _is_ovr = _ovr_state != VALVE_IGNORE;
     }
 
     /* Overrided action? */
-    if (_ovr_state != VALVE_IGNORE) {
+    if (_is_ovr) {
         _exp_state = _ovr_state;
         _ovr_state = VALVE_IGNORE;
         _time_mark = 0;

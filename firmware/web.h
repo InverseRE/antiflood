@@ -54,7 +54,7 @@ public:
             const Probe* probes, byte probes_cnt,
             const Valve* valves, byte valves_cnt);
     void response_not_found(void);
-    void heading(WebAction action, byte count_down);
+    void heading(WebAction action, byte count_down, bool action_reject = false);
 };
 
 #endif  /* __WEB_H__ */

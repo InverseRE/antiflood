@@ -61,6 +61,8 @@
 #define HTML_HEADING          "<h1 style=\"color:blue\">ANTIFLOOD SYSTEM</h1>"
 #define HTML_HEADING_OPEN     "<h2 style=\"color:green\">VALVE(S) OPENING ... </h2>"
 #define HTML_HEADING_CLOSE    "<h2 style=\"color:green\">VALVE(S) CLOSING ... </h2>"
+#define HTML_HEADING_OPEN_RJ  "<h2 style=\"color:orange\">VALVE(S) OVERRIDED ... </h2>"
+#define HTML_HEADING_CLOSE_RJ "<h2 style=\"color:orange\">VALVE(S) OVERRIDED ... </h2>"
 #define HTML_HEADING_PWR_SAVE "<h2 style=\"color:green\">GO TO PWR SAVE MODE ... </h2>"
 #define HTML_HEADING_UNKNOWN  "<h2 style=\"color:red\">ACTION NOT RECOGNIZED !!! </h2>"
 #define HTML_HEADING_OK       "<h2 style=\"color:green\">OK</h2>"
@@ -130,7 +132,7 @@ WebAction WebPage::parse(const String& request)
     }
 }
 
-void WebPage::heading(WebAction action, byte count_down)
+void WebPage::heading(WebAction action, byte count_down, bool action_reject)
 {
     _client.println(F(
                       HTTP_RESPONSE
@@ -150,8 +152,14 @@ void WebPage::heading(WebAction action, byte count_down)
                       HTML_LN_BR));
 
     switch (action) {
-    case WEB_OPEN:    _client.println(F(HTML_HEADING_OPEN));     break;
-    case WEB_CLOSE:   _client.println(F(HTML_HEADING_CLOSE));    break;
+    case WEB_OPEN:    if (action_reject)
+                      _client.println(F(HTML_HEADING_OPEN_RJ));
+                      else
+                      _client.println(F(HTML_HEADING_OPEN));     break;
+    case WEB_CLOSE:   if (action_reject)
+                      _client.println(F(HTML_HEADING_CLOSE_RJ));
+                       else
+                      _client.println(F(HTML_HEADING_CLOSE));    break;
     case WEB_SUSPEND: _client.println(F(HTML_HEADING_PWR_SAVE)); break;
     default:          _client.println(F(HTML_HEADING_UNKNOWN));
     }

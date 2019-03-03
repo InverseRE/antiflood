@@ -147,17 +147,23 @@ void loop()
 
     case WEB_OPEN:
         DPC("web response: open");
-        page.heading(WEB_OPEN, ticker.web_heading_count());
-        for (int i = 0; i < valves_cnt; ++i) {
-            valves[i].force_open();
+        {
+            bool is_ovr = false;
+            for (int i = 0; i < valves_cnt; ++i) {
+                is_ovr |= !valves[i].force_open();
+            }
+            page.heading(WEB_OPEN, ticker.web_heading_count(), is_ovr);
         }
         break;
 
     case WEB_CLOSE:
         DPC("web response: close");
-        page.heading(WEB_CLOSE, ticker.web_heading_count());
-        for (int i = 0; i < valves_cnt; ++i) {
-            valves[i].force_close();
+        {
+            bool is_ovr = false;
+            for (int i = 0; i < valves_cnt; ++i) {
+                is_ovr |= !valves[i].force_close();
+            }
+            page.heading(WEB_CLOSE, ticker.web_heading_count(), is_ovr);
         }
         break;
 

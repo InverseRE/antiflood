@@ -70,11 +70,11 @@ AppState App::solve(void)
 
     /* resolve */
     for (int i = 0; is_triggered && i < _valves_cnt; ++i) {
-        _valves[i].close();
+        is_overrided |= !_valves[i].close();
     }
     for (int i = 0; i < _valves_cnt; ++i) {
         is_resolved |= VALVE_CLOSE == _valves[i].run();
-        is_overrided |= VALVE_IGNORE != _valves[i].state_override();
+        is_overrided |= _valves[i].is_overrided();
     }
 
     /* summary */
