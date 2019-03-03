@@ -121,7 +121,7 @@ int Setting::push(int addr)
 int Setting::pop(int addr)
 {
     int i;
-
+    
     /* check addres is valid */
     if ((addr + 5) > EEPROM.length()) {
         return BAD_ARGUMENT;
@@ -150,10 +150,4 @@ int Setting::pop(int addr)
     }
     
     return OK;
-}
-
-/* total length in bytes */
-short Setting::length(void)
-{
-    return _len + 4;
 }

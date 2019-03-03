@@ -20,6 +20,7 @@
 #define __SETTING_H__
 
 #include <Arduino.h>
+#include "debug.h"
 
 /** Error codes. */
 enum SettingErrorCodes {
@@ -34,15 +35,42 @@ private:
     byte *data;          /* payload */
     byte _len;           /* payload len */
     byte _type;          /* setting type */
-    Setting::~Setting(); 
 
 public:
+
     Setting();
     Setting(byte type, byte len, byte value[]);
-    static unsigned short crc16(byte *block, unsigned short len);
+    Setting::~Setting(); 
+
     int push(int addr);
     int pop(int addr);
-    short Setting::length(void);
+    
+    /* crc-16 calculation */
+    static unsigned short crc16(byte *block, unsigned short len);
+       
+    /* get total length in bytes */   
+    short Setting::length(void) const 
+    {
+        return _len + 4;
+    }
+    
+    /* get setting type */
+    byte Setting::get_type() const
+    {
+        return _type;   
+    }
+    
+    /* get payload length */
+    byte Setting::get_len() const
+    {
+        return _len;   
+    }
+    
+    /* get payload */
+    void Setting::get_data(byte *value) const
+    {
+        memcpy(value, data, _len);
+    }
 };
 
 #endif  /* __SETTING_H__ */

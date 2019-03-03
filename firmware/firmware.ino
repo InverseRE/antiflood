@@ -29,6 +29,8 @@
 #include "power.h"
 #include "probe.h"
 #include "valve.h"
+#include "setting.h"
+#include "storage.h"
 
 
 
@@ -44,6 +46,23 @@ void setup() {
     valves_configure();
 
     app_set_state(APP_OK);
+    
+    SettingsStorage& sst = SettingsStorage::get_instance();
+    if (sst.exist()) {
+        DP(F("storage already exist"));
+        if (sst.load() != ST_OK) {
+            DP(F("storage loading failed"));
+        } else {
+            DP(F("storage loaded successfully"));
+        }
+    } else {
+        DP(F("storage not exist"));
+        if (sst.create() != ST_OK) {
+            DP(F("create failed"));
+        } else {
+            DP(F("storage created successfully"));
+        }
+    }
 
     DP(F("ready to go..."));
 }

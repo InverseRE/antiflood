@@ -2,10 +2,14 @@
 #define __STORAGE_H__
 
 #include <Arduino.h>
+#include "debug.h"
 #include "setting.h"
 
 /* max number of storage records */
-#define MAX_SETTIGS_NUMBER  20
+#define MAX_SETTIGS_NUMBER  10
+
+/* storage raw data size */
+#define RAW_SIZE  ((MAX_SETTIGS_NUMBER) * sizeof(short) + 4)
 
 /** Error codes. */
 enum StorageErrorCodes {
@@ -25,21 +29,19 @@ typedef struct store {
     
 typedef struct storage {
     union {
-        store_t str;     /* structured data */
-        byte raw[44];    /* raw data        */
+        store_t str;           /* structured data */
+        byte raw[RAW_SIZE];    /* raw data        */
     } data;
-    unsigned short crc;  /* check sum       */
+    unsigned short crc;        /* check sum       */
 } storage_t;
-
+    
 class SettingsStorage {
 
-private:
-    storage_t st;
-    int pop(storage_t& st, bool load);
-    int push(storage_t st);
-
 public:
-    SettingsStorage();
+    static SettingsStorage& get_instance() {
+        static SettingsStorage s;
+        return s;
+    }
     
     int load();
     int create();
@@ -50,6 +52,21 @@ public:
     int update(short idx, Setting);
     int append(Setting);
     int erase_all(void);
+    
+    void eeprom_dp(void);
+    
+private:
+    storage_t st;
+
+    SettingsStorage() {}
+    ~SettingsStorage() {}
+    SettingsStorage(SettingsStorage const&) = delete;
+    SettingsStorage& operator= (SettingsStorage const&) = delete;
+    
+    int pop(bool load);
+    int push(void);
+
+
 };
 
 #endif  /* __STORAGE_H__ */
