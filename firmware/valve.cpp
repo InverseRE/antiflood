@@ -23,11 +23,12 @@
 
 #include <Arduino.h>
 #include "app.h"
+#include "debug.h"
 
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
-#define ACTIVE_OP_TRIGGER       2
-#define MANUAL_OP_TRIGGER       450         /* TODO: should be calculated */
+#define ACTIVE_OP_TRIGGER       2           /**< minimum supply readings for an active op */
+#define MANUAL_OP_TRIGGER_BOTH  50          /**< both signals active! */
 
 Valve::Valve(const Ticker& ticker,
         byte verif_switch_port, byte verif_supply_port,
@@ -111,23 +112,34 @@ bool Valve::force_close(void)
 ValveState Valve::run(void)
 {
     /* Take into account a manualy overridden signals. */
-    if (analogRead(_vport_switch) < MANUAL_OP_TRIGGER) {
+    int switch_readings = analogRead(_vport_switch);
 
-        /* TODO: ongoing action should be compute on */
-        _ovr_state =
-                  _act_state == VALVE_OPEN  ? VALVE_CLOSE
-                : _act_state == VALVE_CLOSE ? VALVE_OPEN
-                :                             VALVE_IGNORE;
-        _time_mark = 0; /* reset timer */
+    /* TODO: an actual vavle's state: by switch and supply current */
+    /* TODO: signal to App actual state */
+
+    if (switch_readings < MANUAL_OP_TRIGGER_BOTH) {
+        /* stop all operations, due to a conflict */
+        DPV("valve conflicts, switch readings", switch_readings);
+        digitalWrite(_oport, IDLE_LVL);
+        digitalWrite(_cport, IDLE_LVL);
+        _act_state = VALVE_IGNORE;
+        _exp_state = VALVE_IGNORE;
+        _ovr_state = VALVE_IGNORE;
+        _time_mark = 0;
     }
 
     /* Overrided action? */
-    _exp_state = _ovr_state != VALVE_IGNORE ? _ovr_state : _exp_state;
+    if (_ovr_state != VALVE_IGNORE) {
+        _exp_state = _ovr_state;
+        _ovr_state = VALVE_IGNORE;
+        _time_mark = 0;
+    }
 
     /* An action start-mark. */
     if (_act_state != _exp_state && _time_mark == 0) {
 
         /* Operation starts. */
+        DPC("valve engaged");
         _time_mark = _ticker.mark();
         _extra_time = VALVE_OPERATION_EXTRA;
     }
@@ -137,7 +149,6 @@ ValveState Valve::run(void)
 
     case VALVE_IGNORE:
         /* Do nothing. */
-        _time_mark = 0;
         break;
 
     case VALVE_OPEN:
@@ -159,6 +170,7 @@ ValveState Valve::run(void)
     case VALVE_MALFUNCTION:
     default:
         /* Operation aborts. */
+        DPC("valve malfunction");
         digitalWrite(_oport, IDLE_LVL);
         digitalWrite(_cport, IDLE_LVL);
         _act_state = VALVE_MALFUNCTION;
@@ -169,17 +181,23 @@ ValveState Valve::run(void)
 
     /* Time limits. */
     if (_ticker.limit_valve(_time_mark)) {
-        if (analogRead(_vport_supply) > ACTIVE_OP_TRIGGER
+        int supply_readings = analogRead(_vport_supply);
+        if (supply_readings > ACTIVE_OP_TRIGGER
                 && _extra_time > 0) {
 
             /* Extra time needed? (apply only once) */
+            DPV("valve ops granted an extra time, supply readings", supply_readings);
             _time_mark += _extra_time;
             _extra_time = 0;
 
         } else {
 
             /* Operation stops. */
+            DPV("valve disengaged by timeout, supply readings", supply_readings);
+            digitalWrite(_oport, IDLE_LVL);
+            digitalWrite(_cport, IDLE_LVL);
             _act_state = _exp_state;
+            _exp_state = VALVE_IGNORE;
             _ovr_state = VALVE_IGNORE;
             _time_mark = 0;
         }
