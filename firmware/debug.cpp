@@ -50,12 +50,13 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt)
     String size(cnt);
 
     SWS.print(msg);
-    SWS.print(": [" + size + "] ");
+    SWS.print(F(": ["));
+    SWS.print(size);
+    SWS.print(F("] "));
     while (c--) {
-        String s(*ptr, HEX);
-        SWS.print(s);
+        SWS.print(*ptr, HEX);
     }
-    SWS.println("");
+    SWS.println(F(""));
 }
 
 #endif  /* DEBUG_PRINTOUT */

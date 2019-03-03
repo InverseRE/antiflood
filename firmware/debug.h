@@ -48,10 +48,9 @@ void DPC_(const __FlashStringHelper* const msg);
 extern SoftwareSerial SWS;
 template <typename T> void DPV_(const __FlashStringHelper* const msg, const T& val)
 {
-    String v(val);
     SWS.print(msg);
-    SWS.print(": ");
-    SWS.println(v);
+    SWS.print(F(": "));
+    SWS.println(val);
 }
 
 /** Debug printout an array value. */
