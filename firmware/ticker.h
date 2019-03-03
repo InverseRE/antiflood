@@ -37,7 +37,7 @@
 #define SHIELD_SHUTDOWN_TIME    100         /**< shutdown time for ESP8266, ms */
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
 #define LOOP_POLLING_LATENCY    10          /**< basic loop period, ms */
-#define WEB_HEADING_COUNT       1           /**< basic loop period, s */
+#define WEB_HEADING_COUNT       5           /**< web page redirect delay, s */
 
 /**
  * Ticker.
