@@ -30,14 +30,14 @@
 #define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
 #define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
-#define VALVE_OPERATION_LIMIT   10000       /**< amount of time for valve's action, ms*/
-#define VALVE_OPERATION_EXTRA   10000       /**< extra time for an ongoing action, ms*/
+#define VALVE_OPERATION_LIMIT   12000       /**< amount of time for valve's action, ms*/
+#define VALVE_OPERATION_EXTRA   20000       /**< extra time for an ongoing action, ms*/
 #define SETUP_DELAY             1000        /**< startup time for the device, ms */
 #define SHIELD_STARTUP_TIME     1000        /**< startup time for ESP8266, ms */
 #define SHIELD_SHUTDOWN_TIME    100         /**< shutdown time for ESP8266, ms */
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
 #define LOOP_POLLING_LATENCY    10          /**< basic loop period, ms */
-#define WEB_HEADING_COUNT       3           /**< basic loop period, s */
+#define WEB_HEADING_COUNT       1           /**< basic loop period, s */
 
 /**
  * Ticker.
@@ -78,7 +78,7 @@ public:
     void delay_probe(void) const { delay(PROBE_CHECK_DURATION); }
     void delay_loop(void) const { delay(LOOP_POLLING_LATENCY); }
 
-    byte web_heading_count(void) const { delay(WEB_HEADING_COUNT); }
+    byte web_heading_count(void) const { return WEB_HEADING_COUNT; }
 
     bool limit_valve(unsigned long mark) {
         return mark != 0
