@@ -25,8 +25,8 @@
 #define __NET_H__
 
 #include <Arduino.h>
-#include <WiFiEspServer.h>
-#include <WiFiEspClient.h>
+#include <WiFiEsp.h>
+#include <WiFiEspUdp.h>
 #include "ticker.h"
 
 enum WiFiType {
@@ -45,9 +45,7 @@ private:
     const String _password;
     const int _channel;
     const int _auth_type;
-    WiFiEspServer _server;
-    RingBuffer _ibuff;
-    String _request;
+    WiFiEspUDP _udp;
     bool _is_online;
 
 public:
@@ -63,11 +61,16 @@ public:
     bool is_online(void) const { return _is_online; }
     bool is_offline(void) const { return !_is_online; }
     WiFiType mode(void) const { return _mode; }
-
     void disconnect(void);
-    const String& run(WiFiEspClient& client);
     void suspend(void);
     void resume(void);
+
+    bool rx(void);
+    int available(void);
+    void read(void* buf, int len);
+
+    void write(const void* buf, int len);
+    void tx(void);
 };
 
 #endif  /* __NET_H__ */

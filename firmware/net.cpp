@@ -25,7 +25,6 @@
 #include "net.h"
 
 #define SHIELD_BAUD_RATE     115200         /**< shield's UART baud rate */
-#define WEB_IN_CACHE_SIZE    32             /**< size of input buffer */
 
 NetServer::NetServer(const Ticker& ticker,
         IPAddress ip, short port,
@@ -36,9 +35,7 @@ NetServer::NetServer(const Ticker& ticker,
           _port(port),
           _ssid(ssid),
           _password(password),
-          _server(port),
-          _ibuff(WEB_IN_CACHE_SIZE),
-          _request("")
+          _is_online(false)
 {
 }
 
@@ -54,9 +51,7 @@ NetServer::NetServer(const Ticker& ticker,
           _password(password),
           _channel(channel),
           _auth_type(auth_type),
-          _server(port),
-          _ibuff(WEB_IN_CACHE_SIZE),
-          _request("")
+          _is_online(false)
 {
 }
 
@@ -101,17 +96,19 @@ void NetServer::setup(void)
     }
 
     /* Start server. */
-    _server.begin();
-    _is_online = true;
+    _is_online = _udp.begin(_port);
 }
 
 void NetServer::disconnect(void)
 {
     DPC("network shutdown");
 
+    /* Turn off server. */
+    _udp.stop();
+    _ticker.delay_shield_down();
+
     /* Turn off WIFI library. */
     WiFi.disconnect();
-
     _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
@@ -121,65 +118,16 @@ void NetServer::disconnect(void)
     _is_online = false;
 }
 
-const String& NetServer::run(WiFiEspClient& client)
-{
-    bool stage_1 = true;
-    bool stage_2 = false;
-    _request = "";
-
-    client = _server.available();
-    if (!client) {
-        return _request;
-    }
-
-    _ibuff.init();
-
-    /* TODO: break by timeout to prevent stuck */
-    while (client.connected()) {
-
-        /* Wait till data appears. */
-        if (!client.available()) {
-            continue;
-        }
-
-        char c = client.read();
-        _ibuff.push(c);
-
-        /* Search for GET request. */
-        if (stage_1 && _ibuff.endsWith("GET ")) {
-            stage_1 = false;
-            stage_2 = true;
-            continue;
-        }
-
-        /* Store requested URL. */
-        if (stage_2) {
-            _request += c;
-            if (c == ' ') {
-                stage_2 = false;
-                _request.trim();
-            }
-        }
-
-        /* Two newline characters in a row are the end of the HTTP request. */
-        if (_ibuff.endsWith("\r\n\r\n")) {
-            DPC("client requests");
-            return !stage_1 && !stage_2 ? _request : _request = "";
-        }
-    }
-
-    DPC("client dropped");
-
-    return _request = "";
-}
-
 void NetServer::suspend(void)
 {
     DPC("network suspend");
 
+    /* Turn off server. */
+    _udp.stop();
+    _ticker.delay_shield_down();
+
     /* Turn off WIFI library. */
     WiFi.disconnect();
-
     _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
@@ -196,4 +144,38 @@ void NetServer::resume(void)
 
     /* TODO: restore ESP8266 operations */
     _is_online = true;
+}
+
+bool NetServer::rx(void)
+{
+    int len = _udp.parsePacket();
+
+    if (len) {
+        _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
+    }
+
+    return len;
+}
+
+int NetServer::available(void)
+{
+    return _udp.available();
+}
+
+
+void NetServer::read(void* buf, int len)
+{
+    _udp.read((byte*)buf, len);
+}
+
+
+void NetServer::write(const void* buf, int len)
+{
+    _udp.write((byte*)buf, len);
+}
+
+
+void NetServer::tx(void)
+{
+    _udp.endPacket();
 }
