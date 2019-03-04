@@ -82,6 +82,30 @@ cont  - returnoing to normal operations
 
 
 ================================================================================
+ SIGNALS' ROUTE
+================================================================================
+
+Every cycle signals are generated in different stages(layers), starting from
+lower priority signals and passing toward higher priority. Current stage(layer)
+may pass or alter/ignore previous signals.
+
+
+ low priority      >>>         >>>         >>>         >>>      high priority
+
+   PROBE   ===>   USER COMMAND   ===>   H/W SWITCHES   ===>   VALVES
+-----------------------------------------------------------------------
+  detectors      Web, GUI, API      buttons open/close        relays
+-----------------------------------------------------------------------
+  sig:water      force to open         some button      preforms a control
+  sig:error      force to close         is pressed        use timing and
+ toggle(E/D)                                              self checking
+
+
+class Probe      void loop(void)        class Valve         class Valve
+
+
+
+================================================================================
  VALVE'S ROUTINE
 ================================================================================
 
