@@ -35,7 +35,8 @@ NetServer::NetServer(const Ticker& ticker,
           _port(port),
           _ssid(ssid),
           _password(password),
-          _is_online(false)
+          _is_online(false),
+          _is_sending(false)
 {
 }
 
@@ -51,7 +52,8 @@ NetServer::NetServer(const Ticker& ticker,
           _password(password),
           _channel(channel),
           _auth_type(auth_type),
-          _is_online(false)
+          _is_online(false),
+          _is_sending(false)
 {
 }
 
@@ -97,6 +99,7 @@ void NetServer::setup(void)
 
     /* Start server. */
     _is_online = _udp.begin(_port);
+    _is_sending = false;
 }
 
 void NetServer::disconnect(void)
@@ -116,6 +119,7 @@ void NetServer::disconnect(void)
     digitalWrite(WIFIRS, LOW);
 
     _is_online = false;
+    _is_sending = false;
 }
 
 void NetServer::suspend(void)
@@ -136,6 +140,7 @@ void NetServer::suspend(void)
     digitalWrite(WIFIRS, LOW);
 
     _is_online = false;
+    _is_sending = false;
 }
 
 void NetServer::resume(void)
@@ -144,17 +149,12 @@ void NetServer::resume(void)
 
     /* TODO: restore ESP8266 operations */
     _is_online = true;
+    _is_sending = false;
 }
 
 bool NetServer::rx(void)
 {
-    int len = _udp.parsePacket();
-
-    if (len) {
-        _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
-    }
-
-    return len;
+    return _udp.parsePacket();
 }
 
 int NetServer::available(void)
@@ -162,20 +162,25 @@ int NetServer::available(void)
     return _udp.available();
 }
 
-
-void NetServer::read(void* buf, int len)
+int NetServer::read(void* buf, int len)
 {
-    _udp.read((byte*)buf, len);
+    return _udp.read((byte*)buf, len);
 }
-
 
 void NetServer::write(const void* buf, int len)
 {
+    if (!_is_sending) {
+        _is_sending = true;
+        _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
+    }
     _udp.write((byte*)buf, len);
 }
 
 
 void NetServer::tx(void)
 {
-    _udp.endPacket();
+    if (_is_sending) {
+        _is_sending = false;
+        _udp.endPacket();
+    }
 }

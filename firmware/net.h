@@ -47,6 +47,7 @@ private:
     const int _auth_type;
     WiFiEspUDP _udp;
     bool _is_online;
+    bool _is_sending;
 
 public:
     NetServer(const Ticker& ticker,
@@ -67,7 +68,7 @@ public:
 
     bool rx(void);
     int available(void);
-    void read(void* buf, int len);
+    int read(void* buf, int len);
 
     void write(const void* buf, int len);
     void tx(void);

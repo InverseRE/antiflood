@@ -24,6 +24,163 @@
 #include <Arduino.h>
 #include "proto.h"
 
+/** Packet class. */
+enum Class : byte {
+    cEcho         = 0,                      /**< whole packet should be sent back unaltered */
+    cInfo         = 1,                      /**< a general information, no response required */
+    cRequest      = 2,                      /**< a request */
+    cResponse     = 3,                      /**< a response */
+    cRFU          = 255                     /**< reserved */
+};
+
+/** Container/data type. */
+enum Instruction : byte {
+    iAbout        = 0,                      /**< info about firmware */
+    iTime         = 1,                      /**< report/set local time */
+    iFullStatus   = 2,                      /**< detectors & valves status */
+    iOpenValves   = 3,                      /**< open all valves command */
+    iCloseValves  = 4,                      /**< close all valves command */
+    iSuspend      = 5,                      /**< enter power save mode */
+    iEnableProbe  = 6,                      /**< enable probes */
+    iDisableProbe = 7,                      /**< disable probes */
+    iUnsupported  = 254,                    /**< unsupported request */
+    iRFU          = 255                     /**< reserved */
+};
+
+#pragma push(pack, 0)
+
+class Packet {
+private:
+    Class _cla;                             /**< class of the packet */
+    Instruction _ins;                       /**< included data type */
+    byte _seqnum;                           /**< request/response, both have the same numbers */
+    byte _data_size;                        /**< raw data length */
+    byte _xor;                              /**< magic 0 = cla^ins^seqnum^data_size^xor */
+    byte _data[56];                         /**< raw data, structured acording to it's type */
+
+    byte hdr_size(void) const {
+        return 5;
+    }
+
+    void csum(void) {
+        _xor = _cla ^ _ins ^ _seqnum ^ _data_size;
+    }
+
+public:
+    Packet()
+        : _cla(cInfo), _ins(iUnsupported), _seqnum(0), _data_size(0) {
+        csum();
+    }
+
+    Packet(Class cla, Instruction ins, byte seqnum, byte data_size, const byte* data)
+        : _cla(cla), _ins(ins), _seqnum(seqnum), _data_size(data_size) {
+        csum();
+        if (_data_size > sizeof(_data)) {
+            _xor ^= 1;
+            memset(_data, 0, sizeof(_data));
+        } else {
+            memcpy(_data, data, _data_size);
+        }
+    }
+
+    bool validate(byte size) const {
+        return _xor == _cla ^ _ins ^ _seqnum ^ _data_size
+                && _data_size <= sizeof(_data)
+                && _data_size < size - hdr_size();
+    }
+
+    byte raw(byte* buf, byte buf_size) const {
+        byte packet_size = hdr_size() + _data_size;
+        if (buf_size < packet_size) {
+            return 0;
+        }
+        memcpy(buf, this, packet_size);
+        return packet_size;
+    }
+
+    Class cla(void) const {
+        return _cla;
+    }
+
+    Instruction ins(void) const {
+        return _ins;
+    }
+
+    void trx_about(const String& msg) {
+        byte len = msg.length();
+        _data_size = len < sizeof(_data) ? len : sizeof(_data);
+        _cla = cResponse;
+        _ins = iAbout;
+        memcpy(_data, msg.c_str(), _data_size);
+        csum();
+    }
+
+    void trx_time(unsigned long time) {
+        _data_size = sizeof(time);
+        _cla = cResponse;
+        _ins = iTime;
+        memcpy(_data, &time, _data_size);
+        csum();
+    }
+
+    void trx_full_status(AppState app_state,
+            const Led* leds, byte leds_cnt,
+            const Probe* probes, byte probes_cnt,
+            const Valve* valves, byte valves_cnt) {
+        csum();
+    }
+
+    void trx_open(bool success) {
+        _data_size = sizeof(success);
+        _cla = cResponse;
+        _ins = iOpenValves;
+        memcpy(_data, &success, _data_size);
+        csum();
+    }
+
+    void trx_close(bool success) {
+        _data_size = sizeof(success);
+        _cla = cResponse;
+        _ins = iCloseValves;
+        memcpy(_data, &success, _data_size);
+        csum();
+    }
+
+    void trx_suspend(bool success) {
+        _data_size = sizeof(success);
+        _cla = cResponse;
+        _ins = iSuspend;
+        memcpy(_data, &success, _data_size);
+        csum();
+    }
+
+    void trx_enable_probe(bool success) {
+        _data_size = sizeof(success);
+        _cla = cResponse;
+        _ins = iEnableProbe;
+        memcpy(_data, &success, _data_size);
+        csum();
+    }
+
+    void trx_disable_probe(bool success) {
+        _data_size = sizeof(success);
+        _cla = cResponse;
+        _ins = iDisableProbe;
+        memcpy(_data, &success, _data_size);
+        csum();
+    }
+
+    void trx_unsupported(void) {
+        memcpy(_data, this, hdr_size());
+        _data_size = hdr_size();
+        _cla = cResponse;
+        _ins = iUnsupported;
+        csum();
+    }
+};
+
+#pragma pop
+
 ProtoSession::ProtoSession(const Ticker& ticker, const NetServer& server)
         : _ticker(ticker), _server(server)
 {
@@ -39,23 +196,59 @@ ProtoAction ProtoSession::inform(
         const Probe* probes, byte probes_cnt,
         const Valve* valves, byte valves_cnt)
 {
+    byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
+    byte buf[256];
+    int len = 0;
 
-    while (_server.available()) {
-        byte buf[255];
-        int len;
+    /* till data is incoming and enough buffer left */
+    while (_server.available() && len < sizeof(buf) && packets_limit) {
 
-        /* TODO: parse packet */
-        /* len = _server.read(buf, sizeof(buf)); */
+        /* get some data */
+        len += _server.read(buf + len, sizeof(buf) - len);
 
-        /* TODO: switch action */
-        /* action = ...; */
+        /* parse packet */
+        Packet* pkt = (Packet*)buf;
+        if (!pkt->validate(len)) {
+            /* get more data if uncompleted */
+            continue;
+        }
 
-        /* TODO: response */
-        /* _server.write(...); */
-        /* _server.tx(); */
+        /* switch by requested action */
+        switch(pkt->ins())  {
+        case iAbout:        pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
+        case iTime:         pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
+        case iFullStatus:   pkt->trx_full_status(
+                app_state,
+                leds, leds_cnt,
+                probes, probes_cnt,
+                valves, valves_cnt);                       action = PROTO_STATE;   break;
+        case iOpenValves:   pkt->trx_open(false);          action = PROTO_OPEN;    break;
+        case iCloseValves:  pkt->trx_close(false);         action = PROTO_CLOSE;   break;
+        case iSuspend:      pkt->trx_suspend(false);       action = PROTO_SUSPEND; break;
+        case iEnableProbe:  pkt->trx_enable_probe(false);  action = PROTO_UNKNOWN; break;
+        case iDisableProbe: pkt->trx_disable_probe(false); action = PROTO_UNKNOWN; break;
+        case iUnsupported:  pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
+        case iRFU:          pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
+        default:            pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
+        }
+
+        /* write out */
+        len = pkt->raw(buf, sizeof(buf));
+        _server.write(buf, len);
+
+        /* send data back immediately */
+        if (true) { // XXX: can be done later, use this for large packets only
+            _server.tx();
+        }
+
+        /* packet has been processed, get another one */
+        packets_limit -= 1;
+        len = 0;
     }
 
+    /* send remaining data back */
+    _server.tx();
 
     return action;
 }
