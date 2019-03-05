@@ -26,7 +26,7 @@
 
 /** Packet class. */
 enum Class : byte {
-    cEcho         = 0,                      /**< whole packet should be sent back unaltered */
+    cEcho         = 0,                      /**< a packet should be echoed as cInfo */
     cInfo         = 1,                      /**< a general information, no response required */
     cRequest      = 2,                      /**< a request */
     cResponse     = 3,                      /**< a response */
@@ -43,6 +43,7 @@ enum Instruction : byte {
     iSuspend      = 5,                      /**< enter power save mode */
     iEnableProbe  = 6,                      /**< enable probes */
     iDisableProbe = 7,                      /**< disable probes */
+    iEcho         = 253,                    /**< echoed packet */
     iUnsupported  = 254,                    /**< unsupported request */
     iRFU          = 255                     /**< reserved */
 };
@@ -104,6 +105,13 @@ public:
 
     Instruction ins(void) const {
         return _ins;
+    }
+
+    void trx_info_back(void) {
+        _cla = cInfo;
+        _ins = iEcho;
+        _data_size = 0;
+        csum();
     }
 
     void trx_about(const String& msg) {
@@ -214,8 +222,26 @@ ProtoAction ProtoSession::inform(
             continue;
         }
 
+        /* switch by class */
+        switch (pkt->cla()) {
+        case cRequest:
+        case cResponse:
+            break;
+        case cEcho:
+            pkt->trx_info_back();
+             len = pkt->raw(buf, sizeof(buf));
+            _server.write(buf, len);
+            _server.tx();
+        case cInfo:
+        case cRFU:
+        default:
+            packets_limit -= 1;
+            len = 0;
+            continue;
+        }
+
         /* switch by requested action */
-        switch(pkt->ins())  {
+        switch (pkt->ins())  {
         case iAbout:        pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
         case iTime:         pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
         case iFullStatus:   pkt->trx_full_status(
@@ -228,6 +254,7 @@ ProtoAction ProtoSession::inform(
         case iSuspend:      pkt->trx_suspend(false);       action = PROTO_SUSPEND; break;
         case iEnableProbe:  pkt->trx_enable_probe(false);  action = PROTO_UNKNOWN; break;
         case iDisableProbe: pkt->trx_disable_probe(false); action = PROTO_UNKNOWN; break;
+        case iEcho:         pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
         case iUnsupported:  pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
         case iRFU:          pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
         default:            pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
@@ -238,17 +265,12 @@ ProtoAction ProtoSession::inform(
         _server.write(buf, len);
 
         /* send data back immediately */
-        if (true) { // XXX: can be done later, use this for large packets only
-            _server.tx();
-        }
+        _server.tx(); // XXX: but this can be done later as a bunch of packets are ready
 
         /* packet has been processed, get another one */
         packets_limit -= 1;
         len = 0;
     }
-
-    /* send remaining data back */
-    _server.tx();
 
     return action;
 }
