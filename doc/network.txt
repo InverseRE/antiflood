@@ -1,0 +1,14 @@
+Utilities:
+1) screen
+2) nc
+
+
+'screen' is to display debug printout, usage:
+> screen /dev/ttyUSB0 115200
+
+'nc' is to send/receive data, usage:
+> nc -u <destination host> <destination port>
+> nc -u -p <source port> <destination host> <destination port>
+
+'printf' is to send binary data, for example:
+> printf "\x00\xff\xff\x00\x00" | nc <...>
