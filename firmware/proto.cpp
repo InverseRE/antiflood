@@ -23,6 +23,7 @@
 
 #include <Arduino.h>
 #include "proto.h"
+#include "debug.h"
 
 /** Packet class. */
 enum Class : byte {
@@ -87,7 +88,7 @@ public:
     bool validate(byte size) const {
         return _xor == _cla ^ _ins ^ _seqnum ^ _data_size
                 && _data_size <= sizeof(_data)
-                && _data_size < size - hdr_size();
+                && _data_size <= size - hdr_size();
     }
 
     byte raw(byte* buf, byte buf_size) const {
@@ -206,7 +207,7 @@ ProtoAction ProtoSession::inform(
 {
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
-    byte buf[256];
+    byte buf[255];
     int len = 0;
 
     /* till data is incoming and enough buffer left */
@@ -215,25 +216,34 @@ ProtoAction ProtoSession::inform(
         /* get some data */
         len += _server.read(buf + len, sizeof(buf) - len);
 
+        DPA("rxd", buf, len);
+
         /* parse packet */
         Packet* pkt = (Packet*)buf;
         if (!pkt->validate(len)) {
             /* get more data if uncompleted */
+            DPC("get more data");
             continue;
         }
 
         /* switch by class */
         switch (pkt->cla()) {
         case cRequest:
+            DPC("cRequest");
+            break;
         case cResponse:
+            DPC("cResponse");
             break;
         case cEcho:
+            DPC("cEcho");
             pkt->trx_info_back();
-             len = pkt->raw(buf, sizeof(buf));
+            len = pkt->raw(buf, sizeof(buf));
             _server.write(buf, len);
             _server.tx();
         case cInfo:
+            DPC("cInfo");
         case cRFU:
+            DPC("cRFU");
         default:
             packets_limit -= 1;
             len = 0;

@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "net.h"
+#include "debug.h"
 
 #define SHIELD_BAUD_RATE     115200         /**< shield's UART baud rate */
 
@@ -154,7 +155,14 @@ void NetServer::resume(void)
 
 bool NetServer::rx(void)
 {
-    return _udp.parsePacket();
+    bool conn = _udp.parsePacket();
+    if (conn) {
+        IPAddress ipa = _udp.remoteIP();
+        uint16_t rp = _udp.remotePort();
+        DPV("rx from:", ipa);
+        DPV("@port", rp);
+    }
+    return conn;
 }
 
 int NetServer::available(void)
@@ -171,7 +179,14 @@ void NetServer::write(const void* buf, int len)
 {
     if (!_is_sending) {
         _is_sending = true;
-        _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
+        // FIXME: _udp.remotePort() from Arduino/libraries/WiFiEsp/src/utility/EspDrv.cpp
+        // comment out the second serial read (at EspDrv.cpp:686)
+        // https://github.com/bportaluri/WiFiEsp/issues/119
+        IPAddress ipa = _udp.remoteIP();
+        uint16_t rp = _udp.remotePort();
+        _udp.beginPacket(ipa, rp);
+        DPV("tx to:", ipa);
+        DPV("@port", rp);
     }
     _udp.write((byte*)buf, len);
 }
