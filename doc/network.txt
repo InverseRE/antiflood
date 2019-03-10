@@ -14,8 +14,8 @@ Utilities:
 'printf' is to send binary data, for example:
 > printf "\x00\xff\xff\x00\x00" | nc <...>
 
-'xxd' converts binary to hex and vice versa, use it in cojunction:
->  echo "00ff ff0000" | xxd -r -p - | nc -u -w 1 <host> <port> | xxd -p -
+'xxd' converts binary to hex and vice versa, use it in conjunction:
+>  echo "00ff ff0000" | xxd -r -p - | nc -u -w 1 <host> <port> | xxd -
              ^                ^               ^                     ^
       command to send    hex to bin      wait for 1 sec          bin to hex
         in hex-mode                     to close stdout       prints response
