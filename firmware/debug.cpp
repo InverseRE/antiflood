@@ -54,7 +54,10 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt)
     SWS.print(size);
     SWS.print(F("] "));
     while (c--) {
-        SWS.print(*ptr, HEX);
+        if (*ptr < 0x10) {
+            SWS.print("0");
+        }
+        SWS.print(*ptr++, HEX);
     }
     SWS.println(F(""));
 }
