@@ -57,28 +57,20 @@ private:
     Instruction _ins;                       /**< included data type */
     byte _seqnum;                           /**< request/response, both have the same numbers */
     byte _data_size;                        /**< raw data length */
-    byte _xor;                              /**< magic 0 = cla^ins^seqnum^data_size^xor */
     byte _data[56];                         /**< raw data, structured acording to it's type */
 
     byte hdr_size(void) const {
         return 5;
     }
 
-    void csum(void) {
-        _xor = _cla ^ _ins ^ _seqnum ^ _data_size;
-    }
-
 public:
     Packet()
         : _cla(cInfo), _ins(iUnsupported), _seqnum(0), _data_size(0) {
-        csum();
     }
 
     Packet(Class cla, Instruction ins, byte seqnum, byte data_size, const byte* data)
         : _cla(cla), _ins(ins), _seqnum(seqnum), _data_size(data_size) {
-        csum();
         if (_data_size > sizeof(_data)) {
-            _xor ^= 1;
             memset(_data, 0, sizeof(_data));
         } else {
             memcpy(_data, data, _data_size);
@@ -86,9 +78,7 @@ public:
     }
 
     bool validate(byte size) const {
-        return _xor == _cla ^ _ins ^ _seqnum ^ _data_size
-                && _data_size <= sizeof(_data)
-                && _data_size <= size - hdr_size();
+        return _data_size <= sizeof(_data) && _data_size <= size - hdr_size();
     }
 
     byte raw(byte* buf, byte buf_size) const {
@@ -112,7 +102,6 @@ public:
         _cla = cInfo;
         _ins = iEcho;
         _data_size = 0;
-        csum();
     }
 
     void trx_about(const String& msg) {
@@ -121,7 +110,6 @@ public:
         _cla = cResponse;
         _ins = iAbout;
         memcpy(_data, msg.c_str(), _data_size);
-        csum();
     }
 
     void trx_time(unsigned long time) {
@@ -129,14 +117,12 @@ public:
         _cla = cResponse;
         _ins = iTime;
         memcpy(_data, &time, _data_size);
-        csum();
     }
 
     void trx_full_status(AppState app_state,
             const Led* leds, byte leds_cnt,
             const Probe* probes, byte probes_cnt,
             const Valve* valves, byte valves_cnt) {
-        csum();
     }
 
     void trx_open(bool success) {
@@ -144,7 +130,6 @@ public:
         _cla = cResponse;
         _ins = iOpenValves;
         memcpy(_data, &success, _data_size);
-        csum();
     }
 
     void trx_close(bool success) {
@@ -152,7 +137,6 @@ public:
         _cla = cResponse;
         _ins = iCloseValves;
         memcpy(_data, &success, _data_size);
-        csum();
     }
 
     void trx_suspend(bool success) {
@@ -160,7 +144,6 @@ public:
         _cla = cResponse;
         _ins = iSuspend;
         memcpy(_data, &success, _data_size);
-        csum();
     }
 
     void trx_enable_probe(bool success) {
@@ -168,7 +151,6 @@ public:
         _cla = cResponse;
         _ins = iEnableProbe;
         memcpy(_data, &success, _data_size);
-        csum();
     }
 
     void trx_disable_probe(bool success) {
@@ -176,7 +158,6 @@ public:
         _cla = cResponse;
         _ins = iDisableProbe;
         memcpy(_data, &success, _data_size);
-        csum();
     }
 
     void trx_unsupported(void) {
@@ -184,7 +165,6 @@ public:
         _data_size = hdr_size();
         _cla = cResponse;
         _ins = iUnsupported;
-        csum();
     }
 };
 
