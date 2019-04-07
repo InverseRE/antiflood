@@ -969,7 +969,7 @@ F 3 "" H 5800 6400 50  0001 C CNN
 	1    5800 6400
 	1    0    0    -1  
 $EndComp
-Text Notes 7000 6750 0    60   ~ 0
+Text Notes 6750 6150 0    60   ~ 0
 TODO:\n1) add control schemes for battery reserve power, use A7\n
 $Comp
 L C C3
@@ -2295,4 +2295,6 @@ Wire Wire Line
 Wire Wire Line
 	7900 1050 8050 1050
 Connection ~ 7900 1050
+Text Notes 7050 7050 0    60   ~ 0
+Antiflood Copyright (C) 2019 Alexey <Inverse> Shumeiko\nThis is a part of Antiflood project.\nUnder the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n
 $EndSCHEMATC
