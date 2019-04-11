@@ -1,4 +1,4 @@
-update=Sun 07 Apr 2019 08:59:00 PM EEST
+update=Thu 11 Apr 2019 10:26:47 PM EEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -64,3 +64,4 @@ LibName32=contrib
 LibName33=valves
 LibName34=mc34063
 LibName35=tp4056
+LibName36=mt3608
