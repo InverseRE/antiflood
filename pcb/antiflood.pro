@@ -1,4 +1,4 @@
-update=Thu 11 Apr 2019 10:26:47 PM EEST
+update=Tue 16 Apr 2019 10:15:00 PM EEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -27,9 +27,9 @@ NetIExt=net
 version=1
 [eeschema]
 version=1
-LibDir=
+LibDir=../pcb
 [eeschema/libraries]
-LibName1=antiflood-rescue
+LibName1=mt3608
 LibName2=power
 LibName3=device
 LibName4=switches
@@ -64,4 +64,4 @@ LibName32=contrib
 LibName33=valves
 LibName34=mc34063
 LibName35=tp4056
-LibName36=mt3608
+LibName36=Power_Management
