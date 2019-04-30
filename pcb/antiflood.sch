@@ -2416,4 +2416,6 @@ Wire Wire Line
 	6750 4150 6750 4050
 Wire Wire Line
 	6750 4050 6400 4050
+Text Notes 7000 6300 0    60   ~ 0
+TODO:\n1) battery power LED\n2) OPEN/CLOSE action LEDs\n3) ZOOMER output
 $EndSCHEMATC
