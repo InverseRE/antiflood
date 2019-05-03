@@ -963,7 +963,7 @@ F 3 "" H 8100 5400 50  0001 C CNN
 $EndComp
 Text Label 3250 3100 0    60   ~ 0
 DBG
-Text Label 3100 4900 0    60   ~ 0
+Text Label 3100 5200 0    60   ~ 0
 FON
 Text Label 3100 5000 0    60   ~ 0
 FCL
@@ -971,9 +971,9 @@ Text Label 2850 7150 0    60   ~ 0
 PCL
 Text Label 600  7200 0    60   ~ 0
 PON
-Text Label 3100 5100 0    60   ~ 0
+Text Label 3100 4900 0    60   ~ 0
 PCL
-Text Label 3100 5200 0    60   ~ 0
+Text Label 3100 5100 0    60   ~ 0
 PON
 $Comp
 L Conn_02x05_Odd_Even J6
