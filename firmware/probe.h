@@ -29,6 +29,7 @@
 /** Probe sensor states. */
 enum ProbeSensor {
     PROBE_DRY,                              /**< nothing happens, all is OK */
+    PROBE_UNAWARE,                          /**< ignored */
     PROBE_WATER                             /**< some activity detected */
 };
 
@@ -56,6 +57,7 @@ private:
     unsigned long _time_mark;               /**< an engage time mark */
     ProbeSensor _sensor;                    /**< probe's detector state */
     ProbeConnection _connection;            /**< probe's connection state */
+    bool _is_suspended;                     /**< probe's life status (accepted or ignored) */
 
 public:
     Probe(const Ticker& ticker, byte port);
@@ -65,6 +67,8 @@ public:
     void delay(void) const;
     ProbeConnection test_connection(void);
 
+    void enable(void) { _is_suspended = false; }
+    void disable(void) { _is_suspended = true; }
     ProbeConnection connection(void) const { return _connection; }
     ProbeSensor sensor(void) const { return _sensor; }
 };

@@ -222,13 +222,14 @@ void WebPage::response_state(AppState app_state,
 
         _client.print(F(HTML_TABLE_LN HTML_TABLE_ITEM));
         _client.print(
-                  con == PROBE_OFFLINE ? F("OFFLINE")
-                : con == PROBE_ONLINE  ? F("ONLINE")
-                : con == PROBE_ERROR   ? F("ERROR")
-                :                        F("---"));
+                  con == PROBE_OFFLINE   ? F("OFFLINE")
+                : con == PROBE_ONLINE    ? F("ONLINE")
+                : con == PROBE_ERROR     ? F("ERROR")
+                :                          F("---"));
         _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));
         _client.print(
                   det == PROBE_DRY     ? F("DRY")
+                : det == PROBE_UNAWARE ? F("N/D")
                 : det == PROBE_WATER   ? F("WATER")
                 :                        F("---"));
         _client.print(F(HTML_TABLE_ITEM_BR HTML_TABLE_ITEM));

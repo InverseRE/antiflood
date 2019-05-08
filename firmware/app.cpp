@@ -87,6 +87,7 @@ AppState App::solve(void)
 
         switch (_probes[i].sensor()) {
         case PROBE_DRY:                                break;
+        case PROBE_UNAWARE:                            break;
         case PROBE_WATER:   _leds[i].lit(LED_BLINK);   break;
         }
     }

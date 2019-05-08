@@ -37,6 +37,7 @@ Probe::Probe(const Ticker& ticker, byte port)
     _time_mark = 0;
     _sensor = PROBE_DRY;
     _connection = PROBE_OFFLINE;
+    _is_suspended = false;
 }
 
 void Probe::setup(void)
@@ -47,6 +48,10 @@ void Probe::setup(void)
 
 ProbeSensor Probe::test_sensor(void)
 {
+    if (_is_suspended) {
+        return _sensor = PROBE_UNAWARE;
+    }
+
     pinMode(_port, INPUT_PULLUP);
     _value = analogRead(_port) >> 2;
 
@@ -72,6 +77,10 @@ void Probe::delay(void) const
 
 ProbeConnection Probe::test_connection(void)
 {
+    if (_is_suspended) {
+        return _connection = PROBE_OFFLINE;
+    }
+
     pinMode(_port, INPUT_PULLUP);
 
     unsigned long t = (_ticker.mark() - _time_mark) / 4;
