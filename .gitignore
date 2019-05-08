@@ -1,4 +1,6 @@
 /.*bak
+*.diff
+*.patch
 GPATH
 GRTAGS
 GSYMS
