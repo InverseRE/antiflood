@@ -37,7 +37,6 @@ Probe::Probe(const Ticker& ticker, byte port)
     _time_mark = 0;
     _sensor = PROBE_DRY;
     _connection = PROBE_OFFLINE;
-    _is_suspended = false;
 }
 
 void Probe::setup(void)
@@ -48,7 +47,7 @@ void Probe::setup(void)
 
 ProbeSensor Probe::test_sensor(void)
 {
-    if (_is_suspended) {
+    if (_time_limit > _ticker.mark()) {
         return _sensor = PROBE_UNAWARE;
     }
 
@@ -77,7 +76,7 @@ void Probe::delay(void) const
 
 ProbeConnection Probe::test_connection(void)
 {
-    if (_is_suspended) {
+    if (_time_limit > _ticker.mark()) {
         return _connection = PROBE_OFFLINE;
     }
 

@@ -57,7 +57,7 @@ private:
     unsigned long _time_mark;               /**< an engage time mark */
     ProbeSensor _sensor;                    /**< probe's detector state */
     ProbeConnection _connection;            /**< probe's connection state */
-    bool _is_suspended;                     /**< probe's life status (accepted or ignored) */
+    unsigned long _time_limit;              /**< action/state end time, ms */
 
 public:
     Probe(const Ticker& ticker, byte port);
@@ -67,8 +67,9 @@ public:
     void delay(void) const;
     ProbeConnection test_connection(void);
 
-    void enable(void) { _is_suspended = false; }
-    void disable(void) { _is_suspended = true; }
+    unsigned long time_limit(void) const { return _time_limit; }
+    void enable(void) { _time_limit = _ticker.mark(); }
+    void disable(unsigned long duration) { _time_limit = _ticker.mark() + duration; }
     ProbeConnection connection(void) const { return _connection; }
     ProbeSensor sensor(void) const { return _sensor; }
 };
