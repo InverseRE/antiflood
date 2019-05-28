@@ -21,40 +21,38 @@
    For more details see LICENSE file.
 */
 
-#ifndef __WEB_H__
-#define __WEB_H__
+#ifndef __PROTO_H__
+#define __PROTO_H__
 
-#include <WiFiEspClient.h>
 #include "ticker.h"
 #include "app.h"
+#include "net.h"
 
 /** User commands. */
-enum WebAction {
-    WEB_UNKNOWN,                            /* unknown */
-    WEB_NOT_FOUND,                          /* not found */
-    WEB_STATE,                              /* show state */
-    WEB_OPEN,                               /* open valves */
-    WEB_CLOSE,                              /* close valves */
-    WEB_SUSPEND                             /* enter a power-save mode */
+enum ProtoAction {
+    PROTO_UNKNOWN,                            /* unknown */
+    PROTO_STATE,                              /* show state */
+    PROTO_OPEN,                               /* open valves */
+    PROTO_CLOSE,                              /* close valves */
+    PROTO_SUSPEND,                            /* enter a power-save mode */
+    PROTO_EN_PROBE,                           /* enable probes */
+    PROTO_DIS_PROBE,                          /* disable probes */
 };
 
-/** HTML page constructor. */
-class WebPage {
+/** Client session. */
+class ProtoSession {
 private:
     const Ticker& _ticker;
-    const WiFiEspClient& _client;
+    const NetServer& _server;
 
 public:
-    WebPage(const Ticker& ticker, const WiFiEspClient& client);
+    ProtoSession(const Ticker& ticker, const NetServer& server);
     void setup(void);
 
-    WebAction parse(const String& request);
-    void response_state(AppState app_state,
+    ProtoAction inform(AppState app_state,
             const Led* leds, byte leds_cnt,
             const Probe* probes, byte probes_cnt,
             const Valve* valves, byte valves_cnt);
-    void response_not_found(void);
-    void heading(WebAction action, byte count_down, bool action_reject = false);
 };
 
-#endif  /* __WEB_H__ */
+#endif  /* __PROTO_H__ */

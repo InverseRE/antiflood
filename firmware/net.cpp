@@ -23,9 +23,9 @@
 
 #include "config.h"
 #include "net.h"
+#include "debug.h"
 
 #define SHIELD_BAUD_RATE     115200         /**< shield's UART baud rate */
-#define WEB_IN_CACHE_SIZE    32             /**< size of input buffer */
 
 NetServer::NetServer(const Ticker& ticker,
         IPAddress ip, short port,
@@ -36,9 +36,8 @@ NetServer::NetServer(const Ticker& ticker,
           _port(port),
           _ssid(ssid),
           _password(password),
-          _server(port),
-          _ibuff(WEB_IN_CACHE_SIZE),
-          _request("")
+          _is_online(false),
+          _is_sending(false)
 {
 }
 
@@ -54,9 +53,8 @@ NetServer::NetServer(const Ticker& ticker,
           _password(password),
           _channel(channel),
           _auth_type(auth_type),
-          _server(port),
-          _ibuff(WEB_IN_CACHE_SIZE),
-          _request("")
+          _is_online(false),
+          _is_sending(false)
 {
 }
 
@@ -101,17 +99,20 @@ void NetServer::setup(void)
     }
 
     /* Start server. */
-    _server.begin();
-    _is_online = true;
+    _is_online = _udp.begin(_port);
+    _is_sending = false;
 }
 
 void NetServer::disconnect(void)
 {
     DPC("network shutdown");
 
+    /* Turn off server. */
+    _udp.stop();
+    _ticker.delay_shield_down();
+
     /* Turn off WIFI library. */
     WiFi.disconnect();
-
     _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
@@ -119,67 +120,19 @@ void NetServer::disconnect(void)
     digitalWrite(WIFIRS, LOW);
 
     _is_online = false;
-}
-
-const String& NetServer::run(WiFiEspClient& client)
-{
-    bool stage_1 = true;
-    bool stage_2 = false;
-    _request = "";
-
-    client = _server.available();
-    if (!client) {
-        return _request;
-    }
-
-    _ibuff.init();
-
-    /* TODO: break by timeout to prevent stuck */
-    while (client.connected()) {
-
-        /* Wait till data appears. */
-        if (!client.available()) {
-            continue;
-        }
-
-        char c = client.read();
-        _ibuff.push(c);
-
-        /* Search for GET request. */
-        if (stage_1 && _ibuff.endsWith("GET ")) {
-            stage_1 = false;
-            stage_2 = true;
-            continue;
-        }
-
-        /* Store requested URL. */
-        if (stage_2) {
-            _request += c;
-            if (c == ' ') {
-                stage_2 = false;
-                _request.trim();
-            }
-        }
-
-        /* Two newline characters in a row are the end of the HTTP request. */
-        if (_ibuff.endsWith("\r\n\r\n")) {
-            DPC("client requests");
-            return !stage_1 && !stage_2 ? _request : _request = "";
-        }
-    }
-
-    DPC("client dropped");
-
-    return _request = "";
+    _is_sending = false;
 }
 
 void NetServer::suspend(void)
 {
     DPC("network suspend");
 
+    /* Turn off server. */
+    _udp.stop();
+    _ticker.delay_shield_down();
+
     /* Turn off WIFI library. */
     WiFi.disconnect();
-
     _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
@@ -188,6 +141,7 @@ void NetServer::suspend(void)
     digitalWrite(WIFIRS, LOW);
 
     _is_online = false;
+    _is_sending = false;
 }
 
 void NetServer::resume(void)
@@ -196,4 +150,52 @@ void NetServer::resume(void)
 
     /* TODO: restore ESP8266 operations */
     _is_online = true;
+    _is_sending = false;
+}
+
+bool NetServer::rx(void)
+{
+    bool conn = _udp.parsePacket();
+    if (conn) {
+        IPAddress ipa = _udp.remoteIP();
+        uint16_t rp = _udp.remotePort();
+        DPV("rx from:", ipa);
+        DPV("@port", rp);
+    }
+    return conn;
+}
+
+int NetServer::available(void)
+{
+    return _udp.available();
+}
+
+int NetServer::read(void* buf, int len)
+{
+    return _udp.read((byte*)buf, len);
+}
+
+void NetServer::write(const void* buf, int len)
+{
+    if (!_is_sending) {
+        _is_sending = true;
+        // FIXME: _udp.remotePort() from Arduino/libraries/WiFiEsp/src/utility/EspDrv.cpp
+        // comment out the second serial read (at EspDrv.cpp:686)
+        // https://github.com/bportaluri/WiFiEsp/issues/119
+        IPAddress ipa = _udp.remoteIP();
+        uint16_t rp = _udp.remotePort();
+        _udp.beginPacket(ipa, rp);
+        DPV("tx to:", ipa);
+        DPV("@port", rp);
+    }
+    _udp.write((byte*)buf, len);
+}
+
+
+void NetServer::tx(void)
+{
+    if (_is_sending) {
+        _is_sending = false;
+        _udp.endPacket();
+    }
 }

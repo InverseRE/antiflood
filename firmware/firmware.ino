@@ -29,7 +29,7 @@
 #include "power.h"
 #include "probe.h"
 #include "valve.h"
-#include "web.h"
+#include "proto.h"
 #include "ticker.h"
 
 static Ticker ticker;
@@ -125,67 +125,59 @@ void loop()
 
     AppState app_state = app.solve();
 
-    if (p_server->is_offline()) {
+    if (p_server->is_offline() || !p_server->rx()) {
         ticker.delay_loop();
         return;
     }
 
-    WiFiEspClient client;
-    const String& request = p_server->run(client);
-    WebPage page(ticker, client);
-    WebAction response = page.parse(request);
+    ProtoSession session(ticker, *p_server);
+    ProtoAction action = session.inform(
+            app_state,
+            leds, leds_cnt,
+            probes, probes_cnt,
+            valves, valves_cnt);
 
-    switch (response) {
+    /* TODO: move invoked actions to proto.cpp? */
+    switch (action) {
 
-    case WEB_STATE:
-        DPC("web response: state");
-        page.response_state(app_state,
-                leds, leds_cnt,
-                probes, probes_cnt,
-                valves, valves_cnt);
+    case PROTO_STATE:
+        DPC("proto: state");
         break;
 
-    case WEB_OPEN:
-        DPC("web response: open");
-        {
-            bool is_ovr = false;
-            for (int i = 0; i < valves_cnt; ++i) {
-                is_ovr |= !valves[i].force_open();
-            }
-            page.heading(WEB_OPEN, ticker.web_heading_count(), is_ovr);
+    case PROTO_OPEN:
+        DPC("proto: open");
+        for (int i = 0; i < valves_cnt; ++i) {
+            valves[i].force_open();
         }
         break;
 
-    case WEB_CLOSE:
-        DPC("web response: close");
-        {
-            bool is_ovr = false;
-            for (int i = 0; i < valves_cnt; ++i) {
-                is_ovr |= !valves[i].force_close();
-            }
-            page.heading(WEB_CLOSE, ticker.web_heading_count(), is_ovr);
+    case PROTO_CLOSE:
+        DPC("proto: close");
+        for (int i = 0; i < valves_cnt; ++i) {
+            valves[i].force_close();
         }
         break;
 
-    case WEB_SUSPEND:
-        DPC("web response: suspend");
-        page.heading(WEB_SUSPEND, ticker.web_heading_count());
+    case PROTO_SUSPEND:
+        DPC("proto: suspend");
         ticker.delay_shield_trx();
         enter_sleep(true, true);
         break;
 
-    case WEB_NOT_FOUND:
-        DPC("web response: not found");
-        page.response_not_found();
+    case PROTO_EN_PROBE:
+        DPC("proto: enable probes");
         break;
 
-    case WEB_UNKNOWN:
+    case PROTO_DIS_PROBE:
+        DPC("proto: disable probes");
+        break;
+
+    case PROTO_UNKNOWN:
     default:
+        DPC("proto: unknown");
         break;
     };
 
     ticker.delay_shield_trx();
-    client.stop();
-
     ticker.delay_loop();
 }
