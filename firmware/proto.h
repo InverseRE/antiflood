@@ -34,7 +34,9 @@ enum ProtoAction {
     PROTO_STATE,                              /* show state */
     PROTO_OPEN,                               /* open valves */
     PROTO_CLOSE,                              /* close valves */
-    PROTO_SUSPEND                             /* enter a power-save mode */
+    PROTO_SUSPEND,                            /* enter a power-save mode */
+    PROTO_EN_PROBE,                           /* enable probes */
+    PROTO_DIS_PROBE,                          /* disable probes */
 };
 
 /** Client session. */

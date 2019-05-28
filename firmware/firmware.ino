@@ -137,6 +137,7 @@ void loop()
             probes, probes_cnt,
             valves, valves_cnt);
 
+    /* TODO: move invoked actions to proto.cpp? */
     switch (action) {
 
     case PROTO_STATE:
@@ -161,6 +162,14 @@ void loop()
         DPC("proto: suspend");
         ticker.delay_shield_trx();
         enter_sleep(true, true);
+        break;
+
+    case PROTO_EN_PROBE:
+        DPC("proto: enable probes");
+        break;
+
+    case PROTO_DIS_PROBE:
+        DPC("proto: disable probes");
         break;
 
     case PROTO_UNKNOWN:
