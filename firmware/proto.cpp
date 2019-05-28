@@ -60,7 +60,7 @@ private:
     byte _data[56];                         /**< raw data, structured acording to it's type */
 
     byte hdr_size(void) const {
-        return 5;
+        return 4;
     }
 
 public:
@@ -123,6 +123,36 @@ public:
             const Led* leds, byte leds_cnt,
             const Probe* probes, byte probes_cnt,
             const Valve* valves, byte valves_cnt) {
+        _data_size = 4
+                + 1 * leds_cnt
+                + 2 * probes_cnt
+                + 3 * valves_cnt;
+        if (_data_size > sizeof(_data)) {
+            _cla = cResponse;
+            _ins = iUnsupported;
+            _data_size = 1;
+            _data[0] = _data_size;
+            return;
+        }
+        _cla = cResponse;
+        _ins = iFullStatus;
+        byte* p = _data;
+        *p++ = app_state;
+        *p++ = leds_cnt;
+        for (byte i = 0; i < leds_cnt; ++i) {
+            *p++ = leds[i].mode();
+        }
+        *p++ = probes_cnt;
+        for (byte i = 0; i < probes_cnt; ++i) {
+            *p++ = probes[i].connection();
+            *p++ = probes[i].sensor();
+        }
+        *p++ = valves_cnt;
+        for (byte i = 0; i < valves_cnt; ++i) {
+            *p++ = valves[i].state_override();
+            *p++ = valves[i].state_expect();
+            *p++ = valves[i].state_actual();
+        }
     }
 
     void trx_open(bool success) {

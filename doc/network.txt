@@ -19,3 +19,25 @@ Utilities:
              ^                ^               ^                     ^
       command to send    hex to bin      wait for 1 sec          bin to hex
         in hex-mode                     to close stdout       prints response
+
+
+
+Examples:
+
+Command structure [ CLA INS SEQ LEN ... ]
+Refer firmware/proto.cpp: enum Class, enum Instruction, class Packet.
+
+ECHO
+> echo "0000 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+STATE
+> echo "0202 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+OPEN
+> echo "0203 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+CLOSE
+> echo "0204 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SUSPEND
+> echo "0205 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
