@@ -49,10 +49,13 @@ public:
     ProtoSession(const Ticker& ticker, const NetServer& server);
     void setup(void);
 
-    ProtoAction inform(AppState app_state,
-            const Led* leds, byte leds_cnt,
-            const Probe* probes, byte probes_cnt,
-            const Valve* valves, byte valves_cnt);
+    ProtoAction action(
+            byte (*state)(byte* buf, byte buf_max_size),
+            bool (*open)(void),
+            bool (*close)(void),
+            bool (*suspend)(void),
+            bool (*enable)(byte idx),
+            bool (*disable)(byte idx, unsigned long duration));
 };
 
 #endif  /* __PROTO_H__ */

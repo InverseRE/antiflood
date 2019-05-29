@@ -58,6 +58,7 @@ public:
     void setup(void);
 
     AppState solve(void);
+    AppState state(void) const { return _state; }
 };
 
 #endif  /* __APP_H__ */

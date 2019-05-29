@@ -119,75 +119,51 @@ public:
         memcpy(_data, &time, _data_size);
     }
 
-    void trx_full_status(AppState app_state,
-            const Led* leds, byte leds_cnt,
-            const Probe* probes, byte probes_cnt,
-            const Valve* valves, byte valves_cnt) {
-        _data_size = 4
-                + 1 * leds_cnt
-                + 2 * probes_cnt
-                + 3 * valves_cnt;
-        if (_data_size > sizeof(_data)) {
-            _cla = cResponse;
-            _ins = iUnsupported;
-            _data_size = 1;
-            _data[0] = _data_size;
-            return;
-        }
+    void trx_full_status(byte (*state)(byte* buf, byte buf_max_size)) {
+        _data_size = state(_data, sizeof(_data));
         _cla = cResponse;
-        _ins = iFullStatus;
-        byte* p = _data;
-        *p++ = app_state;
-        *p++ = leds_cnt;
-        for (byte i = 0; i < leds_cnt; ++i) {
-            *p++ = leds[i].mode();
-        }
-        *p++ = probes_cnt;
-        for (byte i = 0; i < probes_cnt; ++i) {
-            *p++ = probes[i].connection();
-            *p++ = probes[i].sensor();
-        }
-        *p++ = valves_cnt;
-        for (byte i = 0; i < valves_cnt; ++i) {
-            *p++ = valves[i].state_override();
-            *p++ = valves[i].state_expect();
-            *p++ = valves[i].state_actual();
-        }
+        _ins = 1 == _data_size ? iUnsupported : iFullStatus;
     }
 
-    void trx_open(bool success) {
-        _data_size = sizeof(success);
+    void trx_open(bool (*open)(void)) {
+        bool res = open();
+        _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iOpenValves;
-        memcpy(_data, &success, _data_size);
+        memcpy(_data, &res, _data_size);
     }
 
-    void trx_close(bool success) {
-        _data_size = sizeof(success);
+    void trx_close(bool (*close)(void)) {
+        bool res = close();
+        _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iCloseValves;
-        memcpy(_data, &success, _data_size);
+        memcpy(_data, &res, _data_size);
     }
 
-    void trx_suspend(bool success) {
-        _data_size = sizeof(success);
+    void trx_suspend(bool (*suspend)(void)) {
+        bool res = suspend();
+        _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iSuspend;
-        memcpy(_data, &success, _data_size);
+        memcpy(_data, &res, _data_size);
     }
 
-    void trx_enable_probe(bool success) {
-        _data_size = sizeof(success);
+    void trx_enable_probe(bool (*enable)(byte idx)) {
+        bool res = _data_size == 1 && enable(_data[0]);
+        _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iEnableProbe;
-        memcpy(_data, &success, _data_size);
+        memcpy(_data, &res, _data_size);
     }
 
-    void trx_disable_probe(bool success) {
-        _data_size = sizeof(success);
+    void trx_disable_probe(bool (*disable)(byte idx, unsigned long duration)) {
+        bool res = _data_size == 5 && disable(_data[0],
+                _data[1] << 24 | _data[2] << 16 | _data[3] << 8 | _data[4]);
+        _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iDisableProbe;
-        memcpy(_data, &success, _data_size);
+        memcpy(_data, &res, _data_size);
     }
 
     void trx_unsupported(void) {
@@ -207,11 +183,13 @@ void ProtoSession::setup(void)
 {
 }
 
-ProtoAction ProtoSession::inform(
-        AppState app_state,
-        const Led* leds, byte leds_cnt,
-        const Probe* probes, byte probes_cnt,
-        const Valve* valves, byte valves_cnt)
+ProtoAction ProtoSession::action(
+        byte (*state)(byte* buf, byte buf_max_size),
+        bool (*open)(void),
+        bool (*close)(void),
+        bool (*suspend)(void),
+        bool (*enable)(byte idx),
+        bool (*disable)(byte idx, unsigned long duration))
 {
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
@@ -260,22 +238,18 @@ ProtoAction ProtoSession::inform(
 
         /* switch by requested action */
         switch (pkt->ins())  {
-        case iAbout:        pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
-        case iTime:         pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
-        case iFullStatus:   pkt->trx_full_status(
-                app_state,
-                leds, leds_cnt,
-                probes, probes_cnt,
-                valves, valves_cnt);                       action = PROTO_STATE;   break;
-        case iOpenValves:   pkt->trx_open(false);          action = PROTO_OPEN;    break;
-        case iCloseValves:  pkt->trx_close(false);         action = PROTO_CLOSE;   break;
-        case iSuspend:      pkt->trx_suspend(false);       action = PROTO_SUSPEND; break;
-        case iEnableProbe:  pkt->trx_enable_probe(false);  action = PROTO_UNKNOWN; break;
-        case iDisableProbe: pkt->trx_disable_probe(false); action = PROTO_UNKNOWN; break;
-        case iEcho:         pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
-        case iUnsupported:  pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
-        case iRFU:          pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
-        default:            pkt->trx_unsupported();        action = PROTO_UNKNOWN; break;
+        case iAbout:        pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        case iTime:         pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        case iFullStatus:   pkt->trx_full_status(state);     action = PROTO_STATE;   break;
+        case iOpenValves:   pkt->trx_open(open);             action = PROTO_OPEN;    break;
+        case iCloseValves:  pkt->trx_close(close);           action = PROTO_CLOSE;   break;
+        case iSuspend:      pkt->trx_suspend(suspend);       action = PROTO_SUSPEND; break;
+        case iEnableProbe:  pkt->trx_enable_probe(enable);   action = PROTO_UNKNOWN; break;
+        case iDisableProbe: pkt->trx_disable_probe(disable); action = PROTO_UNKNOWN; break;
+        case iEcho:         pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        case iUnsupported:  pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        case iRFU:          pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        default:            pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
         }
 
         /* write out */
