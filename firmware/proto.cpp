@@ -49,15 +49,15 @@ enum Instruction : byte {
     iRFU          = 255                     /**< reserved */
 };
 
-#pragma push(pack, 0)
-
 class Packet {
 private:
+#pragma push(pack, 0)
     Class _cla;                             /**< class of the packet */
     Instruction _ins;                       /**< included data type */
     byte _seqnum;                           /**< request/response, both have the same numbers */
     byte _data_size;                        /**< raw data length */
     byte _data[56];                         /**< raw data, structured acording to it's type */
+#pragma pop
 
     byte hdr_size(void) const {
         return 4;
@@ -197,8 +197,6 @@ public:
         _ins = iUnsupported;
     }
 };
-
-#pragma pop
 
 ProtoSession::ProtoSession(const Ticker& ticker, const NetServer& server)
         : _ticker(ticker), _server(server)
