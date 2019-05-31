@@ -26,6 +26,13 @@
 
 #include <Arduino.h>
 
+#define LED_SPIKE_NEXT          10          /**< spike's next schedule, ms */
+#define LED_FLASH_NEXT          180         /**< flash' next schedule, ms */
+#define LED_BLINK_NEXT          480         /**< blink's next schedule, ms */
+#define LED_NEXT                10000       /**< on/off next schedule, ms */
+#define PROBE_NEXT_IDLE         8000        /**< measurement period, ms */
+#define PROBE_NEXT_ACTIVE       1000        /**< measurement period, ms */
+
 #define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
 #define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
 #define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */

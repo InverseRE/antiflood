@@ -46,59 +46,51 @@ AppState App::solve(void)
     if (_state == APP_MALFUNCTION) {
         DPC("app: malfunction");
         for (int i = 0; i < _leds_cnt; ++i) {
-            _leds[i].lit(LED_WARNING);
+            _leds[i].set(LED_WARNING);
         }
         return _state;
     }
 
     /* read data */
     bool is_triggered = false;
-    bool is_resolved = false;
+    bool is_engaged = false;
     bool is_overrided = false;
 
-    /* TODO: perform checks from time to time, use Probe::sensor() if bypass */
     for (int i = 0; i < _probes_cnt; ++i) {
-        is_triggered |= PROBE_WATER == _probes[i].test_sensor();
+        is_triggered |= PROBE_WATER == _probes[i].sensor();
     }
 
-    _probes[0].delay();
-
-    /* TODO: perform checks from time to time, use Probe::connection() if bypass */
     for (int i = 0; i < _probes_cnt; ++i) {
-        is_triggered |= PROBE_ERROR == _probes[i].test_connection();
-    }
-
-    /* resolve */
-    for (int i = 0; is_triggered && i < _valves_cnt; ++i) {
-        is_overrided |= !_valves[i].close();
-    }
-    for (int i = 0; i < _valves_cnt; ++i) {
-        is_resolved |= VALVE_CLOSE == _valves[i].run();
-        is_overrided |= _valves[i].is_overrided();
+        is_triggered |= PROBE_ERROR == _probes[i].connection();
     }
 
     /* summary */
+    for (int i = 0; is_triggered && i < _valves_cnt; ++i) {
+        is_overrided |= !_valves[i].close();
+        is_engaged |= _valves[i].is_engaged();
+        is_overrided |= _valves[i].is_overrided();
+    }
+
     for (int i = 0; i < _probes_cnt && i < _leds_cnt; ++i) {
         switch (_probes[i].connection()) {
-        case PROBE_OFFLINE: _leds[i].lit(LED_OFF);     break;
-        case PROBE_ONLINE:  _leds[i].lit(LED_SPIKE);   break;
-        case PROBE_ERROR:   _leds[i].lit(LED_WARNING); continue;
+        case PROBE_OFFLINE: _leds[i].set(LED_OFF);     break;
+        case PROBE_ONLINE:  _leds[i].set(LED_SPIKE);   break;
+        case PROBE_ERROR:   _leds[i].set(LED_WARNING); continue;
         }
-
         switch (_probes[i].sensor()) {
         case PROBE_DRY:                                break;
         case PROBE_UNAWARE:                            break;
-        case PROBE_WATER:   _leds[i].lit(LED_BLINK);   break;
+        case PROBE_WATER:   _leds[i].set(LED_BLINK);   break;
         }
     }
 
     if (is_overrided) {
         _state = APP_STANDBY;
-    } else if (!is_triggered && !is_resolved) {
+    } else if (!is_triggered && !is_engaged) {
         _state = APP_OK;
-    } else if (is_triggered && !is_resolved) {
+    } else if (is_triggered && !is_engaged) {
         _state = APP_ALARM;
-    } else if (!is_triggered && is_resolved) {
+    } else if (!is_triggered && is_engaged) {
         _state = APP_OK;
     } else {
         _state = APP_SOLVED;

@@ -112,6 +112,64 @@ void setup()
     DPC("setup complete");
 }
 
+static unsigned long task_sensors(unsigned long dt)
+{
+    (void)dt;
+
+    bool is_triggered = false;
+
+    for (int i = 0; i < probes_cnt; ++i) {
+        is_triggered |= PROBE_WATER == probes[i].test_sensor();
+    }
+
+    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+}
+
+static unsigned long task_connections(unsigned long dt)
+{
+    (void)dt;
+
+    bool is_triggered = false;
+
+    for (int i = 0; i < probes_cnt; ++i) {
+        is_triggered |= PROBE_ERROR == probes[i].test_connection();
+    }
+
+    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+}
+
+static unsigned long task_display(unsigned long dt)
+{
+    (void)dt;
+
+    LedMode min = LED_OFF;
+
+    for (int i = 0; i < leds_cnt; ++i) {
+        LedMode m = leds[i].lit();
+        min = m < min ? m : min;
+    }
+
+    return    min == LED_SPIKE   ? LED_SPIKE_NEXT
+            : min == LED_WARNING ? LED_FLASH_NEXT
+            : min == LED_BLINK   ? LED_BLINK_NEXT
+            :                      LED_NEXT;
+}
+
+static unsigned long task_valves(unsigned long dt)
+{
+    (void)dt;
+
+    bool is_resolved = false;
+    bool is_overrided = false;
+
+    for (int i = 0; i < valves_cnt; ++i) {
+        is_resolved |= VALVE_CLOSE == valves[i].run();
+        is_overrided |= valves[i].is_overrided();
+    }
+
+    return is_resolved && !is_overrided ? -1 : 0;
+}
+
 static byte act_state(byte* buf, byte buf_max_size)
 {
     byte size = 4 + 1 * leds_cnt + 2 * probes_cnt + 3 * valves_cnt;

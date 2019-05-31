@@ -28,11 +28,11 @@
 
 /** LED states. */
 enum LedMode {
-    LED_OFF,                                /**< switched off */
     LED_SPIKE,                              /**< tiny light or rapid single flash */
+    LED_WARNING,                            /**< rapidly flashes */
     LED_BLINK,                              /**< periodic blinking */
     LED_ON,                                 /**< constantly on */
-    LED_WARNING                             /**< rapidly flashes */
+    LED_OFF                                 /**< constantly off */
 };
 
 /** LED. */
@@ -46,9 +46,9 @@ public:
     Led(const Ticker& ticker, byte port);
     void setup(void);
 
-    void lit(LedMode mode);
-    void dim(void);
+    void set(LedMode mode) { _mode = mode; }
     LedMode mode(void) const { return _mode; }
+    LedMode lit(void) const;
 };
 
 #endif  /* __LED_H__ */
