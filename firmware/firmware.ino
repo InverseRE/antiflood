@@ -32,6 +32,8 @@
 #include "proto.h"
 #include "scheduler.h"
 #include "ticker.h"
+#include "setting.h"
+#include "storage.h"
 
 static Ticker ticker;
 
@@ -66,6 +68,9 @@ static App app(ticker,
         valves, valves_cnt);
 
 static NetServer* p_server = nullptr;
+static SettingsStorage& sst = SettingsStorage::get_instance();;
+static bool storage_loaded = false;
+static bool storage_created = false;
 
 static Scheduler scheduler(ticker);
 
@@ -95,14 +100,56 @@ void setup()
     peripheral_configure();
     DPC("peripheral configured");
 
-    /* TODO: read and apply user's settings */
-    IPAddress ip_addr(APP_DEFAULT_IP);
+    /* Create/Load settings storage. */
+    if (sst.exist()) {
+        DPC("storage already exist");
+        if (sst.load() != ST_OK) {
+            DPC("storage loading failed");
+        } else {
+            DPC("storage loaded successfully");
+            storage_loaded = true;
+        }
+    } else {
+        DPC("storage not exist");
+        if (sst.create() != ST_OK) {
+            DPC("create failed");
+        } else {
+            DPC("storage created successfully");
+            storage_created = true;
+        }
+    }
+
+    /* Default settings. */
+    byte wifi_mode = 0;
+    byte ip_address[4] = {APP_DEFAULT_IP};
     unsigned short ip_port = APP_DEFAULT_PORT;
     String ssid = WIFI_DEFAULT_SSID;
     String password = WIFI_DEFAULT_PASS;
     byte channel = WIFI_DEFAULT_CHAN;
     int auth_type = WIFI_DEFAULT_SECU;
-    DPC("custom configuration readed");
+
+    /* Apply user settings if exist. */
+    short settings_num = sst.enumerate();
+    if (storage_loaded && settings_num) {
+        load_setting(sst, WIFI_MODE, wifi_mode);
+        DPV("WIFI_MODE", wifi_mode);
+        load_setting_bytes(sst, IP_ADDRESS, ip_address);
+        DPV("IP_ADDRESS", String((char *)ip_address));
+        load_setting(sst, PORT_NUMBER, ip_port);
+        DPV("PORT_NUMBER", ip_port);
+        load_setting_string(sst, SSID, ssid);
+        DPV("SSID", wifi_mode);
+        load_setting_string(sst, PASSWORD, password);
+        DPV("PASSWORD", password);
+        load_setting(sst, CHANNEL, channel);
+        DPV("CHANNEL", channel);
+        load_setting(sst, AUTH_TYPE, auth_type);
+        DPV("AUTH_TYPE", auth_type);
+    } else {
+        DPC("default configuration");
+    }
+
+    IPAddress ip_addr(ip_address);
 
     /* Setup local data. */
     ticker.setup();
@@ -118,17 +165,13 @@ void setup()
     }
     app.setup();
 
-#if defined WIFI_STATION
-    (void)channel;
-    (void)auth_type;
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password);
-#elif defined WIFI_ACCESS_POINT
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type);
-#else
-#   error no server type specified
-#endif
-    server.setup();
-    p_server = &server;
+    if (wifi_mode) {
+        p_server = new NetServer(ticker, ip_addr, ip_port, ssid, password); // STATION
+    } else {
+        p_server = new NetServer(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+    }
+
+    p_server->setup();
 
     scheduler.setup();
     DPT(scheduler.add(task_sensors));
@@ -252,6 +295,48 @@ static bool act_disable(byte idx, unsigned long duration)
     return true;
 }
 
+static int act_get_setting(byte type, byte* buff, byte* len)
+{
+    int ret;
+    DPC("act_get_setting");
+    DPV("type", type);
+    DPV("len", *len);
+
+    if (!storage_loaded) {
+        DPC("not loaded");
+        return ST_NOT_FOUND;
+    }
+
+    if (!sst.enumerate()) {
+        DPC("no records");
+        return ST_NOT_FOUND;
+    }
+
+    ret = read_setting(sst, type, buff, len);
+    DPV("ret", ret);
+    DPA("data", buff, *len);
+
+    return ret;
+}
+
+static int act_set_setting(byte type, const byte* data, byte len)
+{
+    int ret;
+    DPC("act_set_setting");
+    DPV("type", type);
+    DPV("len", len);
+
+    if (!storage_loaded && !storage_created) {
+        DPC("not loaded & not created");
+        return ST_NOT_FOUND;
+    }
+
+    ret = write_setting(sst, type, data, len);
+    DPV("ret", ret);
+
+    return ret;
+}
+
 static bool act_emu_water(byte idx, bool immediately)
 {
     if (idx >= probes_cnt) {
@@ -297,18 +382,24 @@ static unsigned long task_server(unsigned long dt)
             act_suspend,
             act_enable,
             act_disable,
+            act_get_setting,
+            act_set_setting,
             act_emu_water,
             act_emu_error);
 
     switch (action) {
-    case PROTO_STATE:     DPC("proto: state");         break;
-    case PROTO_OPEN:      DPC("proto: open");          break;
-    case PROTO_CLOSE:     DPC("proto: close");         break;
-    case PROTO_SUSPEND:   DPC("proto: suspend");       break;
-    case PROTO_EN_PROBE:  DPC("proto: enable probe");  break;
-    case PROTO_DIS_PROBE: DPC("proto: disable probe"); break;
-    case PROTO_UNKNOWN:   DPC("proto: unknown");       break;
-    default:              DPC("proto: ...");
+    case PROTO_STATE:       DPC("proto: state");         break;
+    case PROTO_OPEN:        DPC("proto: open");          break;
+    case PROTO_CLOSE:       DPC("proto: close");         break;
+    case PROTO_SUSPEND:     DPC("proto: suspend");       break;
+    case PROTO_EN_PROBE:    DPC("proto: enable probe");  break;
+    case PROTO_DIS_PROBE:   DPC("proto: disable probe"); break;
+    case PROTO_GET_SETTING: DPC("proto: get setting");   break;
+    case PROTO_SET_SETTING: DPC("proto: set setting");   break;
+    case PROTO_EMU_WATER:   DPC("proto: emulate water"); break;
+    case PROTO_EMU_ERROR:   DPC("proto: emulate error"); break;
+    case PROTO_UNKNOWN:     DPC("proto: unknown");       break;
+    default:                DPC("proto: ...");
     }
 
     return PROTO_NEXT; // TODO: adjust timings:

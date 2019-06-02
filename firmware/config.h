@@ -76,7 +76,6 @@
 #define USE_POWER_SAVE                      /**< use power saving mode between loop cycles */
 
 /* Network interface settings. */
-#define WIFI_STATION                        /**< wireless interface mode */
 #define WIFI_DEFAULT_SSID ">)"              /**< default network identifier */
 #define WIFI_DEFAULT_PASS "00000000"        /**< default network access password */
 #define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
