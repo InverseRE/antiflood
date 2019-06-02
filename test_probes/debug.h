@@ -21,38 +21,24 @@
    For more details see LICENSE file.
 */
 
+#ifndef __DEBUG_H__
+#define __DEBUG_H__
+
 #include <Arduino.h>
-#include "led.h"
 
-Led::Led(const Ticker& ticker, byte port)
-         : _ticker(ticker), _port(port), _mode(LED_OFF)
-{
-}
+#define SW_RX     4                       /**< software serial rx (debug printout) */
+#define SW_TX     5                       /**< software serial tx (debug printout) */
 
-void Led::setup(void)
-{
-    pinMode(_port, OUTPUT);
-    digitalWrite(_port, LOW);
-}
+/* Debug config. */
+#define DEBUG_PRINTOUT                    /* debug printout */
+#define DEBUG_BAUD_RATE 9600              /* software serial baud rate */
 
-void Led::lit(LedMode mode)
-{
-    _mode = mode;
+/* Init serial for debug print. */
+void start_db_print(void);
+/* Print string from stack. */
+void DPS(String str);
+void DPSLN(String str);
+/* Print int from stack. */
+void DPI(int x);
 
-    byte sig =
-              mode == LED_OFF     ? _ticker.sig_low()
-            : mode == LED_SPIKE   ? _ticker.sig_spike()
-            : mode == LED_BLINK   ? _ticker.sig_blink()
-            : mode == LED_ON      ? _ticker.sig_high()
-            : mode == LED_WARNING ? _ticker.sig_flash()
-            :                       _ticker.sig_flash();
-
-    digitalWrite(_port, sig);
-}
-
-void Led::dim(void)
-{
-    _mode = LED_OFF;
-
-    digitalWrite(_port, LOW);
-}
+#endif  /* __DEBUG_H__ */

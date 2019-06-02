@@ -21,34 +21,17 @@
    For more details see LICENSE file.
 */
 
-#ifndef __LED_H__
-#define __LED_H__
+#include "debug.h"
+#include "probe.h"
 
-#include "ticker.h"
 
-/** LED states. */
-enum LedMode {
-    LED_OFF,                                /**< switched off */
-    LED_SPIKE,                              /**< tiny light or rapid single flash */
-    LED_BLINK,                              /**< periodic blinking */
-    LED_ON,                                 /**< constantly on */
-    LED_WARNING                             /**< rapidly flashes */
-};
+/** Startup procedure. */
+void setup() {
+    start_db_print();
+    probes_configure();
+}
 
-/** LED. */
-class Led {
-private:
-    const Ticker& _ticker;
-    const byte _port;
-    LedMode _mode;
-
-public:
-    Led(const Ticker& ticker, byte port);
-    void setup(void);
-
-    void lit(LedMode mode);
-    void dim(void);
-    LedMode mode(void) const { return _mode; }
-};
-
-#endif  /* __LED_H__ */
+/** Main procedure. */
+void loop() {
+    probes_test();
+}

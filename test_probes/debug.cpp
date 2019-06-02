@@ -21,25 +21,26 @@
    For more details see LICENSE file.
 */
 
-#ifndef __POWER_H__
-#define __POWER_H__
+#include "debug.h"
 
-#include "config.h"
+#ifdef DEBUG_PRINTOUT
+#include <SoftwareSerial.h>
+#endif
 
+/* Debug printout. */
+#ifdef DEBUG_PRINTOUT
+SoftwareSerial SWS(SW_RX, SW_TX);
+void DPS(String str) { SWS.print(str); }
+void DPSLN(String str) { SWS.println(str); }
+void DPI(int x) { SWS.print(x); }
+#else
+void DPS(String str) { }
+void DPSLN(String str) { }
+void DPI(int x) { }
+#endif
 
-
-/**
- * Setup the Watch Dog Timer (WDT).
- * WDT will generate interrupt without reset in about 8 sec.
- */
-void wdt_setup();
-
-/** Enters the arduino into a sleep mode. */
-void enter_sleep(boolean adc_off, boolean bod_off);
-
-/** Apply power save mode. */
-void power_save_mode_on(void);
-
-
-
-#endif  /* __POWER_H__ */
+void start_db_print(void) {
+#ifdef DEBUG_PRINTOUT
+    SWS.begin(DEBUG_BAUD_RATE);
+#endif
+}

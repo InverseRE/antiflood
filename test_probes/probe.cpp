@@ -21,45 +21,44 @@
    For more details see LICENSE file.
 */
 
-#include <avr/wdt.h>
-#include <avr/power.h>
-
-#include "hw.h"
-#include "net.h"
+#include "debug.h"
 #include "probe.h"
 
+/** List of available probes. */
+int PROBES[] = {PROBE0, PROBE1, PROBE2, PROBE3, PROBE4, PROBE5};
 
+/** Count of probes. */
+const int PROBES_CNT = (sizeof(PROBES) / sizeof(PROBES[0]));
 
-#define LED_HALT_DURATION  100
-#define LED_SWITCH_LATENCY 500
+int val[PROBES_CNT] = {0};
 
-
-
-/** Turn off unused modules at startup. */
-void peripheral_configure()
+/** Configure probes. */
+void probes_configure(void)
 {
-    /* Disable not used timers. */
-    power_timer1_disable();
-    power_timer2_disable();
+    int i = PROBES_CNT;
 
-    /* Disable I2C. */
-    power_twi_disable();
-
-    /* Disable SPI. */
-    power_spi_disable();
+    while (i--) {
+        pinMode(PROBES[i], INPUT_PULLUP);
+    }
 }
 
-/** Signal an error by all means. */
-void halt_on_error(void)
+/** Perform readings from probes. */
+void probes_test(void)
 {
-    // TODO
-    do { } while (true); /* here may be placed an option to unstack */
-}
+    int i = PROBES_CNT;
 
-/** Perform reset by watchdog timer. */
-void reset(void)
-{
-    /* Ensure WD timer is power up. */
-    wdt_enable(WDTO_4S);
-    halt_on_error();
+    while (i--) {
+        val[i] = analogRead(PROBES[i]);
+        delay(2);
+    }
+
+    i = PROBES_CNT;
+
+    while (i--) {
+        DPI(val[i]);
+        DPS(" ");
+    }
+
+    DPSLN("");
+    delay(10);
 }

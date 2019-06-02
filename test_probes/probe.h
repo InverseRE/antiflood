@@ -21,22 +21,22 @@
    For more details see LICENSE file.
 */
 
-#ifndef __HW_H__
-#define __HW_H__
+#ifndef __PROBE_H__
+#define __PROBE_H__
 
-#include "config.h"
+#include <Arduino.h>
 
+#define PROBE0    A0                        /**< probe 0 */
+#define PROBE1    A1                        /**< probe 1 */
+#define PROBE2    A2                        /**< probe 2 */
+#define PROBE3    A3                        /**< probe 3 */
+#define PROBE4    A4                        /**< probe 4 */
+#define PROBE5    A5                        /**< probe 5 */
 
+/** Configure probes. */
+void probes_configure(void);
 
-/** Turn off unused modules at startup. */
-void peripheral_configure();
+/** Perform readings from probes. */
+void probes_test(void);
 
-/** Signal an error by all means. */
-void halt_on_error(void);
-
-/** Perform reset by watchdog timer. */
-void reset(void);
-
-
-
-#endif /* __HW_H__ */
+#endif  /* __PROBE_H__ */
