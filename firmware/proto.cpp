@@ -24,6 +24,7 @@
 #include <Arduino.h>
 #include "proto.h"
 #include "debug.h"
+#include "storage.h"
 
 /** Packet class. */
 enum Class : byte {
@@ -44,6 +45,8 @@ enum Instruction : byte {
     iSuspend      = 5,                      /**< enter power save mode */
     iEnableProbe  = 6,                      /**< enable probes */
     iDisableProbe = 7,                      /**< disable probes */
+    iGetSetting   = 8,                      /**< read settings */
+    iSetSetting   = 9,                      /**< append/update settings */
     iEcho         = 253,                    /**< echoed packet */
     iUnsupported  = 254,                    /**< unsupported request */
     iRFU          = 255                     /**< reserved */
@@ -125,6 +128,29 @@ public:
         _ins = 1 == _data_size ? iUnsupported : iFullStatus;
     }
 
+    void trx_get_setting(int (*get_setting)(byte type, byte* buf, byte* size)) {
+        byte size = sizeof(_data) - sizeof(int);
+        int res = get_setting(_data[0], _data, &size);
+        _cla = cResponse;
+        _ins = iGetSetting;
+        if (res == ST_OK || res == ST_NOT_ENAUGHT) {
+            _data_size = size;
+            memcpy(_data + size, &res, sizeof(res));
+        } else {
+            _data_size = sizeof(res);
+            memcpy(_data, &res, sizeof(res));
+        }
+    }
+
+    void trx_set_setting(int (*set_setting)(byte type, const byte* data, byte size)) {
+        int res = set_setting(_data[0], _data + 2, _data[1]);
+        _cla = cResponse;
+        _ins = iSetSetting;
+        _data_size = sizeof(res);
+        memcpy(_data, &res, sizeof(res));
+    }
+
+
     void trx_open(bool (*open)(void)) {
         bool res = open();
         _data_size = sizeof(res);
@@ -189,7 +215,9 @@ ProtoAction ProtoSession::action(
         bool (*close)(void),
         bool (*suspend)(void),
         bool (*enable)(byte idx),
-        bool (*disable)(byte idx, unsigned long duration))
+        bool (*disable)(byte idx, unsigned long duration),
+        int (*get_setting)(byte type, byte* buff, byte* size),
+        int (*set_setting)(byte type, const byte* data, byte size))
 {
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
@@ -238,18 +266,20 @@ ProtoAction ProtoSession::action(
 
         /* switch by requested action */
         switch (pkt->ins())  {
-        case iAbout:        pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iTime:         pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iFullStatus:   pkt->trx_full_status(state);     action = PROTO_STATE;   break;
-        case iOpenValves:   pkt->trx_open(open);             action = PROTO_OPEN;    break;
-        case iCloseValves:  pkt->trx_close(close);           action = PROTO_CLOSE;   break;
-        case iSuspend:      pkt->trx_suspend(suspend);       action = PROTO_SUSPEND; break;
-        case iEnableProbe:  pkt->trx_enable_probe(enable);   action = PROTO_UNKNOWN; break;
-        case iDisableProbe: pkt->trx_disable_probe(disable); action = PROTO_UNKNOWN; break;
-        case iEcho:         pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iUnsupported:  pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iRFU:          pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        default:            pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        case iAbout:        pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        case iTime:         pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        case iFullStatus:   pkt->trx_full_status(state);       action = PROTO_STATE;   break;
+        case iOpenValves:   pkt->trx_open(open);               action = PROTO_OPEN;    break;
+        case iCloseValves:  pkt->trx_close(close);             action = PROTO_CLOSE;   break;
+        case iSuspend:      pkt->trx_suspend(suspend);         action = PROTO_SUSPEND; break;
+        case iEnableProbe:  pkt->trx_enable_probe(enable);     action = PROTO_EN_PROBE; break;
+        case iDisableProbe: pkt->trx_disable_probe(disable);   action = PROTO_DIS_PROBE; break;
+        case iGetSetting:   pkt->trx_get_setting(get_setting); action = PROTO_GET_SETTING; break;
+        case iSetSetting:   pkt->trx_set_setting(set_setting); action = PROTO_SET_SETTING; break;
+        case iEcho:         pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        case iUnsupported:  pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        case iRFU:          pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        default:            pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
         }
 
         /* write out */

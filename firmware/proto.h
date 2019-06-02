@@ -37,6 +37,8 @@ enum ProtoAction {
     PROTO_SUSPEND,                            /* enter a power-save mode */
     PROTO_EN_PROBE,                           /* enable probes */
     PROTO_DIS_PROBE,                          /* disable probes */
+    PROTO_GET_SETTING,                        /* read setting */
+    PROTO_SET_SETTING                         /* append/update setting */
 };
 
 /** Client session. */
@@ -55,7 +57,9 @@ public:
             bool (*close)(void),
             bool (*suspend)(void),
             bool (*enable)(byte idx),
-            bool (*disable)(byte idx, unsigned long duration));
+            bool (*disable)(byte idx, unsigned long duration),
+            int (*get_setting)(byte type, byte* buff, byte* size),
+            int (*set_setting)(byte type, const byte* data, byte size));
 };
 
 #endif  /* __PROTO_H__ */
