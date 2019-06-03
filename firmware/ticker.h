@@ -78,6 +78,7 @@ public:
     byte sig_blink(void) const { return _sig_blink; }
     byte sig_flash(void) const { return _sig_flash; }
 
+    void delay(unsigned long t) const { delay(t); } // TODO: replace with a suspend function
     void delay_setup(void) const { delay(SETUP_DELAY); }
     void delay_shield_up(void) const { delay(SHIELD_STARTUP_TIME); }
     void delay_shield_down(void) const { delay(SHIELD_SHUTDOWN_TIME); }

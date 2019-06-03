@@ -24,18 +24,18 @@
 #ifndef __SCHEDULER_H__
 #define __SCHEDULER_H__
 
+#include <ArduinoSTL.h>
 #include <list>
+#include "ticker.h"
 
 /** Task pointer. */
-typedef unsigned long (*)(unsigned long dt) Fptr;
+typedef unsigned long (*Fptr)(unsigned long dt);
 
 /** Task's metdadata. */
 struct Task {
-    unsigned long time2go;                  /**< time to go (remaining time before execution) */
+    unsigned long t2g;                      /**< time to go (remaining time before execution) */
     Fptr task;                              /**< pointer to a task */
-}
-
-Task EMPTY_TASK{0, nullptr};
+};
 
 /** Scheduler. */
 class Scheduler {
@@ -47,7 +47,7 @@ private:
     std::list<Task>::iterator find(Fptr task) const;
 
 public:
-    Scheduler(const Ticker& ticker) : _ticker(ticker) {};
+    Scheduler(const Ticker& ticker) : _ticker(ticker) {}
     void setup(void);
 
     bool add(Fptr task, unsigned long t2g = 0);

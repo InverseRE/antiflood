@@ -57,6 +57,9 @@ template <typename T> void DPV_(const __FlashStringHelper* const msg, const T& v
 #define DPA(msg, ptr, cnt) DPA_(F(msg), (byte*)&(ptr), cnt)
 void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt);
 
+/** Debug print if test fails. */
+#define DPT(test) { if (!(test)) { DPV("Function fails: " #test " " __FILE__, __LINE__); } }
+
 
 
 #else  /* DEBUG_PRINTOUT */
@@ -67,6 +70,7 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt);
 #define DPC(x)
 #define DPV(x, y)
 #define DPA(x, y, z)
+#define DPT(x) { (x); }
 
 
 

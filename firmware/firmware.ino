@@ -30,6 +30,7 @@
 #include "probe.h"
 #include "valve.h"
 #include "proto.h"
+#include "scheduler.h"
 #include "ticker.h"
 
 static Ticker ticker;
@@ -66,109 +67,7 @@ static App app(ticker,
 
 static NetServer* p_server = nullptr;
 
-/** Startup procedure. */
-void setup()
-{
-    /* Debug printout. */
-    DPI();
-    DPC("setup");
-
-    /* Setup HW devices */
-    peripheral_configure();
-    DPC("peripheral configured");
-
-    /* TODO: read and apply user's settings */
-    IPAddress ip_addr(APP_DEFAULT_IP);
-    unsigned short ip_port = APP_DEFAULT_PORT;
-    String ssid = WIFI_DEFAULT_SSID;
-    String password = WIFI_DEFAULT_PASS;
-    byte channel = WIFI_DEFAULT_CHAN;
-    int auth_type = WIFI_DEFAULT_SECU;
-    DPC("custom configuration readed");
-
-    /* Setup local data. */
-    ticker.setup();
-
-    for (int i = 0; i < leds_cnt; ++i) {
-        leds[i].setup();
-    }
-    for (int i = 0; i < probes_cnt; ++i) {
-        probes[i].setup();
-    }
-    for (int i = 0; i < valves_cnt; ++i) {
-        valves[i].setup();
-    }
-    app.setup();
-
-    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
-    server.setup();
-    p_server = &server;
-
-    // some delay is needed for setup take effect
-    // (for example, charging detector's capacitors)
-    ticker.delay_setup();
-
-    DPC("setup complete");
-}
-
-static unsigned long task_sensors(unsigned long dt)
-{
-    (void)dt;
-
-    bool is_triggered = false;
-
-    for (int i = 0; i < probes_cnt; ++i) {
-        is_triggered |= PROBE_WATER == probes[i].test_sensor();
-    }
-
-    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
-}
-
-static unsigned long task_connections(unsigned long dt)
-{
-    (void)dt;
-
-    bool is_triggered = false;
-
-    for (int i = 0; i < probes_cnt; ++i) {
-        is_triggered |= PROBE_ERROR == probes[i].test_connection();
-    }
-
-    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
-}
-
-static unsigned long task_display(unsigned long dt)
-{
-    (void)dt;
-
-    LedMode min = LED_OFF;
-
-    for (int i = 0; i < leds_cnt; ++i) {
-        LedMode m = leds[i].lit();
-        min = m < min ? m : min;
-    }
-
-    return    min == LED_SPIKE   ? LED_SPIKE_NEXT
-            : min == LED_WARNING ? LED_FLASH_NEXT
-            : min == LED_BLINK   ? LED_BLINK_NEXT
-            :                      LED_NEXT;
-}
-
-static unsigned long task_valves(unsigned long dt)
-{
-    (void)dt;
-
-    bool is_resolved = false;
-    bool is_overrided = false;
-
-    for (int i = 0; i < valves_cnt; ++i) {
-        is_resolved |= VALVE_CLOSE == valves[i].run();
-        is_overrided |= valves[i].is_overrided();
-    }
-
-    return is_resolved && !is_overrided ? -1 : 0;
-}
+static Scheduler scheduler(ticker);
 
 static byte act_state(byte* buf, byte buf_max_size)
 {
@@ -250,22 +149,12 @@ static bool act_disable(bool idx, unsigned long duration)
     return true;
 }
 
-/** Main procedure. */
-void loop()
+static unsigned long task_server(unsigned long dt)
 {
-    unsigned long tm = ticker.tick();
-
-    /* Application should restart once per month. */
-    if (tm & 0x80000000) {
-        reset();
-        return;
-    }
-
-    AppState app_state = app.solve();
+    (void)dt;
 
     if (p_server->is_offline() || !p_server->rx()) {
-        ticker.delay_loop();
-        return;
+        return -1;
     }
 
     ProtoAction action = ProtoSession(ticker, *p_server).action(
@@ -287,6 +176,163 @@ void loop()
     default:              DPC("proto: ...");
     }
 
-    ticker.delay_shield_trx();
-    ticker.delay_loop();
+    return -1;
+}
+
+static unsigned long task_application(unsigned long dt)
+{
+    (void)dt;
+
+    AppState app_state = app.solve();
+
+    switch (app_state) {
+    case APP_OK:
+        break;
+    case APP_ALARM:
+        DPT(scheduler.force(task_server));
+        break;
+    case APP_SOLVED:
+        break;
+    case APP_STANDBY:
+        break;
+    case APP_MALFUNCTION:
+    default:
+        DPT(scheduler.force(task_server));
+    }
+
+    return -1;
+}
+
+static unsigned long task_sensors(unsigned long dt)
+{
+    (void)dt;
+
+    bool is_triggered = false;
+
+    for (int i = 0; i < probes_cnt; ++i) {
+        is_triggered |= PROBE_WATER == probes[i].test_sensor();
+    }
+
+    DPT(scheduler.force(task_application));
+
+    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+}
+
+static unsigned long task_connections(unsigned long dt)
+{
+    (void)dt;
+
+    bool is_triggered = false;
+
+    for (int i = 0; i < probes_cnt; ++i) {
+        is_triggered |= PROBE_ERROR == probes[i].test_connection();
+    }
+
+    DPT(scheduler.force(task_application));
+
+    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+}
+
+static unsigned long task_display(unsigned long dt)
+{
+    (void)dt;
+
+    LedMode min = LED_OFF;
+
+    for (int i = 0; i < leds_cnt; ++i) {
+        LedMode m = leds[i].lit();
+        min = m < min ? m : min;
+    }
+
+    return    min == LED_SPIKE   ? LED_SPIKE_NEXT
+            : min == LED_WARNING ? LED_FLASH_NEXT
+            : min == LED_BLINK   ? LED_BLINK_NEXT
+            :                      LED_NEXT;
+}
+
+static unsigned long task_valves(unsigned long dt)
+{
+    (void)dt;
+
+    bool is_resolved = false;
+    bool is_overrided = false;
+
+    for (int i = 0; i < valves_cnt; ++i) {
+        is_resolved |= VALVE_CLOSE == valves[i].run();
+        is_overrided |= valves[i].is_overrided();
+    }
+
+    DPT(scheduler.force(task_application));
+
+    return is_resolved && !is_overrided ? -1 : 0;
+}
+
+/** Startup procedure. */
+void setup()
+{
+    /* Debug printout. */
+    DPI();
+    DPC("setup");
+
+    /* Setup HW devices */
+    peripheral_configure();
+    DPC("peripheral configured");
+
+    /* TODO: read and apply user's settings */
+    IPAddress ip_addr(APP_DEFAULT_IP);
+    unsigned short ip_port = APP_DEFAULT_PORT;
+    String ssid = WIFI_DEFAULT_SSID;
+    String password = WIFI_DEFAULT_PASS;
+    byte channel = WIFI_DEFAULT_CHAN;
+    int auth_type = WIFI_DEFAULT_SECU;
+    DPC("custom configuration readed");
+
+    /* Setup local data. */
+    ticker.setup();
+
+    for (int i = 0; i < leds_cnt; ++i) {
+        leds[i].setup();
+    }
+    for (int i = 0; i < probes_cnt; ++i) {
+        probes[i].setup();
+    }
+    for (int i = 0; i < valves_cnt; ++i) {
+        valves[i].setup();
+    }
+    app.setup();
+
+    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+    server.setup();
+    p_server = &server;
+
+    scheduler.setup();
+    DPT(scheduler.add(task_sensors));
+    DPT(scheduler.add(task_connections));
+    DPT(scheduler.add(task_display));
+    DPT(scheduler.add(task_valves));
+    // TODO: add event on WiFi activity
+
+    // some delay is needed for setup take effect
+    // (for example, charging detector's capacitors)
+    ticker.delay_setup();
+
+    DPC("setup complete");
+}
+
+/** Main procedure. */
+void loop()
+{
+    unsigned long tm = ticker.tick();
+
+    /* Application should restart once per month. */
+    if (tm & 0x80000000) {
+        reset();
+        return;
+    }
+
+    unsigned long delay = scheduler.run();
+    // TODO: check WiFi events too
+
+    ticker.delay(delay);
 }

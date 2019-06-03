@@ -34,7 +34,7 @@ void Scheduler::setup(void)
     _time_mark = _ticker.mark();
 }
 
-bool Scheduler::add(Fptr task), unsigned long t2g)
+bool Scheduler::add(Fptr task, unsigned long t2g)
 {
     if (_tasks.end() != find(task)) {
         return false;
@@ -45,7 +45,7 @@ bool Scheduler::add(Fptr task), unsigned long t2g)
     return true;
 }
 
-bool Scheduler::drop(Fptr task))
+bool Scheduler::drop(Fptr task)
 {
     std::list<Task>::iterator it = find(task);
 
@@ -58,7 +58,7 @@ bool Scheduler::drop(Fptr task))
     return true;
 }
 
-bool Scheduler::supress(Fptr task))
+bool Scheduler::supress(Fptr task)
 {
     std::list<Task>::iterator it = find(task);
 
@@ -66,12 +66,12 @@ bool Scheduler::supress(Fptr task))
         return false;
     }
 
-    it.t2g = -1;
+    it->t2g = -1;
 
     return true;
 }
 
-bool Scheduler::force(Fptr task))
+bool Scheduler::force(Fptr task)
 {
     std::list<Task>::iterator it = find(task);
 
@@ -79,12 +79,12 @@ bool Scheduler::force(Fptr task))
         return false;
     }
 
-    it.t2g = 0;
+    it->t2g = 0;
 
     return true;
 }
 
-unsigned long Scheduler::run(void))
+unsigned long Scheduler::run(void)
 {
     const unsigned long mark = _ticker.mark();
     const unsigned long dt = mark - _time_mark;
@@ -93,10 +93,10 @@ unsigned long Scheduler::run(void))
     std::list<Task>::iterator it = _tasks.begin();
     unsigned long next = -1;
 
-    while (it ! =_tasks.end()) {
-        it.t2g -= it.t2g < dt ? it.t2g : dt;
-        it.t2g = it.t2g ? it.t2g : it.task(dt);
-        next = next < it.t2g ? next : it.t2g;
+    while (it != _tasks.end()) {
+        it->t2g -= it->t2g < dt ? it->t2g : dt;
+        it->t2g = it->t2g ? it->t2g : it->task(dt);
+        next = next < it->t2g ? next : it->t2g;
         ++it;
     }
 
