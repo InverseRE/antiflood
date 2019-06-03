@@ -23,42 +23,82 @@
 
 #include "scheduler.h"
 
-Scheduler::Scheduler(const Ticker& ticker)
+std::list<Task>::iterator Scheduler::find(Fptr task) const
 {
-    /* TODO */
+    return std::find_if(_tasks.begin(), _tasks.end(),
+            [&task](const Task v) { return v.task == task; });
 }
 
 void Scheduler::setup(void)
 {
-    /* TODO */
+    _time_mark = _ticker.mark();
 }
 
-bool Scheduler::add(unsigned long (*task)(unsigned long dt)))
+bool Scheduler::add(Fptr task), unsigned long t2g)
 {
-    /* TODO */
-    return false;
+    if (_tasks.end() != find(task)) {
+        return false;
+    }
+
+    _tasks.push_back({t2g, task});
+
+    return true;
 }
 
-bool Scheduler::drop(unsigned long (*task)(unsigned long dt)))
+bool Scheduler::drop(Fptr task))
 {
-    /* TODO */
-    return false;
+    std::list<Task>::iterator it = find(task);
+
+    if (_tasks.end() == find(task)) {
+        return false;
+    }
+
+    _tasks.erase(it);
+
+    return true;
 }
 
-bool Scheduler::supress(unsigned long (*task)(unsigned long dt)))
+bool Scheduler::supress(Fptr task))
 {
-    /* TODO */
-    return false;
+    std::list<Task>::iterator it = find(task);
+
+    if (_tasks.end() == find(task)) {
+        return false;
+    }
+
+    it.t2g = -1;
+
+    return true;
 }
 
-bool Scheduler::force(unsigned long (*task)(unsigned long dt)))
+bool Scheduler::force(Fptr task))
 {
-    /* TODO */
-    return false;
+    std::list<Task>::iterator it = find(task);
+
+    if (_tasks.end() == find(task)) {
+        return false;
+    }
+
+    it.t2g = 0;
+
+    return true;
 }
 
 unsigned long Scheduler::run(void))
 {
-    /* TODO */
-    return 0;
+    const unsigned long mark = _ticker.mark();
+    const unsigned long dt = mark - _time_mark;
+    _time_mark = mark;
+
+    std::list<Task>::iterator it = _tasks.begin();
+    unsigned long next = -1;
+
+    while (it ! =_tasks.end()) {
+        it.t2g -= it.t2g < dt ? it.t2g : dt;
+        it.t2g = it.t2g ? it.t2g : it.task(dt);
+        next = next < it.t2g ? next : it.t2g;
+        ++it;
+    }
+
+    return next;
 }
