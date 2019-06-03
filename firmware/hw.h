@@ -1,4 +1,4 @@
-/* -*- mode: c -*- */
+/* -*-*- mode: c++ -*-*- */
 
 /*
    Antiflood Copyright (C) 2018 Alexey <Inverse> Shumeiko
