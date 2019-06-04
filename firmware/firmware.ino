@@ -75,8 +75,8 @@ static bool act_close(void);
 static bool act_suspend(void);
 static bool act_enable(byte idx);
 static bool act_disable(bool idx, unsigned long duration);
-static bool act_emu_water(byte idx);
-static bool act_emu_error(byte idx);
+static bool act_emu_water(byte idx, bool immediately);
+static bool act_emu_error(byte idx, bool immediately);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -244,7 +244,7 @@ static bool act_disable(bool idx, unsigned long duration)
     return true;
 }
 
-static bool act_emu_water(byte idx)
+static bool act_emu_water(byte idx, bool immediately)
 {
     if (idx >= probes_cnt) {
         return false;
@@ -252,16 +252,24 @@ static bool act_emu_water(byte idx)
 
     probes[idx].emulate_water();
 
+    if (immediately) {
+        DPT(scheduler.force(task_sensors));
+    }
+
     return true;
 }
 
-static bool act_emu_error(byte idx)
+static bool act_emu_error(byte idx, bool immediately)
 {
     if (idx >= probes_cnt) {
         return false;
     }
 
     probes[idx].emulate_error();
+
+    if (immediately) {
+        DPT(scheduler.force(task_connections));
+    }
 
     return true;
 }

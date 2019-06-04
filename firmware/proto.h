@@ -58,8 +58,8 @@ public:
             bool (*suspend)(void),
             bool (*enable)(byte idx),
             bool (*disable)(byte idx, unsigned long duration),
-            bool (*emu_water)(byte idx),
-            bool (*emu_error)(byte idx));
+            bool (*emu_water)(byte idx, bool immediately),
+            bool (*emu_error)(byte idx, bool immediately));
 };
 
 #endif  /* __PROTO_H__ */

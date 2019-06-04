@@ -168,16 +168,16 @@ public:
         memcpy(_data, &res, _data_size);
     }
 
-    void trx_emu_water(bool (*emu_water)(byte idx)) {
-        bool res = _data_size == 1 && emu_water(_data[0]);
+    void trx_emu_water(bool (*emu_water)(byte idx, bool immediately)) {
+        bool res = _data_size == 2 && emu_water(_data[0], _data[1]);
         _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iEmuWater;
         memcpy(_data, &res, _data_size);
     }
 
-    void trx_emu_error(bool (*emu_error)(byte idx)) {
-        bool res = _data_size == 2 && emu_error(_data[0]);
+    void trx_emu_error(bool (*emu_error)(byte idx, bool immediately)) {
+        bool res = _data_size == 2 && emu_error(_data[0], _data[1]);
         _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iEmuError;
@@ -208,8 +208,8 @@ ProtoAction ProtoSession::action(
         bool (*suspend)(void),
         bool (*enable)(byte idx),
         bool (*disable)(byte idx, unsigned long duration),
-        bool (*emu_water)(byte idx),
-        bool (*emu_error)(byte idx))
+        bool (*emu_water)(byte idx, bool immediately),
+        bool (*emu_error)(byte idx, bool immediately))
 {
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
