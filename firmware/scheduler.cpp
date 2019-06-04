@@ -90,14 +90,15 @@ unsigned long Scheduler::run(void)
     const unsigned long dt = mark - _time_mark;
     _time_mark = mark;
 
-    std::list<Task>::iterator it = _tasks.begin();
-    unsigned long next = -1;
-
-    while (it != _tasks.end()) {
+    for (std::list<Task>::iterator it = _tasks.begin(), it != _tasks.end(), ++it) {
         it->t2g -= it->t2g < dt ? it->t2g : dt;
         it->t2g = it->t2g ? it->t2g : it->task(dt);
+    }
+
+    unsigned long next = -1;
+
+    for (std::list<Task>::iterator it = _tasks.begin(), it != _tasks.end(), ++it) {
         next = next < it->t2g ? next : it->t2g;
-        ++it;
     }
 
     return next;
