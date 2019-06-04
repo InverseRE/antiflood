@@ -69,6 +69,89 @@ static NetServer* p_server = nullptr;
 
 static Scheduler scheduler(ticker);
 
+static byte act_state(byte* buf, byte buf_max_size);
+static bool act_open(void);
+static bool act_close(void);
+static bool act_suspend(void);
+static bool act_enable(byte idx);
+static bool act_disable(bool idx, unsigned long duration);
+static unsigned long task_server(unsigned long dt);
+static unsigned long task_application(unsigned long dt);
+static unsigned long task_sensors(unsigned long dt);
+static unsigned long task_connections(unsigned long dt);
+static unsigned long task_display(unsigned long dt);
+static unsigned long task_valves(unsigned long dt);
+
+/** Startup procedure. */
+void setup()
+{
+    /* Debug printout. */
+    DPI();
+    DPC("setup");
+
+    /* Setup HW devices */
+    peripheral_configure();
+    DPC("peripheral configured");
+
+    /* TODO: read and apply user's settings */
+    IPAddress ip_addr(APP_DEFAULT_IP);
+    unsigned short ip_port = APP_DEFAULT_PORT;
+    String ssid = WIFI_DEFAULT_SSID;
+    String password = WIFI_DEFAULT_PASS;
+    byte channel = WIFI_DEFAULT_CHAN;
+    int auth_type = WIFI_DEFAULT_SECU;
+    DPC("custom configuration readed");
+
+    /* Setup local data. */
+    ticker.setup();
+
+    for (int i = 0; i < leds_cnt; ++i) {
+        leds[i].setup();
+    }
+    for (int i = 0; i < probes_cnt; ++i) {
+        probes[i].setup();
+    }
+    for (int i = 0; i < valves_cnt; ++i) {
+        valves[i].setup();
+    }
+    app.setup();
+
+    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+    server.setup();
+    p_server = &server;
+
+    scheduler.setup();
+    DPT(scheduler.add(task_sensors));
+    DPT(scheduler.add(task_connections));
+    DPT(scheduler.add(task_display));
+    DPT(scheduler.add(task_valves));
+    // TODO: add event on WiFi activity
+
+    // some delay is needed for setup take effect
+    // (for example, charging detector's capacitors)
+    ticker.delay_setup();
+
+    DPC("setup complete");
+}
+
+/** Main procedure. */
+void loop()
+{
+    unsigned long tm = ticker.tick();
+
+    /* Application should restart once per month. */
+    if (tm & 0x80000000) {
+        reset();
+        return;
+    }
+
+    unsigned long delay = scheduler.run();
+    // TODO: check WiFi events too
+
+    ticker.delay(delay);
+}
+
 static byte act_state(byte* buf, byte buf_max_size)
 {
     byte size = 4 + 1 * leds_cnt + 2 * probes_cnt + 3 * valves_cnt;
@@ -97,8 +180,6 @@ static byte act_state(byte* buf, byte buf_max_size)
 
     return size;
 }
-
-static unsigned long task_valves(unsigned long dt);
 
 static bool act_open(void)
 {
@@ -132,9 +213,6 @@ static bool act_suspend(void)
     // enter_sleep(true, true);
     return false;
 }
-
-static unsigned long task_sensors(unsigned long dt);
-static unsigned long task_connections(unsigned long dt);
 
 static bool act_enable(byte idx)
 {
@@ -288,74 +366,4 @@ static unsigned long task_valves(unsigned long dt)
     }
 
     return is_resolved && !is_overrided ? -1 : 0;
-}
-
-/** Startup procedure. */
-void setup()
-{
-    /* Debug printout. */
-    DPI();
-    DPC("setup");
-
-    /* Setup HW devices */
-    peripheral_configure();
-    DPC("peripheral configured");
-
-    /* TODO: read and apply user's settings */
-    IPAddress ip_addr(APP_DEFAULT_IP);
-    unsigned short ip_port = APP_DEFAULT_PORT;
-    String ssid = WIFI_DEFAULT_SSID;
-    String password = WIFI_DEFAULT_PASS;
-    byte channel = WIFI_DEFAULT_CHAN;
-    int auth_type = WIFI_DEFAULT_SECU;
-    DPC("custom configuration readed");
-
-    /* Setup local data. */
-    ticker.setup();
-
-    for (int i = 0; i < leds_cnt; ++i) {
-        leds[i].setup();
-    }
-    for (int i = 0; i < probes_cnt; ++i) {
-        probes[i].setup();
-    }
-    for (int i = 0; i < valves_cnt; ++i) {
-        valves[i].setup();
-    }
-    app.setup();
-
-    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
-    server.setup();
-    p_server = &server;
-
-    scheduler.setup();
-    DPT(scheduler.add(task_sensors));
-    DPT(scheduler.add(task_connections));
-    DPT(scheduler.add(task_display));
-    DPT(scheduler.add(task_valves));
-    // TODO: add event on WiFi activity
-
-    // some delay is needed for setup take effect
-    // (for example, charging detector's capacitors)
-    ticker.delay_setup();
-
-    DPC("setup complete");
-}
-
-/** Main procedure. */
-void loop()
-{
-    unsigned long tm = ticker.tick();
-
-    /* Application should restart once per month. */
-    if (tm & 0x80000000) {
-        reset();
-        return;
-    }
-
-    unsigned long delay = scheduler.run();
-    // TODO: check WiFi events too
-
-    ticker.delay(delay);
 }

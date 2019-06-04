@@ -45,6 +45,8 @@
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
 #define LOOP_POLLING_LATENCY    10          /**< basic loop period, ms */
 #define WEB_HEADING_COUNT       5           /**< web page redirect delay, s */
+#define PROTO_NEXT              1000        /**< protocol checks period, ms */
+#define APPLICATION_NEXT        8000        /**< application calcs period, ms */
 
 /**
  * Ticker.
