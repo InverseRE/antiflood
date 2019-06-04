@@ -47,6 +47,11 @@ void Probe::setup(void)
 
 ProbeSensor Probe::test_sensor(void)
 {
+    if (_is_sens_ovr) {
+        _is_sens_ovr = false;
+        return _ovr_sens;
+    }
+
     if (_time_limit > _ticker.mark()) {
         return _sensor = PROBE_UNAWARE;
     }
@@ -76,6 +81,11 @@ void Probe::delay(void) const
 
 ProbeConnection Probe::test_connection(void)
 {
+    if (_is_conn_ovr) {
+        _is_conn_ovr = false;
+        return _ovr_conn;
+    }
+
     if (_time_limit > _ticker.mark()) {
         return _connection = PROBE_OFFLINE;
     }

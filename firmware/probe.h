@@ -59,6 +59,11 @@ private:
     ProbeConnection _connection;            /**< probe's connection state */
     unsigned long _time_limit;              /**< action/state end time, ms */
 
+    bool _is_sens_ovr;                      /**< is sensor value overrided? (once) */
+    bool _is_conn_ovr;                      /**< is connection value overrided? (once) */
+    ProbeSensor _ovr_sens;                  /**< emulated detector state */
+    ProbeConnection _ovr_conn;              /**< emulated connection state */
+
 public:
     Probe(const Ticker& ticker, byte port);
     void setup(void);
@@ -72,6 +77,16 @@ public:
     void disable(unsigned long duration) { _time_limit = _ticker.mark() + duration; }
     ProbeConnection connection(void) const { return _connection; }
     ProbeSensor sensor(void) const { return _sensor; }
+
+    void emulate_water(void) {
+        _is_sens_ovr = true;
+        _ovr_sens = PROBE_WATER;
+    }
+
+    void emulate_error(void) {
+        _is_conn_ovr = true;
+        _ovr_conn = PROBE_ERROR;
+    }
 };
 
 #endif  /* __PROBE_H__ */

@@ -75,6 +75,8 @@ static bool act_close(void);
 static bool act_suspend(void);
 static bool act_enable(byte idx);
 static bool act_disable(bool idx, unsigned long duration);
+static bool act_emu_water(byte idx);
+static bool act_emu_error(byte idx);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -242,6 +244,28 @@ static bool act_disable(bool idx, unsigned long duration)
     return true;
 }
 
+static bool act_emu_water(byte idx)
+{
+    if (idx >= probes_cnt) {
+        return false;
+    }
+
+    probes[idx].emulate_water();
+
+    return true;
+}
+
+static bool act_emu_error(byte idx)
+{
+    if (idx >= probes_cnt) {
+        return false;
+    }
+
+    probes[idx].emulate_error();
+
+    return true;
+}
+
 static unsigned long task_server(unsigned long dt)
 {
     (void)dt;
@@ -256,7 +280,9 @@ static unsigned long task_server(unsigned long dt)
             act_close,
             act_suspend,
             act_enable,
-            act_disable);
+            act_disable,
+            act_emu_water,
+            act_emu_error);
 
     switch (action) {
     case PROTO_STATE:     DPC("proto: state");         break;
