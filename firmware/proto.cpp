@@ -177,7 +177,7 @@ public:
     }
 
     void trx_emu_error(bool (*emu_error)(byte idx)) {
-        bool res = _data_size == 5 && emu_error(_data[0]);
+        bool res = _data_size == 2 && emu_error(_data[0]);
         _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iEmuError;
