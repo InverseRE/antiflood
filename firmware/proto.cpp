@@ -44,6 +44,8 @@ enum Instruction : byte {
     iSuspend      = 5,                      /**< enter power save mode */
     iEnableProbe  = 6,                      /**< enable probes */
     iDisableProbe = 7,                      /**< disable probes */
+    iEmuWater     = 8,                      /**< emulate WATER on probes */
+    iEmuError     = 9,                      /**< emulate ERROR on probes */
     iEcho         = 253,                    /**< echoed packet */
     iUnsupported  = 254,                    /**< unsupported request */
     iRFU          = 255                     /**< reserved */
@@ -166,6 +168,22 @@ public:
         memcpy(_data, &res, _data_size);
     }
 
+    void trx_emu_water(bool (*emu_water)(byte idx)) {
+        bool res = _data_size == 1 && emu_water(_data[0]);
+        _data_size = sizeof(res);
+        _cla = cResponse;
+        _ins = iEmuWater;
+        memcpy(_data, &res, _data_size);
+    }
+
+    void trx_emu_error(bool (*emu_error)(byte idx)) {
+        bool res = _data_size == 5 && emu_error(_data[0]);
+        _data_size = sizeof(res);
+        _cla = cResponse;
+        _ins = iEmuError;
+        memcpy(_data, &res, _data_size);
+    }
+
     void trx_unsupported(void) {
         memcpy(_data, this, hdr_size());
         _data_size = hdr_size();
@@ -189,7 +207,9 @@ ProtoAction ProtoSession::action(
         bool (*close)(void),
         bool (*suspend)(void),
         bool (*enable)(byte idx),
-        bool (*disable)(byte idx, unsigned long duration))
+        bool (*disable)(byte idx, unsigned long duration),
+        bool (*emu_water)(byte idx),
+        bool (*emu_error)(byte idx))
 {
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
@@ -238,18 +258,20 @@ ProtoAction ProtoSession::action(
 
         /* switch by requested action */
         switch (pkt->ins())  {
-        case iAbout:        pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iTime:         pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iFullStatus:   pkt->trx_full_status(state);     action = PROTO_STATE;   break;
-        case iOpenValves:   pkt->trx_open(open);             action = PROTO_OPEN;    break;
-        case iCloseValves:  pkt->trx_close(close);           action = PROTO_CLOSE;   break;
-        case iSuspend:      pkt->trx_suspend(suspend);       action = PROTO_SUSPEND; break;
-        case iEnableProbe:  pkt->trx_enable_probe(enable);   action = PROTO_UNKNOWN; break;
-        case iDisableProbe: pkt->trx_disable_probe(disable); action = PROTO_UNKNOWN; break;
-        case iEcho:         pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iUnsupported:  pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        case iRFU:          pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
-        default:            pkt->trx_unsupported();          action = PROTO_UNKNOWN; break;
+        case iAbout:        pkt->trx_unsupported();          action = PROTO_UNKNOWN;   break;
+        case iTime:         pkt->trx_unsupported();          action = PROTO_UNKNOWN;   break;
+        case iFullStatus:   pkt->trx_full_status(state);     action = PROTO_STATE;     break;
+        case iOpenValves:   pkt->trx_open(open);             action = PROTO_OPEN;      break;
+        case iCloseValves:  pkt->trx_close(close);           action = PROTO_CLOSE;     break;
+        case iSuspend:      pkt->trx_suspend(suspend);       action = PROTO_SUSPEND;   break;
+        case iEnableProbe:  pkt->trx_enable_probe(enable);   action = PROTO_UNKNOWN;   break;
+        case iDisableProbe: pkt->trx_disable_probe(disable); action = PROTO_UNKNOWN;   break;
+        case iEmuWater:     pkt->trx_emu_water(emu_water);   action = PROTO_EMU_WATER; break;
+        case iEmuError:     pkt->trx_emu_error(emu_error);   action = PROTO_EMU_ERROR; break;
+        case iEcho:         pkt->trx_unsupported();          action = PROTO_UNKNOWN;   break;
+        case iUnsupported:  pkt->trx_unsupported();          action = PROTO_UNKNOWN;   break;
+        case iRFU:          pkt->trx_unsupported();          action = PROTO_UNKNOWN;   break;
+        default:            pkt->trx_unsupported();          action = PROTO_UNKNOWN;   break;
         }
 
         /* write out */

@@ -192,6 +192,28 @@ static bool act_disable(bool idx, unsigned long duration)
     return true;
 }
 
+static bool act_emu_water(byte idx)
+{
+    if (idx >= probes_cnt) {
+        return false;
+    }
+
+    probes[idx].emulate_water();
+
+    return true;
+}
+
+static bool act_emu_error(byte idx)
+{
+    if (idx >= probes_cnt) {
+        return false;
+    }
+
+    probes[idx].emulate_error();
+
+    return true;
+}
+
 /** Main procedure. */
 void loop()
 {
@@ -216,7 +238,9 @@ void loop()
             act_close,
             act_suspend,
             act_enable,
-            act_disable);
+            act_disable,
+            act_emu_water,
+            act_emu_error);
 
     switch (action) {
     case PROTO_STATE:     DPC("proto: state");         break;

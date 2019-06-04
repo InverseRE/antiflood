@@ -37,6 +37,8 @@ enum ProtoAction {
     PROTO_SUSPEND,                            /* enter a power-save mode */
     PROTO_EN_PROBE,                           /* enable probes */
     PROTO_DIS_PROBE,                          /* disable probes */
+    PROTO_EMU_WATER,                          /* emulate WATER on probes */
+    PROTO_EMU_ERROR,                          /* emulate ERROR on probes */
 };
 
 /** Client session. */
@@ -55,7 +57,9 @@ public:
             bool (*close)(void),
             bool (*suspend)(void),
             bool (*enable)(byte idx),
-            bool (*disable)(byte idx, unsigned long duration));
+            bool (*disable)(byte idx, unsigned long duration),
+            bool (*emu_water)(byte idx),
+            bool (*emu_error)(byte idx));
 };
 
 #endif  /* __PROTO_H__ */
