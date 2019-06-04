@@ -41,3 +41,21 @@ CLOSE
 
 SUSPEND
 > echo "0205 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+DISABLE PROBE #0 10sec
+> echo "0207 0005 00 00002710" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+ENABLE PROBE #0
+> echo "0206 0001 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SIGNAL WATER ON PROBE #3
+> echo "0208 0002 03 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SIGNAL WATER ON PROBE #3 (FORCED)
+> echo "0208 0002 03 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SIGNAL ERROR ON PROBE #5
+> echo "0209 0002 05 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SIGNAL ERROR ON PROBE #5 (FORCED)
+> echo "0209 0002 05 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
