@@ -98,6 +98,8 @@ static byte act_state(byte* buf, byte buf_max_size)
     return size;
 }
 
+static unsigned long task_valves(unsigned long dt);
+
 static bool act_open(void)
 {
     bool res = true;
@@ -105,6 +107,8 @@ static bool act_open(void)
     for (int i = 0; i < valves_cnt; ++i) {
         res &= valves[i].force_open();
     }
+
+    DPT(scheduler.force(task_valves));
 
     return res;
 }
@@ -117,6 +121,8 @@ static bool act_close(void)
         res &= valves[i].force_close();
     }
 
+    DPT(scheduler.force(task_valves));
+
     return res;
 }
 
@@ -127,6 +133,9 @@ static bool act_suspend(void)
     return false;
 }
 
+static unsigned long task_sensors(unsigned long dt);
+static unsigned long task_connections(unsigned long dt);
+
 static bool act_enable(byte idx)
 {
     if (idx >= probes_cnt) {
@@ -134,6 +143,9 @@ static bool act_enable(byte idx)
     }
 
     probes[idx].enable();
+
+    DPT(scheduler.force(task_sensors));
+    DPT(scheduler.force(task_connections));
 
     return true;
 }
@@ -146,6 +158,9 @@ static bool act_disable(bool idx, unsigned long duration)
 
     probes[idx].disable(duration);
 
+    DPT(scheduler.force(task_sensors));
+    DPT(scheduler.force(task_connections));
+
     return true;
 }
 
@@ -154,7 +169,7 @@ static unsigned long task_server(unsigned long dt)
     (void)dt;
 
     if (p_server->is_offline() || !p_server->rx()) {
-        return -1;
+        return PROTO_NEXT;
     }
 
     ProtoAction action = ProtoSession(ticker, *p_server).action(
@@ -176,61 +191,62 @@ static unsigned long task_server(unsigned long dt)
     default:              DPC("proto: ...");
     }
 
-    return -1;
+    return PROTO_NEXT;
 }
 
 static unsigned long task_application(unsigned long dt)
 {
     (void)dt;
 
+    static AppState last_state = APP_MALFUNCTION;
     AppState app_state = app.solve();
 
-    switch (app_state) {
-    case APP_OK:
-        break;
-    case APP_ALARM:
+    if (last_state != app_state) {
+        DPT(scheduler.force(task_display));
+        DPT(scheduler.force(task_valves));
         DPT(scheduler.force(task_server));
-        break;
-    case APP_SOLVED:
-        break;
-    case APP_STANDBY:
-        break;
-    case APP_MALFUNCTION:
-    default:
-        DPT(scheduler.force(task_server));
+        last_state = app_state;
     }
 
-    return -1;
+    return APPLICATION_NEXT;
 }
 
 static unsigned long task_sensors(unsigned long dt)
 {
     (void)dt;
 
-    bool is_triggered = false;
+    static bool last_trigger = false;
+    bool trigger = false;
 
     for (int i = 0; i < probes_cnt; ++i) {
-        is_triggered |= PROBE_WATER == probes[i].test_sensor();
+        trigger |= PROBE_WATER == probes[i].test_sensor();
     }
 
-    DPT(scheduler.force(task_application));
+    if (last_trigger != trigger) {
+        DPT(scheduler.force(task_application));
+        last_trigger = trigger;
+    }
 
-    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+    return trigger ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
 }
 
 static unsigned long task_connections(unsigned long dt)
 {
     (void)dt;
 
-    bool is_triggered = false;
+    static bool last_trigger = false;
+    bool trigger = false;
 
     for (int i = 0; i < probes_cnt; ++i) {
-        is_triggered |= PROBE_ERROR == probes[i].test_connection();
+        trigger |= PROBE_ERROR == probes[i].test_connection();
     }
 
-    DPT(scheduler.force(task_application));
+    if (last_trigger != trigger) {
+        DPT(scheduler.force(task_application));
+        last_trigger = trigger;
+    }
 
-    return is_triggered ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+    return trigger ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
 }
 
 static unsigned long task_display(unsigned long dt)
@@ -254,15 +270,22 @@ static unsigned long task_valves(unsigned long dt)
 {
     (void)dt;
 
+    static bool last_trigger = false;
+    bool trigger = false;
     bool is_resolved = false;
     bool is_overrided = false;
 
     for (int i = 0; i < valves_cnt; ++i) {
         is_resolved |= VALVE_CLOSE == valves[i].run();
         is_overrided |= valves[i].is_overrided();
+        trigger |= valves[i].is_engaged();
     }
 
-    DPT(scheduler.force(task_application));
+    if (last_trigger != trigger) {
+        DPT(scheduler.force(task_server));
+        DPT(scheduler.force(task_application));
+        last_trigger = trigger;
+    }
 
     return is_resolved && !is_overrided ? -1 : 0;
 }
