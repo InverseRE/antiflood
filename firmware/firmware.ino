@@ -118,8 +118,13 @@ void setup()
     }
     app.setup();
 
-    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+#if defined WIFI_STATION
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password);
+#elif defined WIFI_ACCESS_POINT
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type);
+#else
+#   error no server type specified
+#endif
     server.setup();
     p_server = &server;
 
