@@ -23,12 +23,6 @@
 
 #include "scheduler.h"
 
-std::list<Task>::iterator Scheduler::find(Fptr task) const
-{
-    return std::find_if(_tasks.begin(), _tasks.end(),
-            [&task](const Task v) { return v.task == task; });
-}
-
 void Scheduler::setup(void)
 {
     _time_mark = _ticker.mark();
@@ -36,52 +30,29 @@ void Scheduler::setup(void)
 
 bool Scheduler::add(Fptr task, unsigned long t2g)
 {
-    if (_tasks.end() != find(task)) {
-        return false;
-    }
+    Task nt{task, t2g};
+    Task* t = _tasks.get(nt);
 
-    _tasks.push_back({t2g, task});
-
-    return true;
+    return !t && _tasks.add(nt);
 }
 
 bool Scheduler::drop(Fptr task)
 {
-    std::list<Task>::iterator it = find(task);
-
-    if (_tasks.end() == find(task)) {
-        return false;
-    }
-
-    _tasks.erase(it);
-
-    return true;
+    return _tasks.drop(Task{task, 0});
 }
 
 bool Scheduler::supress(Fptr task)
 {
-    std::list<Task>::iterator it = find(task);
+    Task* t = _tasks.get(Task{task, 0});
 
-    if (_tasks.end() == find(task)) {
-        return false;
-    }
-
-    it->t2g = -1;
-
-    return true;
+    return t && (t->t2g = -1);
 }
 
 bool Scheduler::force(Fptr task)
 {
-    std::list<Task>::iterator it = find(task);
+    Task* t = _tasks.get(Task{task, 0});
 
-    if (_tasks.end() == find(task)) {
-        return false;
-    }
-
-    it->t2g = 0;
-
-    return true;
+    return t && !(t->t2g = 0);
 }
 
 unsigned long Scheduler::run(void)
@@ -90,15 +61,15 @@ unsigned long Scheduler::run(void)
     const unsigned long dt = mark - _time_mark;
     _time_mark = mark;
 
-    for (std::list<Task>::iterator it = _tasks.begin(); it != _tasks.end(); ++it) {
-        it->t2g -= it->t2g < dt ? it->t2g : dt;
-        it->t2g = it->t2g ? it->t2g : it->task(dt);
+    for (Task* t = _tasks.start(); t; t = _tasks.next()) {
+        t->t2g -= t->t2g < dt ? t->t2g : dt;
+        t->t2g = t->t2g ? t->t2g : t->task(dt);
     }
 
     unsigned long next = -1;
 
-    for (std::list<Task>::iterator it = _tasks.begin(); it != _tasks.end(); ++it) {
-        next = next < it->t2g ? next : it->t2g;
+    for (Task* t = _tasks.start(); t; t = _tasks.next()) {
+        next = next < t->t2g ? next : t->t2g;
     }
 
     return next;
