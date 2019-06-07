@@ -283,7 +283,7 @@ static unsigned long task_server(unsigned long dt)
 {
     (void)dt;
 
-    if (p_server->is_offline() || !p_server->rx()) {
+    if (!p_server || p_server->is_offline() || !p_server->rx()) {
         return PROTO_NEXT;
     }
 
