@@ -59,3 +59,13 @@ SIGNAL ERROR ON PROBE #5
 
 SIGNAL ERROR ON PROBE #5 (FORCED)
 > echo "020b 0002 05 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+Command to check already stored setting:
+> send "0208 0001 tag"
+  where 'tag' is 1 byte value (see SettingTypes enum from setting.h)
+
+Commands to store setting:
+> send "0209 00 len+2 tag len data"
+  where 'tag' is 1 byte value (see SettingTypes enum from setting.h)
+        'len' setting data length in bytes
+        'data' setting data bytes

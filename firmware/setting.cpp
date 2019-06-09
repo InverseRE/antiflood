@@ -1,8 +1,10 @@
 /* -*- mode: c -*- */
 
 /*
-   Antiflood Copyright (C) 2018 Alexey <Inverse> Shumeiko
+   Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
+
    This file is part of Antiflood project.
+
    This firmware is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -105,7 +107,7 @@ int Setting::push(int addr)
     if (!_type || !_len || data == NULL) {
         return BAD_ARGUMENT;
     }
-    
+
     /* check addres is valid */
     if ((addr + _len + 4) > EEPROM.length()) {
         return BAD_ARGUMENT;
@@ -114,9 +116,9 @@ int Setting::push(int addr)
     for (int i = 0; i < _len + 4; i++) {
         EEPROM.update(addr + i, data[i]);
     }
-    
+
     /* read data to check here ? */
-    
+
     return OK;
 }
 
@@ -127,25 +129,25 @@ int Setting::pop(int addr)
     if ((addr + 5) > EEPROM.length()) {
         return BAD_ARGUMENT;
     }
-    
+
     /* get record type & length */    
     _type = EEPROM.read(addr + 0);
     _len = EEPROM.read(addr + 1);
-   
+
     /* incorrect tag or length */
     if (!_type || !_len) {
         _type = 0;
         _len = 0;
         return BAD_ARGUMENT;
     }
-    
+
     /* check that value is not out of range */
     if ((addr + _len + 4) > EEPROM.length()) {
         _type = 0;
         _len = 0;
         return BAD_ARGUMENT;
     }
-    
+
     /* update internal state */
     data = realloc(data, _len + 4);
     for (int i = 0; i < _len + 4; i++) {
@@ -155,10 +157,10 @@ int Setting::pop(int addr)
     /* verify crc */
     _crc = crc16(data, _len + 2);
     unsigned short exp_crc = *(unsigned short *)(data + _len + 2);
-    
+
     if (_crc != exp_crc) {
         return CRC_ERROR;
     }
-    
+
     return OK;
 }

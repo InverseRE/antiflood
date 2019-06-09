@@ -1,8 +1,10 @@
 /* -*- mode: c -*- */
 
 /*
-   Antiflood Copyright (C) 2018 Alexey <Inverse> Shumeiko
+   Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
+
    This file is part of Antiflood project.
+
    This firmware is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -154,7 +156,7 @@ short SettingsStorage::enumerate(void)
         push(st_addr);
     }
 
-    return num;
+    return st.data.str.num;
 }
 
 /* get setting by index
@@ -236,6 +238,7 @@ int SettingsStorage::update(short idx, const Setting &s)
         if ((ret = move(addr + s.length(), off, len)) != ST_OK) {
             return ret;
         }
+        st_addr += off;
         return s.push(addr);
     }
 
@@ -318,7 +321,11 @@ int SettingsStorage::erase_all(bool fast = true)
 void SettingsStorage::eeprom_dp(void)
 {
     for (int i = 0; i < EEPROM.length(); i++) {
-        SWS.print(String(EEPROM[i]));
+        SWS.print(EEPROM[i]);
+        SWS.print(" ");
+        if (i != 0 && i % 16 == 0) {
+            SWS.println("");
+        }
     }
 }
 
@@ -344,13 +351,9 @@ int read_setting(SettingsStorage& sst, byte type, byte* buff, byte* len)
 {
     int ret;
     Setting s;
-    DPV("buf len", *len);
+
     if ((ret = sst.get(type, s)) == ST_OK) {
         *len = s.get_data(buff, *len);
-        DPV("st len", *len);
-        for(byte j = 0; j < *len; j++) {
-            DPV("read data", buff[j]);
-        }
         return s.get_len() == *len ? ST_OK : ST_NOT_ENAUGHT;
     }
 
@@ -362,12 +365,10 @@ int write_setting(SettingsStorage& sst, byte type, const byte* data, byte len)
     int ret;
     short idx;
     Setting s;
+
     if ((ret = sst.get(type, s, &idx)) == ST_OK) {
-        DPC("update");
         return sst.update(idx, Setting(type, len, data));
     } else {
-        DPC("append");
-        DPV("append data", data[0]);
         return sst.append(Setting(type, len, data));
     }
 

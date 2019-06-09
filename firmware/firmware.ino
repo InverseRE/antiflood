@@ -2,6 +2,7 @@
 
 /*
    Antiflood Copyright (C) 2019 Alexey <Inverse> Shumeiko
+   Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
 
    This file is part of Antiflood project.
 
@@ -131,14 +132,18 @@ void setup()
     /* Apply user settings if exist. */
     short settings_num = sst.enumerate();
     if (storage_loaded && settings_num) {
+        DPC("manual configuration");
         load_setting(sst, WIFI_MODE, wifi_mode);
         DPV("WIFI_MODE", wifi_mode);
         load_setting_bytes(sst, IP_ADDRESS, ip_address);
-        DPV("IP_ADDRESS", String((char *)ip_address));
+        DPV("IP_ADDRESS", ip_address[0]);
+        DPV("IP_ADDRESS", ip_address[1]);
+        DPV("IP_ADDRESS", ip_address[2]);
+        DPV("IP_ADDRESS", ip_address[3]);
         load_setting(sst, PORT_NUMBER, ip_port);
         DPV("PORT_NUMBER", ip_port);
         load_setting_string(sst, SSID, ssid);
-        DPV("SSID", wifi_mode);
+        DPV("SSID", ssid);
         load_setting_string(sst, PASSWORD, password);
         DPV("PASSWORD", password);
         load_setting(sst, CHANNEL, channel);
@@ -314,7 +319,6 @@ static int act_get_setting(byte type, byte* buff, byte* len)
 
     ret = read_setting(sst, type, buff, len);
     DPV("ret", ret);
-    DPA("data", buff, *len);
 
     return ret;
 }

@@ -1,8 +1,10 @@
 /* -*- mode: c -*- */
 
 /*
-   Antiflood Copyright (C) 2018 Alexey <Inverse> Shumeiko
+   Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
+
    This file is part of Antiflood project.
+
    This firmware is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -59,42 +61,42 @@ public:
 
     int push(int addr);
     int pop(int addr);
-    
+
     /* crc-16 calculation */
     static unsigned short crc16(const byte *block, unsigned short len);
-       
+
     /* get total length in bytes */   
     short Setting::length(void) const 
     {
         return _len + 4;
     }
-    
+
     /* get setting type */
     byte Setting::get_type() const
     {
-        return _type;   
+        return _type;
     }
-    
+
     /* get payload length */
     byte Setting::get_len() const
     {
-        return _len;   
+        return _len;
     }
-    
+
     /* get heck sum */
     byte Setting::get_crc() const
     {
-        return _crc;   
+        return _crc;
     }
-    
+
     /* get payload */
     byte Setting::get_data(byte *buff, byte buff_len = 255) const
     {
         byte len = buff_len < _len ? buff_len : _len;
-        memcpy(buff, data, len);
+        memcpy(buff, data + 2, len);
         return len;
     }
-    
+
     /* check equality */
     bool operator == (const Setting &Ref) const 
     {
