@@ -60,6 +60,10 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt);
 /** Debug print if test fails. */
 #define DPT(test) { if (!(test)) { DPC("#" #test); } }
 
+/** Free RAM. */
+#define DFM(msg) DPV((msg), DFM_());
+int DFM_(void);
+
 
 
 #else  /* DEBUG_PRINTOUT */
@@ -71,6 +75,7 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt);
 #define DPV(x, y)
 #define DPA(x, y, z)
 #define DPT(x) { (x); }
+#define DFM
 
 
 
