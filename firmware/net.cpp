@@ -67,6 +67,7 @@ void NetServer::setup(void)
     digitalWrite(WIFIRS, HIGH);
 
     DPC("power on ESP8266");
+    // FIXME: TODO: hangs up here
     _ticker.delay_shield_up();
 
     /* Establish connection. */
