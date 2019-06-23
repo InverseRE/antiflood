@@ -156,7 +156,7 @@ void loop()
     unsigned long delay = scheduler.run();
     // TODO: check WiFi events too
 
-    ticker.delay(delay);
+    ticker.suspend(delay);
 }
 
 static byte act_state(byte* buf, byte buf_max_size)
