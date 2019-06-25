@@ -32,8 +32,8 @@ typedef unsigned long (*Fptr)(unsigned long dt);
 
 /** Task's metdadata. */
 struct Task {
-    unsigned long t2g;                      /**< time to go (remaining time before execution) */
     Fptr task;                              /**< pointer to a task */
+    unsigned long t2g;                      /**< time to go (remaining time before execution) */
 
     bool operator ==(const Task& t) const { return task == t.task; }
 };
