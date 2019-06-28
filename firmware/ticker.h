@@ -26,12 +26,16 @@
 
 #include <Arduino.h>
 
+#define FAR_NEXT                (-1)
 #define LED_SPIKE_NEXT          10          /**< spike's next schedule, ms */
 #define LED_FLASH_NEXT          180         /**< flash' next schedule, ms */
 #define LED_BLINK_NEXT          480         /**< blink's next schedule, ms */
 #define LED_NEXT                10000       /**< on/off next schedule, ms */
 #define PROBE_NEXT_IDLE         8000        /**< measurement period, ms */
 #define PROBE_NEXT_ACTIVE       1000        /**< measurement period, ms */
+#define VALVE_NEXT              100         /**< valve's period, ms */
+#define PROTO_NEXT              1000        /**< protocol checks period, ms */
+#define APPLICATION_NEXT        8000        /**< application calcs period, ms */
 
 #define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
 #define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
@@ -45,8 +49,6 @@
 #define SHIELD_TRX_LATENCY      10          /**< some delays in web communication, ms */
 #define LOOP_POLLING_LATENCY    10          /**< basic loop period, ms */
 #define WEB_HEADING_COUNT       5           /**< web page redirect delay, s */
-#define PROTO_NEXT              1000        /**< protocol checks period, ms */
-#define APPLICATION_NEXT        8000        /**< application calcs period, ms */
 
 /**
  * Ticker.

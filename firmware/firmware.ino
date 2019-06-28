@@ -74,7 +74,7 @@ static bool act_open(void);
 static bool act_close(void);
 static bool act_suspend(void);
 static bool act_enable(byte idx);
-static bool act_disable(bool idx, unsigned long duration);
+static bool act_disable(byte idx, unsigned long duration);
 static bool act_emu_water(byte idx, bool immediately);
 static bool act_emu_error(byte idx, bool immediately);
 static unsigned long task_server(unsigned long dt);
@@ -119,6 +119,8 @@ void setup()
     app.setup();
 
 #if defined WIFI_STATION
+    (void)channel;
+    (void)auth_type;
     static NetServer server(ticker, ip_addr, ip_port, ssid, password);
 #elif defined WIFI_ACCESS_POINT
     static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type);
@@ -131,9 +133,10 @@ void setup()
     scheduler.setup();
     DPT(scheduler.add(task_sensors));
     DPT(scheduler.add(task_connections));
-    DPT(scheduler.add(task_display));
     DPT(scheduler.add(task_valves));
-    // TODO: add event on WiFi activity
+    DPT(scheduler.add(task_display));
+    DPT(scheduler.add(task_application));
+    DPT(scheduler.add(task_server));
 
     // some delay is needed for setup take effect
     // (for example, charging detector's capacitors)
@@ -235,7 +238,7 @@ static bool act_enable(byte idx)
     return true;
 }
 
-static bool act_disable(bool idx, unsigned long duration)
+static bool act_disable(byte idx, unsigned long duration)
 {
     if (idx >= probes_cnt) {
         return false;
@@ -388,21 +391,19 @@ static unsigned long task_valves(unsigned long dt)
     (void)dt;
 
     static bool last_trigger = false;
-    bool trigger = false;
-    bool is_resolved = false;
-    bool is_overrided = false;
+    bool is_engaged = false;
 
     for (int i = 0; i < valves_cnt; ++i) {
-        is_resolved |= VALVE_CLOSE == valves[i].run();
-        is_overrided |= valves[i].is_overrided();
-        trigger |= valves[i].is_engaged();
+        valves[i].run();
+        is_engaged |= valves[i].is_overrided();
+        is_engaged |= valves[i].is_engaged();
     }
 
-    if (last_trigger != trigger) {
+    if (last_trigger != is_engaged) {
         DPT(scheduler.force(task_server));
         DPT(scheduler.force(task_application));
-        last_trigger = trigger;
+        last_trigger = is_engaged;
     }
 
-    return is_resolved && !is_overrided ? -1 : 0;
+    return is_engaged ? VALVE_NEXT : FAR_NEXT;
 }

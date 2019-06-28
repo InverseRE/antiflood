@@ -36,6 +36,8 @@ NetServer::NetServer(const Ticker& ticker,
           _port(port),
           _ssid(ssid),
           _password(password),
+          _channel(0),
+          _auth_type(0),
           _is_online(false),
           _is_sending(false)
 {

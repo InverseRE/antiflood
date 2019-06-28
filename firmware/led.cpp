@@ -37,8 +37,6 @@ void Led::setup(void)
 
 LedMode Led::lit(void) const
 {
-    unsigned long next = -1;
-
     byte sig =
               _mode == LED_OFF     ? _ticker.sig_low()
             : _mode == LED_SPIKE   ? _ticker.sig_spike()

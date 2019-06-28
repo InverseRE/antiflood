@@ -22,6 +22,7 @@
 */
 
 #include "scheduler.h"
+#include "debug.h"
 
 void Scheduler::setup(void)
 {
