@@ -92,7 +92,7 @@ public:
 
     byte web_heading_count(void) const { return WEB_HEADING_COUNT; }
 
-    bool limit_valve(unsigned long mark) {
+    bool limit_valve(unsigned long mark) const {
         return mark != 0
                 && millis() - mark > VALVE_OPERATION_LIMIT;
     }

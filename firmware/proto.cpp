@@ -191,7 +191,7 @@ public:
     }
 };
 
-ProtoSession::ProtoSession(const Ticker& ticker, const NetServer& server)
+ProtoSession::ProtoSession(const Ticker& ticker, NetServer& server)
         : _ticker(ticker), _server(server)
 {
 }
@@ -213,7 +213,7 @@ ProtoAction ProtoSession::action(
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
     byte buf[255];
-    int len = 0;
+    unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
     while (_server.available() && len < sizeof(buf) && packets_limit) {

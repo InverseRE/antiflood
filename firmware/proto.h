@@ -45,10 +45,10 @@ enum ProtoAction {
 class ProtoSession {
 private:
     const Ticker& _ticker;
-    const NetServer& _server;
+    NetServer& _server;
 
 public:
-    ProtoSession(const Ticker& ticker, const NetServer& server);
+    ProtoSession(const Ticker& ticker, NetServer& server);
     void setup(void);
 
     ProtoAction action(
