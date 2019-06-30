@@ -26,6 +26,7 @@
 #include "debug.h"
 #include "proto.h"
 #include "storage.h"
+#include "ntp_time.h"
 
 /** Packet class. */
 enum Class : byte {
@@ -116,11 +117,26 @@ public:
         memcpy(_data, msg.c_str(), _data_size);
     }
 
-    void trx_time(unsigned long time) {
-        _data_size = sizeof(time);
+    unsigned long trx_time(String (*get_ntp_server)(void), const NetServer& ns, byte* buf, byte size) {
+        byte act_len = ntp_make_request(buf, size);
+        unsigned long utc = 0;
+        char ntp_pool[64] = {0};
+        String ntp = get_ntp_server();
+        ntp.toCharArray(ntp_pool, sizeof(ntp_pool));
+        SWS.print(ntp);
+        ns.write(ntp_pool, 123, buf, act_len);
+        ns.tx();
+        delay(1000);
+        if (ns.available()) {
+            DPC("Responce!") ;
+            act_len = ns.read(buf, size);
+            DPV("ACT LEN : ", act_len);
+            utc = ntp_parse_responce(buf, act_len);
+        }
+        _data_size = sizeof(utc);
         _cla = cResponse;
         _ins = iTime;
-        memcpy(_data, &time, _data_size);
+        memcpy(_data, &utc, _data_size);
     }
 
     void trx_full_status(byte (*state)(byte* buf, byte buf_max_size)) {
@@ -238,7 +254,8 @@ ProtoAction ProtoSession::action(
         int (*get_setting)(byte type, byte* buff, byte* size),
         int (*set_setting)(byte type, const byte* data, byte size),
         bool (*emu_water)(byte idx, bool immediately),
-        bool (*emu_error)(byte idx, bool immediately))
+        bool (*emu_error)(byte idx, bool immediately),
+        String (*get_ntp_server)(void))
 {
     byte reads_limit = 2; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
@@ -288,7 +305,8 @@ ProtoAction ProtoSession::action(
         /* switch by requested action */
         switch (pkt->ins())  {
         case iAbout:        pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
-        case iTime:         pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        case iTime:         pkt->trx_time(get_ntp_server, _server, buf, sizeof(buf));
+                                                               action = PROTO_TIME;    break;
         case iFullStatus:   pkt->trx_full_status(state);       action = PROTO_STATE;   break;
         case iOpenValves:   pkt->trx_open(open);               action = PROTO_OPEN;    break;
         case iCloseValves:  pkt->trx_close(close);             action = PROTO_CLOSE;   break;

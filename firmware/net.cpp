@@ -208,6 +208,19 @@ void NetServer::write(const void* buf, int len)
     _udp.write((byte*)buf, len);
 }
 
+void NetServer::write(const char* host, uint16_t port, const void* buf, int len)
+{
+    if (!_is_sending) {
+        _is_sending = true;
+        // FIXME: _udp.remotePort() from Arduino/libraries/WiFiEsp/src/utility/EspDrv.cpp
+        // comment out the second serial read (at EspDrv.cpp:686)
+        // https://github.com/bportaluri/WiFiEsp/issues/119
+        _udp.beginPacket(host, port);
+        DPV("tx to:", host);
+        DPV("@port", port);
+    }
+    _udp.write((byte*)buf, len);
+}
 
 void NetServer::tx(void)
 {

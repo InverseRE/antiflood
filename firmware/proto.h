@@ -30,7 +30,7 @@
 
 /** User commands. */
 enum ProtoAction {
-    PROTO_UNKNOWN,                            /* unknown */
+    PROTO_TIME,                               /* utc time */
     PROTO_STATE,                              /* show state */
     PROTO_OPEN,                               /* open valves */
     PROTO_CLOSE,                              /* close valves */
@@ -40,7 +40,8 @@ enum ProtoAction {
     PROTO_GET_SETTING,                        /* read setting */
     PROTO_SET_SETTING,                        /* append/update setting */
     PROTO_EMU_WATER,                          /* emulate WATER on probes */
-    PROTO_EMU_ERROR                           /* emulate ERROR on probes */
+    PROTO_EMU_ERROR,                          /* emulate ERROR on probes */
+    PROTO_UNKNOWN                             /* unknown */
 };
 
 /** Client session. */
@@ -63,7 +64,8 @@ public:
             int (*get_setting)(byte type, byte* buff, byte* size),
             int (*set_setting)(byte type, const byte* data, byte size),
             bool (*emu_water)(byte idx, bool immediately),
-            bool (*emu_error)(byte idx, bool immediately));
+            bool (*emu_error)(byte idx, bool immediately),
+            String (*act_get_ntp_server)(void));
 };
 
 #endif  /* __PROTO_H__ */

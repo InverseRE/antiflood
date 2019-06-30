@@ -35,6 +35,7 @@
 #include "ticker.h"
 #include "setting.h"
 #include "storage.h"
+#include "ntp_time.h"
 
 static Ticker ticker;
 
@@ -310,9 +311,6 @@ static bool act_disable(byte idx, unsigned long duration)
 static int act_get_setting(byte type, byte* buff, byte* len)
 {
     int ret;
-    DPC("act_get_setting");
-    DPV("type", type);
-    DPV("len", *len);
 
     if (!storage_loaded) {
         DPC("not loaded");
@@ -325,7 +323,6 @@ static int act_get_setting(byte type, byte* buff, byte* len)
     }
 
     ret = read_setting(sst, type, buff, len);
-    DPV("ret", ret);
 
     return ret;
 }
@@ -333,9 +330,6 @@ static int act_get_setting(byte type, byte* buff, byte* len)
 static int act_set_setting(byte type, const byte* data, byte len)
 {
     int ret;
-    DPC("act_set_setting");
-    DPV("type", type);
-    DPV("len", len);
 
     if (!storage_loaded && !storage_created) {
         DPC("not loaded & not created");
@@ -343,9 +337,22 @@ static int act_set_setting(byte type, const byte* data, byte len)
     }
 
     ret = write_setting(sst, type, data, len);
-    DPV("ret", ret);
 
     return ret;
+}
+
+static String act_get_ntp_server(void)
+{
+    String ntp = NTP_SERVER_POOL;
+
+    if (!storage_loaded && !storage_created) {
+        DPC("not loaded & not created");
+        return ntp;
+    }
+
+    load_setting_string(sst, NTP_SERVER_IP, ntp);
+
+    return ntp;
 }
 
 static bool act_emu_water(byte idx, bool immediately)
@@ -407,7 +414,8 @@ static unsigned long task_server(unsigned long dt)
             act_get_setting,
             act_set_setting,
             act_emu_water,
-            act_emu_error);
+            act_emu_error,
+            act_get_ntp_server);
 
     return FAR_NEXT;
 }

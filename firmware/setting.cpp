@@ -76,6 +76,7 @@ Setting::Setting(byte type, byte len, const byte *value)
 {
     assert(STORAGE_TYPE != type);
     data = (byte*)malloc(_len + 4);
+    assert(data != nullptr);
     data[0] = _type;
     data[1] = _len;
     memcpy(data + 2, value, _len);
@@ -151,6 +152,13 @@ int Setting::pop(int addr)
 
     /* update internal state */
     data = realloc(data, _len + 4);
+
+    if (!data) {
+        _type = 0;
+        _len = 0;
+        return MEMORY_FULL;
+    }
+
     for (int i = 0; i < _len + 4; i++) {
         data[i] = EEPROM.read(addr + i);
     }

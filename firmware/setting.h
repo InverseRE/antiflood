@@ -31,7 +31,8 @@
 enum SettingErrorCodes {
     OK = 0,
     CRC_ERROR = 1,
-    BAD_ARGUMENT = 2
+    BAD_ARGUMENT = 2,
+    MEMORY_FULL = 3
 };
 
 /** Setting types. */
@@ -42,7 +43,8 @@ enum SettingTypes {
     SSID = 4,
     PASSWORD = 5,
     CHANNEL = 6,
-    AUTH_TYPE = 7
+    AUTH_TYPE = 7,
+    NTP_SERVER_IP = 8
 };
 
 /** Settings */

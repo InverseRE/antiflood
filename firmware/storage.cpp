@@ -340,11 +340,14 @@ void load_setting_bytes(SettingsStorage& sst, byte type, byte* st)
 void load_setting_string(SettingsStorage& sst, byte type, String& st)
 {
     Setting s;
-    char value[256] = {0};
+    char value[64] = {0};
+    DPV("type", type);
     if (ST_OK == sst.get(type, s)) {
-        s.get_data(value);
+        DPC("update");
+        s.get_data(value, sizeof(value) - 1);
         st = String(value);
     }
+    DPC("exit");
 }
 
 int read_setting(SettingsStorage& sst, byte type, byte* buff, byte* len)

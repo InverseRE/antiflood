@@ -71,6 +71,7 @@ public:
     int read(void* buf, int len);
 
     void write(const void* buf, int len);
+    void write(const char* host, uint16_t port, const void* buf, int len);
     void tx(void);
 };
 
