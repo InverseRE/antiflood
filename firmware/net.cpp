@@ -36,6 +36,8 @@ NetServer::NetServer(const Ticker& ticker,
           _port(port),
           _ssid(ssid),
           _password(password),
+          _channel(0),
+          _auth_type(0),
           _is_online(false),
           _is_sending(false)
 {
@@ -67,6 +69,7 @@ void NetServer::setup(void)
     digitalWrite(WIFIRS, HIGH);
 
     DPC("power on ESP8266");
+    // FIXME: TODO: hangs up here
     _ticker.delay_shield_up();
 
     /* Establish connection. */
@@ -159,7 +162,7 @@ bool NetServer::rx(void)
     if (conn) {
         IPAddress ipa = _udp.remoteIP();
         uint16_t rp = _udp.remotePort();
-        DPV("rx from:", ipa);
+        DPV("rx from", ipa);
         DPV("@port", rp);
     }
     return conn;
@@ -185,7 +188,7 @@ void NetServer::write(const void* buf, int len)
         IPAddress ipa = _udp.remoteIP();
         uint16_t rp = _udp.remotePort();
         _udp.beginPacket(ipa, rp);
-        DPV("tx to:", ipa);
+        DPV("tx to", ipa);
         DPV("@port", rp);
     }
     _udp.write((byte*)buf, len);

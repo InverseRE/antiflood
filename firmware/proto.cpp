@@ -51,15 +51,13 @@ enum Instruction : byte {
     iRFU          = 255                     /**< reserved */
 };
 
-class Packet {
+class __attribute__((packed)) Packet {
 private:
-#pragma push(pack, 0)
     Class _cla;                             /**< class of the packet */
     Instruction _ins;                       /**< included data type */
     byte _seqnum;                           /**< request/response, both have the same numbers */
     byte _data_size;                        /**< raw data length */
     byte _data[56];                         /**< raw data, structured acording to it's type */
-#pragma pop
 
     byte hdr_size(void) const {
         return 4;
@@ -161,23 +159,24 @@ public:
 
     void trx_disable_probe(bool (*disable)(byte idx, unsigned long duration)) {
         bool res = _data_size == 5 && disable(_data[0],
-                _data[1] << 24 | _data[2] << 16 | _data[3] << 8 | _data[4]);
+                  ((unsigned long)_data[1] << 24) | ((unsigned long)_data[2]) << 16
+                | ((unsigned long)_data[3] << 8) | ((unsigned long)_data[4]));
         _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iDisableProbe;
         memcpy(_data, &res, _data_size);
     }
 
-    void trx_emu_water(bool (*emu_water)(byte idx)) {
-        bool res = _data_size == 1 && emu_water(_data[0]);
+    void trx_emu_water(bool (*emu_water)(byte idx, bool immediately)) {
+        bool res = _data_size == 2 && emu_water(_data[0], _data[1]);
         _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iEmuWater;
         memcpy(_data, &res, _data_size);
     }
 
-    void trx_emu_error(bool (*emu_error)(byte idx)) {
-        bool res = _data_size == 2 && emu_error(_data[0]);
+    void trx_emu_error(bool (*emu_error)(byte idx, bool immediately)) {
+        bool res = _data_size == 2 && emu_error(_data[0], _data[1]);
         _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iEmuError;
@@ -192,7 +191,7 @@ public:
     }
 };
 
-ProtoSession::ProtoSession(const Ticker& ticker, const NetServer& server)
+ProtoSession::ProtoSession(const Ticker& ticker, NetServer& server)
         : _ticker(ticker), _server(server)
 {
 }
@@ -208,13 +207,13 @@ ProtoAction ProtoSession::action(
         bool (*suspend)(void),
         bool (*enable)(byte idx),
         bool (*disable)(byte idx, unsigned long duration),
-        bool (*emu_water)(byte idx),
-        bool (*emu_error)(byte idx))
+        bool (*emu_water)(byte idx, bool immediately),
+        bool (*emu_error)(byte idx, bool immediately))
 {
     byte packets_limit = 1; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
     byte buf[255];
-    int len = 0;
+    unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
     while (_server.available() && len < sizeof(buf) && packets_limit) {

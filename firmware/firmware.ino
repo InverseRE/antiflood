@@ -30,6 +30,7 @@
 #include "probe.h"
 #include "valve.h"
 #include "proto.h"
+#include "scheduler.h"
 #include "ticker.h"
 
 static Ticker ticker;
@@ -66,6 +67,23 @@ static App app(ticker,
 
 static NetServer* p_server = nullptr;
 
+static Scheduler scheduler(ticker);
+
+static byte act_state(byte* buf, byte buf_max_size);
+static bool act_open(void);
+static bool act_close(void);
+static bool act_suspend(void);
+static bool act_enable(byte idx);
+static bool act_disable(byte idx, unsigned long duration);
+static bool act_emu_water(byte idx, bool immediately);
+static bool act_emu_error(byte idx, bool immediately);
+static unsigned long task_server(unsigned long dt);
+static unsigned long task_application(unsigned long dt);
+static unsigned long task_sensors(unsigned long dt);
+static unsigned long task_connections(unsigned long dt);
+static unsigned long task_display(unsigned long dt);
+static unsigned long task_valves(unsigned long dt);
+
 /** Startup procedure. */
 void setup()
 {
@@ -100,16 +118,48 @@ void setup()
     }
     app.setup();
 
-    // static NetServer server(ticker, ip_addr, ip_port, ssid, password); // STATION
-    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
+#if defined WIFI_STATION
+    (void)channel;
+    (void)auth_type;
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password);
+#elif defined WIFI_ACCESS_POINT
+    static NetServer server(ticker, ip_addr, ip_port, ssid, password, channel, auth_type);
+#else
+#   error no server type specified
+#endif
     server.setup();
     p_server = &server;
+
+    scheduler.setup();
+    DPT(scheduler.add(task_sensors));
+    DPT(scheduler.add(task_connections));
+    DPT(scheduler.add(task_valves));
+    DPT(scheduler.add(task_display));
+    DPT(scheduler.add(task_application));
+    DPT(scheduler.add(task_server));
 
     // some delay is needed for setup take effect
     // (for example, charging detector's capacitors)
     ticker.delay_setup();
 
     DPC("setup complete");
+}
+
+/** Main procedure. */
+void loop()
+{
+    unsigned long tm = ticker.tick();
+
+    /* Application should restart once per month. */
+    if (tm & 0x80000000) {
+        reset();
+        return;
+    }
+
+    unsigned long delay = scheduler.run();
+    // TODO: check WiFi events too
+
+    ticker.suspend(delay);
 }
 
 static byte act_state(byte* buf, byte buf_max_size)
@@ -149,6 +199,8 @@ static bool act_open(void)
         res &= valves[i].force_open();
     }
 
+    DPT(scheduler.force(task_valves));
+
     return res;
 }
 
@@ -159,6 +211,8 @@ static bool act_close(void)
     for (int i = 0; i < valves_cnt; ++i) {
         res &= valves[i].force_close();
     }
+
+    DPT(scheduler.force(task_valves));
 
     return res;
 }
@@ -178,10 +232,13 @@ static bool act_enable(byte idx)
 
     probes[idx].enable();
 
+    DPT(scheduler.force(task_sensors));
+    DPT(scheduler.force(task_connections));
+
     return true;
 }
 
-static bool act_disable(bool idx, unsigned long duration)
+static bool act_disable(byte idx, unsigned long duration)
 {
     if (idx >= probes_cnt) {
         return false;
@@ -189,10 +246,13 @@ static bool act_disable(bool idx, unsigned long duration)
 
     probes[idx].disable(duration);
 
+    DPT(scheduler.force(task_sensors));
+    DPT(scheduler.force(task_connections));
+
     return true;
 }
 
-static bool act_emu_water(byte idx)
+static bool act_emu_water(byte idx, bool immediately)
 {
     if (idx >= probes_cnt) {
         return false;
@@ -200,10 +260,14 @@ static bool act_emu_water(byte idx)
 
     probes[idx].emulate_water();
 
+    if (immediately) {
+        DPT(scheduler.force(task_sensors));
+    }
+
     return true;
 }
 
-static bool act_emu_error(byte idx)
+static bool act_emu_error(byte idx, bool immediately)
 {
     if (idx >= probes_cnt) {
         return false;
@@ -211,25 +275,19 @@ static bool act_emu_error(byte idx)
 
     probes[idx].emulate_error();
 
+    if (immediately) {
+        DPT(scheduler.force(task_connections));
+    }
+
     return true;
 }
 
-/** Main procedure. */
-void loop()
+static unsigned long task_server(unsigned long dt)
 {
-    unsigned long tm = ticker.tick();
+    (void)dt;
 
-    /* Application should restart once per month. */
-    if (tm & 0x80000000) {
-        reset();
-        return;
-    }
-
-    AppState app_state = app.solve();
-
-    if (p_server->is_offline() || !p_server->rx()) {
-        ticker.delay_loop();
-        return;
+    if (!p_server || p_server->is_offline() || !p_server->rx()) {
+        return PROTO_NEXT;
     }
 
     ProtoAction action = ProtoSession(ticker, *p_server).action(
@@ -253,6 +311,97 @@ void loop()
     default:              DPC("proto: ...");
     }
 
-    ticker.delay_shield_trx();
-    ticker.delay_loop();
+    return PROTO_NEXT;
+}
+
+static unsigned long task_application(unsigned long dt)
+{
+    (void)dt;
+
+    static AppState last_state = APP_MALFUNCTION;
+    AppState app_state = app.solve();
+
+    if (last_state != app_state) {
+        DPT(scheduler.force(task_display));
+        DPT(scheduler.force(task_valves));
+        DPT(scheduler.force(task_server));
+        last_state = app_state;
+    }
+
+    return FAR_NEXT;
+}
+
+static unsigned long task_sensors(unsigned long dt)
+{
+    (void)dt;
+
+    static bool last_trigger = false;
+    bool trigger = false;
+
+    for (int i = 0; i < probes_cnt; ++i) {
+        trigger |= PROBE_WATER == probes[i].test_sensor();
+    }
+
+    if (last_trigger != trigger) {
+        DPT(scheduler.force(task_application));
+        last_trigger = trigger;
+    }
+
+    return trigger ? PROBE_ACTIVE_NEXT : PROBE_IDLE_NEXT;
+}
+
+static unsigned long task_connections(unsigned long dt)
+{
+    (void)dt;
+
+    static bool last_trigger = false;
+    bool trigger = false;
+
+    for (int i = 0; i < probes_cnt; ++i) {
+        trigger |= PROBE_ERROR == probes[i].test_connection();
+    }
+
+    if (last_trigger != trigger) {
+        DPT(scheduler.force(task_application));
+        last_trigger = trigger;
+    }
+
+    return trigger ? LINE_ACTIVE_NEXT : LINE_IDLE_NEXT;
+}
+
+static unsigned long task_display(unsigned long dt)
+{
+    (void)dt;
+
+    LedMode max = LED_OFF;
+
+    for (int i = 0; i < leds_cnt; ++i) {
+        LedMode m = leds[i].mode();
+        max = m > max ? m : max;
+        leds[i].lit();
+    }
+
+    return max == LED_BLINK ? LED_NEXT : FAR_NEXT;
+}
+
+static unsigned long task_valves(unsigned long dt)
+{
+    (void)dt;
+
+    static bool last_trigger = false;
+    bool is_engaged = false;
+
+    for (int i = 0; i < valves_cnt; ++i) {
+        valves[i].run();
+        is_engaged |= valves[i].is_overrided();
+        is_engaged |= valves[i].is_engaged();
+    }
+
+    if (last_trigger != is_engaged) {
+        DPT(scheduler.force(task_server));
+        DPT(scheduler.force(task_application));
+        last_trigger = is_engaged;
+    }
+
+    return is_engaged ? VALVE_NEXT : FAR_NEXT;
 }

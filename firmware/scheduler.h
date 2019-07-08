@@ -1,4 +1,4 @@
-/* -*-*- mode: c++ -*-*- */
+/* -*- mode: c++ -*- */
 
 /*
    Antiflood Copyright (C) 2018 Alexey <Inverse> Shumeiko
@@ -21,32 +21,39 @@
    For more details see LICENSE file.
 */
 
-#ifndef __LED_H__
-#define __LED_H__
+#ifndef __SCHEDULER_H__
+#define __SCHEDULER_H__
 
+#include "list.h"
 #include "ticker.h"
 
-/** LED states. */
-enum LedMode {
-    LED_OFF,                                /**< constantly off */
-    LED_ON,                                 /**< constantly on */
-    LED_BLINK                               /**< periodic blinking */
+/** Task pointer. */
+typedef unsigned long (*Fptr)(unsigned long dt);
+
+/** Task's metdadata. */
+struct Task {
+    Fptr task;                              /**< pointer to a task */
+    unsigned long t2g;                      /**< time to go (remaining time before execution) */
+
+    bool operator ==(const Task& t) const { return task == t.task; }
 };
 
-/** LED. */
-class Led {
+/** Scheduler. */
+class Scheduler {
 private:
     const Ticker& _ticker;
-    const byte _port;
-    LedMode _mode;
+    unsigned long _time_mark;
+    List<Task> _tasks;
 
 public:
-    Led(const Ticker& ticker, byte port);
+    Scheduler(const Ticker& ticker) : _ticker(ticker) {}
     void setup(void);
 
-    void set(LedMode mode) { _mode = mode; }
-    LedMode mode(void) const { return _mode; }
-    byte lit(void) const;
+    bool add(Fptr task, unsigned long t2g = 0);
+    bool drop(Fptr task);
+    bool supress(Fptr task);
+    bool force(Fptr task);
+    unsigned long run(void);                /**< returns total time passed */
 };
 
-#endif  /* __LED_H__ */
+#endif  /* __SCHEDULER_H__ */

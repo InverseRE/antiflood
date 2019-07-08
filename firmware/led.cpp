@@ -35,24 +35,14 @@ void Led::setup(void)
     digitalWrite(_port, LOW);
 }
 
-void Led::lit(LedMode mode)
+byte Led::lit(void) const
 {
-    _mode = mode;
-
     byte sig =
-              mode == LED_OFF     ? _ticker.sig_low()
-            : mode == LED_SPIKE   ? _ticker.sig_spike()
-            : mode == LED_BLINK   ? _ticker.sig_blink()
-            : mode == LED_ON      ? _ticker.sig_high()
-            : mode == LED_WARNING ? _ticker.sig_flash()
-            :                       _ticker.sig_flash();
-
+              _mode == LED_OFF     ? _ticker.sig_low()
+            : _mode == LED_ON      ? _ticker.sig_high()
+            : _mode == LED_BLINK   ? _ticker.sig_blink()
+            :                        _ticker.sig_blink();
     digitalWrite(_port, sig);
-}
 
-void Led::dim(void)
-{
-    _mode = LED_OFF;
-
-    digitalWrite(_port, LOW);
+    return sig;
 }
