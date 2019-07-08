@@ -28,13 +28,6 @@
 #include "net.h"
 #include "probe.h"
 
-
-
-#define LED_HALT_DURATION  100
-#define LED_SWITCH_LATENCY 500
-
-
-
 /** Turn off unused modules at startup. */
 void peripheral_configure()
 {

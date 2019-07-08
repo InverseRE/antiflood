@@ -328,7 +328,7 @@ static unsigned long task_application(unsigned long dt)
         last_state = app_state;
     }
 
-    return APPLICATION_NEXT;
+    return FAR_NEXT;
 }
 
 static unsigned long task_sensors(unsigned long dt)
@@ -347,7 +347,7 @@ static unsigned long task_sensors(unsigned long dt)
         last_trigger = trigger;
     }
 
-    return trigger ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+    return trigger ? PROBE_ACTIVE_NEXT : PROBE_IDLE_NEXT;
 }
 
 static unsigned long task_connections(unsigned long dt)
@@ -366,24 +366,22 @@ static unsigned long task_connections(unsigned long dt)
         last_trigger = trigger;
     }
 
-    return trigger ? PROBE_NEXT_ACTIVE : PROBE_NEXT_IDLE;
+    return trigger ? LINE_ACTIVE_NEXT : LINE_IDLE_NEXT;
 }
 
 static unsigned long task_display(unsigned long dt)
 {
     (void)dt;
 
-    LedMode min = LED_OFF;
+    LedMode max = LED_OFF;
 
     for (int i = 0; i < leds_cnt; ++i) {
-        LedMode m = leds[i].lit();
-        min = m < min ? m : min;
+        LedMode m = leds[i].mode();
+        max = m > max ? m : max;
+        leds[i].lit();
     }
 
-    return    min == LED_SPIKE   ? LED_SPIKE_NEXT
-            : min == LED_WARNING ? LED_FLASH_NEXT
-            : min == LED_BLINK   ? LED_BLINK_NEXT
-            :                      LED_NEXT;
+    return max == LED_BLINK ? LED_NEXT : FAR_NEXT;
 }
 
 static unsigned long task_valves(unsigned long dt)

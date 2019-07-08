@@ -28,11 +28,9 @@
 
 /** LED states. */
 enum LedMode {
-    LED_SPIKE,                              /**< tiny light or rapid single flash */
-    LED_WARNING,                            /**< rapidly flashes */
-    LED_BLINK,                              /**< periodic blinking */
+    LED_OFF,                                /**< constantly off */
     LED_ON,                                 /**< constantly on */
-    LED_OFF                                 /**< constantly off */
+    LED_BLINK                               /**< periodic blinking */
 };
 
 /** LED. */
@@ -48,7 +46,7 @@ public:
 
     void set(LedMode mode) { _mode = mode; }
     LedMode mode(void) const { return _mode; }
-    LedMode lit(void) const;
+    byte lit(void) const;
 };
 
 #endif  /* __LED_H__ */

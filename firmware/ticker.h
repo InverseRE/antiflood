@@ -27,18 +27,14 @@
 #include <Arduino.h>
 
 #define FAR_NEXT                (-1)
-#define LED_SPIKE_NEXT          10          /**< spike's next schedule, ms */
-#define LED_FLASH_NEXT          180         /**< flash' next schedule, ms */
-#define LED_BLINK_NEXT          480         /**< blink's next schedule, ms */
-#define LED_NEXT                10000       /**< on/off next schedule, ms */
-#define PROBE_NEXT_IDLE         8000        /**< measurement period, ms */
-#define PROBE_NEXT_ACTIVE       1000        /**< measurement period, ms */
+#define LED_NEXT                100         /**< blink's next schedule, ms */
+#define PROBE_IDLE_NEXT         4000        /**< measurement period, ms */
+#define PROBE_ACTIVE_NEXT       4000        /**< measurement period, ms */
+#define LINE_IDLE_NEXT          8000        /**< measurement period, ms */
+#define LINE_ACTIVE_NEXT        8000        /**< measurement period, ms */
 #define VALVE_NEXT              100         /**< valve's period, ms */
 #define PROTO_NEXT              1000        /**< protocol checks period, ms */
-#define APPLICATION_NEXT        8000        /**< application calcs period, ms */
 
-#define LED_SPIKE_DURATION      30          /**< spike on duration, ms */
-#define LED_FLASH_DURATION      200         /**< rapid flashing on/off duration, ms */
 #define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
 #define VALVE_OPERATION_LIMIT   12000       /**< amount of time for valve's action, ms*/
@@ -57,20 +53,16 @@
  */
 class Ticker {
 private:
-    byte _sig_spike;
     byte _sig_blink;
-    byte _sig_flash;
 
 public:
-    Ticker() : _sig_spike(LOW), _sig_blink(LOW), _sig_flash(LOW) {}
+    Ticker() : _sig_blink(LOW) {}
     void setup(void) {}
 
     unsigned long tick(void)
     {
         unsigned long tm = millis();
-        _sig_spike = tm % (200 * LED_SPIKE_DURATION) > LED_SPIKE_DURATION ? LOW : HIGH;
-        _sig_blink = tm % (  2 * LED_BLINK_DURATION) > LED_BLINK_DURATION ? LOW : HIGH;
-        _sig_flash = tm % (  2 * LED_FLASH_DURATION) > LED_FLASH_DURATION ? LOW : HIGH;
+        _sig_blink = tm % ( 2 * LED_BLINK_DURATION) > LED_BLINK_DURATION ? LOW : HIGH;
         return tm;
     }
 
@@ -78,9 +70,7 @@ public:
 
     byte sig_low(void) const { return LOW; }
     byte sig_high(void) const { return HIGH; }
-    byte sig_spike(void) const { return _sig_spike; }
     byte sig_blink(void) const { return _sig_blink; }
-    byte sig_flash(void) const { return _sig_flash; }
 
     void suspend(unsigned long t) const { delay(t); } // TODO: replace with a suspend function
     void delay_setup(void) const { delay(SETUP_DELAY); }

@@ -46,7 +46,7 @@ AppState App::solve(void)
     if (_state == APP_MALFUNCTION) {
         DPC("app: malfunction");
         for (int i = 0; i < _leds_cnt; ++i) {
-            _leds[i].set(LED_WARNING);
+            _leds[i].set(LED_BLINK);
         }
         return _state;
     }
@@ -74,8 +74,8 @@ AppState App::solve(void)
     for (int i = 0; i < _probes_cnt && i < _leds_cnt; ++i) {
         switch (_probes[i].connection()) {
         case PROBE_OFFLINE: _leds[i].set(LED_OFF);     break;
-        case PROBE_ONLINE:  _leds[i].set(LED_SPIKE);   break;
-        case PROBE_ERROR:   _leds[i].set(LED_WARNING); continue;
+        case PROBE_ONLINE:  _leds[i].set(LED_OFF);     break;
+        case PROBE_ERROR:   _leds[i].set(LED_BLINK);   continue;
         }
         switch (_probes[i].sensor()) {
         case PROBE_DRY:                                break;
