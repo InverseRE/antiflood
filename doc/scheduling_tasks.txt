@@ -25,9 +25,9 @@
 |  serv  |        |  1000  |  1000  | conn-s |
 |        |        |        |        | valves |
 +--------+--------+--------+--------+--------+
-|        |        |        |        | valves |
-|  app   |        |  inf   |  inf   | display|
-|        |        |        |        |        |
+|        |        |        |        | serv   |
+|  app   |        |  inf   |  inf   | valves |
+|        |        |        |        | display|
 +--------+--------+--------+--------+--------+
 |        |        |        |        | serv   |
 | valves |        |   100  |  inf   | app    |
@@ -50,12 +50,21 @@ auto detect  =>  sens-s | conn-s  =>  app  =>  valves | display
 NETWORK ACTIVITY:
 
 esp01 activ  =>  serv  =>  sens-s | conn-s | valves
+     valves  =>  serv  =>  sens-s | conn-s | valves
   scheduler  =>  serv  =>  sens-s | conn-s | valves
 
 
 
 PROLONGED ROUTINE:
 
-LOOPED (app  =>  valves  =>  ...)
+scheduler  =>  serv
 scheduler  =>  valves
 scheduler  =>  display
+
+
+
+MAY BE LOOPED:
+ app  =>  valves  =>  ...
+serv  =>  sens-s | conn-s | valves  =>  ...
+serv  =>  sens-s | conn-s | valves  =>  app  => ...
+serv  =>  sens-s | conn-s | valves  =>  app  => valves  =>  ...
