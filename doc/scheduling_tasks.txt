@@ -56,5 +56,6 @@ esp01 activ  =>  serv  =>  sens-s | conn-s | valves
 
 PROLONGED ROUTINE:
 
+LOOPED (app  =>  valves  =>  ...)
 scheduler  =>  valves
 scheduler  =>  display
