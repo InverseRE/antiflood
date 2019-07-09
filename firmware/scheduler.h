@@ -1,7 +1,7 @@
 /* -*- mode: c++ -*- */
 
 /*
-   Antiflood Copyright (C) 2018 Alexey <Inverse> Shumeiko
+   Antiflood Copyright (C) 2019 Alexey <Inverse> Shumeiko
 
    This file is part of Antiflood project.
 
