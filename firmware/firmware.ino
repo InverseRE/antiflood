@@ -326,6 +326,7 @@ static unsigned long task_application(unsigned long dt)
     if (last_state != app_state) {
         DPT(scheduler.force(task_display));
         DPT(scheduler.force(task_valves));
+        DPT(scheduler.force(task_server));
         last_state = app_state;
     }
 
