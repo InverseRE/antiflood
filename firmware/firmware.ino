@@ -311,7 +311,9 @@ static unsigned long task_server(unsigned long dt)
     default:              DPC("proto: ...");
     }
 
-    return PROTO_NEXT;
+    return PROTO_NEXT; // TODO: adjust timings:
+                       // activate this task by actual signals from ESP01
+                       // or scheduling it during intensive communications
 }
 
 static unsigned long task_application(unsigned long dt)
@@ -324,7 +326,6 @@ static unsigned long task_application(unsigned long dt)
     if (last_state != app_state) {
         DPT(scheduler.force(task_display));
         DPT(scheduler.force(task_valves));
-        DPT(scheduler.force(task_server));
         last_state = app_state;
     }
 
