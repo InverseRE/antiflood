@@ -24,35 +24,179 @@
 #include <avr/wdt.h>
 #include <avr/power.h>
 
+#include <avr/wdt.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
+
 #include "hw.h"
-#include "net.h"
-#include "probe.h"
-
-/** Turn off unused modules at startup. */
-void peripheral_configure()
-{
-    /* Disable not used timers. */
-    power_timer1_disable();
-    power_timer2_disable();
-
-    /* Disable I2C. */
-    power_twi_disable();
-
-    /* Disable SPI. */
-    power_spi_disable();
-}
-
-/** Signal an error by all means. */
-void halt_on_error(void)
-{
-    // TODO
-    do { } while (true); /* here may be placed an option to unstack */
-}
+#include "ticker.h"
 
 /** Perform reset by watchdog timer. */
-void reset(void)
+void hw_reset(void)
 {
-    /* Ensure WD timer is power up. */
-    wdt_enable(WDTO_4S);
-    halt_on_error();
+    wdt_enable(WDTO_15MS);
+    do { } while (true); // here may be placed an option to unstack
 }
+
+/** Turn off unused modules at startup. */
+void hw_configure()
+{
+    wdt_disable();
+    interrupts();
+
+    power_timer0_disable();
+    power_timer1_disable();
+    power_timer2_disable();
+    power_twi_disable();
+    power_spi_disable();
+
+    power_adc_enable();
+    power_usart0_enable();
+}
+
+/**
+ * Enters the arduino into a sleep mode.
+ *
+ * Uses IDLE mode, TIMER1(2^16).
+ *
+ * time = 1/16MHz * 1024 * (2^16 - preload) * 1000, ms
+ * preload = 2^16 - (time * 16000 / 1024)
+ */
+void hw_suspend(unsigned long time)
+{
+    wdt_reset();
+
+    // time limits
+    if (time < SUSPEND_MIN) {
+        return;
+    }
+    if (time > SUSPEND_MAX) {
+        time = SUSPEND_MAX;
+    }
+
+    unsigned long ticks = (time * 125) / 8; // GCD(16000, 1024) = 128
+    ticks = ticks < 65535 ? ticks : 65535;
+    unsigned short preload = 65535 - (unsigned short)ticks;
+
+    // select an apropriate sleep mode
+    byte sleep_mode = SLEEP_MODE_IDLE;
+    set_sleep_mode(sleep_mode);
+
+    // before
+    wdt_disable();
+
+    TCCR1A = 0x00;
+    TCCR1B = 0x05;
+    TCNT1 = preload;
+    TIMSK1 = 0x01;
+
+    // suspend/resume point
+    sleep_enable();
+    sleep_mode();
+    sleep_disable();
+
+    // after
+    TIMSK1 = 0x00;
+
+    wdt_enable(ACTIVE_LIMIT);
+}
+
+// #ifndef DEBUG_PRINTOUT
+// /** Pin change Interrupt Service. This is executed when pin form A0 to A5 changed. */
+// ISR (PCINT1_vect) {
+//     /* Turn off WDT. */
+//     wdt_disable();
+//     /* Disable pin change interrupts for A0 to A5 */
+//     PCICR  &= ~bit(PCIE1);
+// }
+// #endif /* DEBUG_PRINTOUT */
+
+// /**
+//  * Setup the Watch Dog Timer (WDT).
+//  * WDT will generate interrupt without reset in about 8 sec.
+//  */
+// void wdt_setup()
+// {
+//     /* Clear the reset flag on the MCUSR, the WDRF bit (bit 3). */
+//     MCUSR &= ~(1 << WDRF);
+
+//     /* Configure the Watchdog timer Control Register (WDTCSR). */
+//     WDTCSR |= (1 << WDCE) | (1 << WDE);
+
+//     /* Setting the watchdog pre-scaler value. */
+//     WDTCSR  = (1 << WDP3) | (0 << WDP2) | (0 << WDP1) | (1 << WDP0);
+
+//     /* Enable the WD interrupt (note: no reset). */
+//     WDTCSR |= _BV(WDIE);
+// }
+
+// /** Enters the arduino into a sleep mode. */
+// void hw_sleep(boolean adc_off, boolean bod_off)
+// {
+//     int previousADCSRA;
+
+//     /* Disable interrupts. */
+//     noInterrupts();
+
+//     /* Setup watchdog. */
+//     wdt_setup();
+
+//     /* Prepare probes. */
+//     // TODO
+
+//     /* Pin change interrupt enable */
+//     PCMSK1 |= bit (PCINT8);  // pin A0
+//     PCMSK1 |= bit (PCINT9);  // pin A1
+//     PCMSK1 |= bit (PCINT10); // pin A2
+//     PCMSK1 |= bit (PCINT11); // pin A3
+//     PCMSK1 |= bit (PCINT12); // pin A4
+//     PCMSK1 |= bit (PCINT13); // pin A5
+//     PCIFR  |= bit (PCIF1);   // clear any outstanding interrupts
+//     PCICR  |= bit (PCIE1);   // enable pin change interrupts for A0 to A5
+
+//     /* Disable ADC */
+//     if (adc_off) {
+//         previousADCSRA = ADCSRA;
+//         ADCSRA = 0;
+//     }
+
+//     /* Use the power saving mode. */
+//     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+
+//     /* Disable interrupts. */
+//     noInterrupts();
+//     sleep_enable();
+
+//     /* Disable peripherals. */
+//     if (adc_off) {
+//         power_adc_disable();
+//     }
+
+//     /* Turn off brown-out enable in software. */
+//     if (bod_off) {
+//         MCUCR = bit(BODS) | bit(BODSE);
+//         MCUCR = bit(BODS);
+//     }
+
+//     /* Enable interrupts. */
+//     interrupts();
+
+//     /* Now enter sleep mode. */
+//     sleep_mode();
+
+//     /* The program will continue from here after the WDT timeout */
+
+//     /* First thing to do is disable sleep. */
+//     sleep_disable();
+
+//     /* Re-enable peripherals. */
+//     if (adc_off) {
+//         power_adc_enable();
+//     }
+
+//     /* Delay to settle down ADC and peripheries. */
+//     delay(10);
+
+//     /* Set previous ADC config. */
+//     ADCSRA = previousADCSRA;
+// }

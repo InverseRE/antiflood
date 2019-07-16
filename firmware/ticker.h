@@ -26,6 +26,10 @@
 
 #include <Arduino.h>
 
+#define ACTIVE_LIMIT            WDTO_8S     /**< watchdog timer in an active mode */
+#define SUSPEND_MIN             5           /**< minimum suspend time, ms*/
+#define SUSPEND_MAX             4194        /**< maximum suspend time, ms*/
+
 #define FAR_NEXT                (-1)
 #define LED_NEXT                100         /**< blink's next schedule, ms */
 #define PROBE_IDLE_NEXT         4000        /**< measurement period, ms */

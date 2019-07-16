@@ -26,7 +26,6 @@
 #include "hw.h"
 #include "led.h"
 #include "net.h"
-#include "power.h"
 #include "probe.h"
 #include "valve.h"
 #include "proto.h"
@@ -92,8 +91,8 @@ void setup()
     DPC("setup");
 
     /* Setup HW devices */
-    peripheral_configure();
-    DPC("peripheral configured");
+    hw_configure();
+    DPC("hw configured");
 
     /* TODO: read and apply user's settings */
     IPAddress ip_addr(APP_DEFAULT_IP);
@@ -152,14 +151,12 @@ void loop()
 
     /* Application should restart once per month. */
     if (tm & 0x80000000) {
-        reset();
-        return;
+        hw_reset();
     }
 
     unsigned long delay = scheduler.run();
-    // TODO: check WiFi events too
 
-    ticker.suspend(delay);
+    hw_suspend(delay);
 }
 
 static byte act_state(byte* buf, byte buf_max_size)
