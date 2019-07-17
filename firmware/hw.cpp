@@ -44,23 +44,18 @@ void hw_configure()
     wdt_disable();
     interrupts();
 
-    power_timer0_disable();
     power_timer1_disable();
     power_timer2_disable();
     power_twi_disable();
     power_spi_disable();
 
+    power_timer0_enable();
     power_adc_enable();
     power_usart0_enable();
 }
 
 /**
- * Enters the arduino into a sleep mode.
- *
- * Uses IDLE mode, TIMER1(2^16).
- *
- * time = 1/16MHz * 1024 * (2^16 - preload) * 1000, ms
- * preload = 2^16 - (time * 16000 / 1024)
+ * Enters the arduino into an idle mode.
  */
 void hw_suspend(unsigned long time)
 {
@@ -74,30 +69,21 @@ void hw_suspend(unsigned long time)
         time = SUSPEND_MAX;
     }
 
-    unsigned long ticks = (time * 125) / 8; // GCD(16000, 1024) = 128
-    ticks = ticks < 65535 ? ticks : 65535;
-    unsigned short preload = 65535 - (unsigned short)ticks;
-
-    // select an apropriate sleep mode
-    byte sleep_mode = SLEEP_MODE_IDLE;
-    set_sleep_mode(sleep_mode);
-
     // before
     wdt_disable();
 
-    TCCR1A = 0x00;
-    TCCR1B = 0x05;
-    TCNT1 = preload;
-    TIMSK1 = 0x01;
-
     // suspend/resume point
+    unsigned long end = millis() + time;
+
+    set_sleep_mode(SLEEP_MODE_IDLE);
+
     sleep_enable();
-    sleep_mode();
+    while (millis() < end) {
+        sleep_mode();
+    }
     sleep_disable();
 
     // after
-    TIMSK1 = 0x00;
-
     wdt_enable(ACTIVE_LIMIT);
 }
 
