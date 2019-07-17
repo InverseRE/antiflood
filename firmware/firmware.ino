@@ -284,7 +284,7 @@ static unsigned long task_server(unsigned long dt)
     (void)dt;
 
     if (!p_server || p_server->is_offline() || !p_server->rx()) {
-        return PROTO_NEXT;
+        return FAR_NEXT;
     }
 
     ProtoAction action = ProtoSession(ticker, *p_server).action(
@@ -308,9 +308,7 @@ static unsigned long task_server(unsigned long dt)
     default:              DPC("proto: ...");
     }
 
-    return PROTO_NEXT; // TODO: adjust timings:
-                       // activate this task by actual signals from ESP01
-                       // or scheduling it during intensive communications
+    return FAR_NEXT;
 }
 
 static unsigned long task_application(unsigned long dt)
@@ -403,4 +401,10 @@ static unsigned long task_valves(unsigned long dt)
     }
 
     return is_engaged ? VALVE_NEXT : FAR_NEXT;
+}
+
+// TODO: collision with WiFiEsp?
+void serialEvent() {
+    // BUG: response packet didn't back to client
+    DPT(scheduler.force(task_server));
 }

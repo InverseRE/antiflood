@@ -22,7 +22,7 @@
 |        |        |        |        |        |
 +--------+--------+--------+--------+--------+
 |        |        |        |        | sens-s |
-|  serv  |        |  1000  |  1000  | conn-s |
+|  serv  |        |  inf   |  inf   | conn-s |
 |        |        |        |        | valves |
 +--------+--------+--------+--------+--------+
 |        |        |        |        | serv   |
@@ -49,15 +49,14 @@ auto detect  =>  sens-s | conn-s  =>  app  =>  valves | display
 
 NETWORK ACTIVITY:
 
-esp01 activ  =>  serv  =>  sens-s | conn-s | valves
-     valves  =>  serv  =>  sens-s | conn-s | valves
-  scheduler  =>  serv  =>  sens-s | conn-s | valves
+  esp01 activ =>  serv  =>  sens-s | conn-s | valves
+       valves =>  serv  =>  sens-s | conn-s | valves
+WiFiEsp event =>  serv  =>  sens-s | conn-s | valves
 
 
 
 PROLONGED ROUTINE:
 
-scheduler  =>  serv
 scheduler  =>  valves
 scheduler  =>  display
 

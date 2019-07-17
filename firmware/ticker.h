@@ -37,7 +37,6 @@
 #define LINE_IDLE_NEXT          8000        /**< measurement period, ms */
 #define LINE_ACTIVE_NEXT        8000        /**< measurement period, ms */
 #define VALVE_NEXT              100         /**< valve's period, ms */
-#define PROTO_NEXT              1000        /**< protocol checks period, ms */
 
 #define LED_BLINK_DURATION      1000        /**< blink on/off duration, ms */
 #define PROBE_CHECK_DURATION    1           /**< measurement waitng delay: t = sqrt(R*C), ms */
