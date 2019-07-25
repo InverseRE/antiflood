@@ -403,8 +403,6 @@ static unsigned long task_valves(unsigned long dt)
     return is_engaged ? VALVE_NEXT : FAR_NEXT;
 }
 
-// TODO: collision with WiFiEsp?
 void serialEvent() {
-    // BUG: response packet didn't back to client
     DPT(scheduler.force(task_server));
 }
