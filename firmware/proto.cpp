@@ -210,13 +210,13 @@ ProtoAction ProtoSession::action(
         bool (*emu_water)(byte idx, bool immediately),
         bool (*emu_error)(byte idx, bool immediately))
 {
-    byte packets_limit = 1; // amount of packets parsed at a time
+    byte reads_limit = 2; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
     byte buf[255];
     unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
-    while (_server.available() && len < sizeof(buf) && packets_limit) {
+    while (_server.available() && len < sizeof(buf) && reads_limit--) {
 
         /* get some data */
         len += _server.read(buf + len, sizeof(buf) - len);
@@ -250,7 +250,6 @@ ProtoAction ProtoSession::action(
         case cRFU:
             DPC("cRFU");
         default:
-            packets_limit -= 1;
             len = 0;
             continue;
         }
@@ -281,7 +280,6 @@ ProtoAction ProtoSession::action(
         _server.tx(); // XXX: but this can be done later as a bunch of packets are ready
 
         /* packet has been processed, get another one */
-        packets_limit -= 1;
         len = 0;
     }
 
