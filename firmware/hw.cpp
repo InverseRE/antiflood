@@ -77,11 +77,13 @@ void hw_suspend(unsigned long time)
 
     set_sleep_mode(SLEEP_MODE_IDLE);
 
-    sleep_enable();
     while (millis() < end) {
-        sleep_mode();
+        cli();
+        sleep_enable();
+        sei();
+        sleep_cpu();
+        sleep_disable();
     }
-    sleep_disable();
 
     // after
     wdt_enable(ACTIVE_LIMIT);
