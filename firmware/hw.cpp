@@ -71,6 +71,8 @@ void hw_suspend(unsigned long time)
 
     // before
     wdt_disable();
+    // TODO: suppress Timer0 and adjust millis(), use Timer2 instead
+    // TODO: allow UART to resume on receive event immediately
 
     // suspend/resume point
     unsigned long end = millis() + time;
