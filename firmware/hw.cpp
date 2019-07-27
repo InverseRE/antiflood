@@ -31,6 +31,8 @@
 #include "hw.h"
 #include "ticker.h"
 
+extern volatile unsigned long timer0_millis;
+
 /** Perform reset by watchdog timer. */
 void hw_reset(void)
 {
@@ -55,7 +57,12 @@ void hw_configure()
 }
 
 /**
- * Enters the arduino into an idle mode.
+ * Enters the arduino into a sleep mode.
+ *
+ * Uses IDLE mode, TIMER1(2^16).
+ *
+ * time = 1/16MHz * 1024 * (2^16 - preload) * 1000, ms
+ * preload = 2^16 - (time * 16000 / 1024)
  */
 void hw_suspend(unsigned long time)
 {
@@ -69,26 +76,49 @@ void hw_suspend(unsigned long time)
         time = SUSPEND_MAX;
     }
 
+    unsigned long ticks = (time * 125) / 8; // GCD(16000, 1024) = 128
+    ticks = ticks < 65535 ? ticks : 65535;
+    unsigned short preload = 65535 - (unsigned short)ticks;
+
     // before
+    noInterrupts();
+
     wdt_disable();
-    // TODO: suppress Timer0 and adjust millis(), use Timer2 instead
+    power_timer0_disable();
+    power_timer1_enable();
+
+    TCCR1A = 0x00;
+    TCCR1B = 0x05;
+    TCNT1 = preload;
+    TIMSK1 = 0x01;
+
     // TODO: allow UART to resume on receive event immediately
 
     // suspend/resume point
-    unsigned long end = millis() + time;
-
     set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_enable();
 
-    while (millis() < end) {
-        cli();
-        sleep_enable();
-        sei();
-        sleep_cpu();
-        sleep_disable();
-    }
+    interrupts();
+    sleep_cpu();
+    sleep_disable();
+    noInterrupts();
+
+    // correction for millis()
+    unsigned short ticks_passed = TCNT1 - preload;
+    unsigned long time_passed = (unsigned long)ticks_passed * 8 / 125;
+    unsigned long ms = timer0_millis;
+
+    ms += time_passed;
+    timer0_millis = ms;
 
     // after
+    TIMSK1 = 0x00;
+
+    power_timer1_disable();
+    power_timer0_enable();
     wdt_enable(ACTIVE_LIMIT);
+
+    interrupts();
 }
 
 // #ifndef DEBUG_PRINTOUT
