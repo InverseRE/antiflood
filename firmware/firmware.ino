@@ -144,6 +144,11 @@ void setup()
     DPC("setup complete");
 }
 
+/** Serial interface event. */
+void serialEvent() {
+    DPT(scheduler.force(task_server));
+}
+
 /** Main procedure. */
 void loop()
 {
@@ -401,8 +406,4 @@ static unsigned long task_valves(unsigned long dt)
     }
 
     return is_engaged ? VALVE_NEXT : FAR_NEXT;
-}
-
-void serialEvent() {
-    DPT(scheduler.force(task_server));
 }
