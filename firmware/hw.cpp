@@ -33,6 +33,10 @@
 
 extern volatile unsigned long timer0_millis;
 
+ISR(TIMER1_OVF_vect)
+{
+}
+
 /** Perform reset by watchdog timer. */
 void hw_reset(void)
 {
@@ -92,8 +96,6 @@ void hw_suspend(unsigned long time)
     TCNT1 = preload;
     TIMSK1 = 0x01;
 
-    // TODO: allow UART to resume on receive event immediately
-
     // suspend/resume point
     set_sleep_mode(SLEEP_MODE_IDLE);
     sleep_enable();
@@ -109,6 +111,7 @@ void hw_suspend(unsigned long time)
     unsigned long ms = timer0_millis;
 
     ms += time_passed;
+    ms += 1; // overdraft for the above code
     timer0_millis = ms;
 
     // after
