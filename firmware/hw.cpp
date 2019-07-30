@@ -21,33 +21,71 @@
    For more details see LICENSE file.
 */
 
-#include <avr/wdt.h>
 #include <avr/power.h>
-
-#include <avr/wdt.h>
 #include <avr/sleep.h>
-#include <avr/power.h>
 
 #include "hw.h"
 #include "ticker.h"
 
 extern volatile unsigned long timer0_millis;
+static volatile bool wdt_ignore = false;
 
 ISR(TIMER1_OVF_vect)
 {
 }
 
+ISR(WDT_vect)
+{
+    if (wdt_ignore) {
+
+        /* Continue one time. */
+        wdt_reset();
+        wdt_ignore = false;
+
+    } else {
+
+        /*
+         * Reset-only mode.
+         * Ñlear WDIE (interrupt enable...7th from left).
+         * Set WDE (reset enable...4th from left), and set delay interval.
+         * Reset system in 16 ms...
+         */
+        MCUSR = 0;
+        WDTCSR |= 0b00011000;
+        WDTCSR = 0b00001000 | 0b000000;
+        while (true);
+    }
+}
+
 /** Perform reset by watchdog timer. */
 void hw_reset(void)
 {
+    wdt_ignore = false;
     wdt_enable(WDTO_15MS);
-    do { } while (true); // here may be placed an option to unstack
+    while (true);
+}
+
+void wdt_configure(void)
+{
+    cli();
+
+    /*
+     * Interrupt-only mode.
+     * Set WDCE (5th from left) and WDE (4th from left).
+     * Set WDIE: interrupt enabled.
+     * Clear WDE: reset disabled.
+     * Interval (right side of bar) to 8 seconds
+     */
+    MCUSR = 0;
+    WDTCSR |= 0b00011000;
+    WDTCSR =  0b01000000 | 0b100001;
+
+    sei();
 }
 
 /** Turn off unused modules at startup. */
 void hw_configure()
 {
-    wdt_disable();
     interrupts();
 
     power_timer1_disable();
@@ -58,6 +96,7 @@ void hw_configure()
     power_timer0_enable();
     power_adc_enable();
     power_usart0_enable();
+    wdt_configure();
 }
 
 /**
@@ -87,7 +126,6 @@ void hw_suspend(unsigned long time)
     // before
     noInterrupts();
 
-    wdt_disable();
     power_timer0_disable();
     power_timer1_enable();
 
@@ -105,23 +143,62 @@ void hw_suspend(unsigned long time)
     sleep_disable();
     noInterrupts();
 
-    // correction for millis()
+    // after
     unsigned short ticks_passed = TCNT1 - preload;
     unsigned long time_passed = (unsigned long)ticks_passed * 8 / 125;
     unsigned long ms = timer0_millis;
-
     ms += time_passed;
     ms += 1; // overdraft for the above code
     timer0_millis = ms;
 
-    // after
     TIMSK1 = 0x00;
 
     power_timer1_disable();
     power_timer0_enable();
-    wdt_enable(ACTIVE_LIMIT);
 
     interrupts();
+
+    // continue
+    wdt_reset();
+}
+
+/** Power down. */
+void hw_sleep(void)
+{
+    wdt_reset();
+    wdt_ignore = true;
+
+    // before
+    noInterrupts();
+
+    power_timer0_disable();
+    power_adc_disable();
+    power_usart0_disable();
+
+    // power down
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+
+    interrupts();
+    sleep_cpu();
+    sleep_disable();
+    noInterrupts();
+
+    // after
+    unsigned long ms = timer0_millis;
+    ms += 8000; // approximately
+    ms += 1; // overdraft for the above code
+    timer0_millis = ms;
+
+    power_timer0_enable();
+    power_adc_enable();
+    power_usart0_enable();
+
+    interrupts();
+
+    // continue
+    wdt_reset();
+    wdt_ignore = false;
 }
 
 // #ifndef DEBUG_PRINTOUT
@@ -133,93 +210,3 @@ void hw_suspend(unsigned long time)
 //     PCICR  &= ~bit(PCIE1);
 // }
 // #endif /* DEBUG_PRINTOUT */
-
-// /**
-//  * Setup the Watch Dog Timer (WDT).
-//  * WDT will generate interrupt without reset in about 8 sec.
-//  */
-// void wdt_setup()
-// {
-//     /* Clear the reset flag on the MCUSR, the WDRF bit (bit 3). */
-//     MCUSR &= ~(1 << WDRF);
-
-//     /* Configure the Watchdog timer Control Register (WDTCSR). */
-//     WDTCSR |= (1 << WDCE) | (1 << WDE);
-
-//     /* Setting the watchdog pre-scaler value. */
-//     WDTCSR  = (1 << WDP3) | (0 << WDP2) | (0 << WDP1) | (1 << WDP0);
-
-//     /* Enable the WD interrupt (note: no reset). */
-//     WDTCSR |= _BV(WDIE);
-// }
-
-// /** Enters the arduino into a sleep mode. */
-// void hw_sleep(boolean adc_off, boolean bod_off)
-// {
-//     int previousADCSRA;
-
-//     /* Disable interrupts. */
-//     noInterrupts();
-
-//     /* Setup watchdog. */
-//     wdt_setup();
-
-//     /* Prepare probes. */
-//     // TODO
-
-//     /* Pin change interrupt enable */
-//     PCMSK1 |= bit (PCINT8);  // pin A0
-//     PCMSK1 |= bit (PCINT9);  // pin A1
-//     PCMSK1 |= bit (PCINT10); // pin A2
-//     PCMSK1 |= bit (PCINT11); // pin A3
-//     PCMSK1 |= bit (PCINT12); // pin A4
-//     PCMSK1 |= bit (PCINT13); // pin A5
-//     PCIFR  |= bit (PCIF1);   // clear any outstanding interrupts
-//     PCICR  |= bit (PCIE1);   // enable pin change interrupts for A0 to A5
-
-//     /* Disable ADC */
-//     if (adc_off) {
-//         previousADCSRA = ADCSRA;
-//         ADCSRA = 0;
-//     }
-
-//     /* Use the power saving mode. */
-//     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-
-//     /* Disable interrupts. */
-//     noInterrupts();
-//     sleep_enable();
-
-//     /* Disable peripherals. */
-//     if (adc_off) {
-//         power_adc_disable();
-//     }
-
-//     /* Turn off brown-out enable in software. */
-//     if (bod_off) {
-//         MCUCR = bit(BODS) | bit(BODSE);
-//         MCUCR = bit(BODS);
-//     }
-
-//     /* Enable interrupts. */
-//     interrupts();
-
-//     /* Now enter sleep mode. */
-//     sleep_mode();
-
-//     /* The program will continue from here after the WDT timeout */
-
-//     /* First thing to do is disable sleep. */
-//     sleep_disable();
-
-//     /* Re-enable peripherals. */
-//     if (adc_off) {
-//         power_adc_enable();
-//     }
-
-//     /* Delay to settle down ADC and peripheries. */
-//     delay(10);
-
-//     /* Set previous ADC config. */
-//     ADCSRA = previousADCSRA;
-// }

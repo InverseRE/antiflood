@@ -26,7 +26,6 @@
 
 #include <Arduino.h>
 
-#define ACTIVE_LIMIT            WDTO_8S     /**< watchdog timer in an active mode */
 #define SUSPEND_MIN             4           /**< minimum suspend time, ms*/
 #define SUSPEND_MAX             4194        /**< maximum suspend time, ms*/
 

@@ -116,6 +116,7 @@ void setup()
         valves[i].setup();
     }
     app.setup();
+    wdt_reset();
 
 #if defined WIFI_STATION
     (void)channel;
@@ -128,6 +129,7 @@ void setup()
 #endif
     server.setup();
     p_server = &server;
+    wdt_reset();
 
     scheduler.setup();
     DPT(scheduler.add(task_sensors));
@@ -140,6 +142,7 @@ void setup()
     // some delay is needed for setup take effect
     // (for example, charging detector's capacitors)
     ticker.delay_setup();
+    wdt_reset();
 
     DPC("setup complete");
 }

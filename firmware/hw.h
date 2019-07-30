@@ -24,6 +24,7 @@
 #ifndef __HW_H__
 #define __HW_H__
 
+#include <avr/wdt.h>
 #include "config.h"
 
 
@@ -35,5 +36,8 @@ void hw_reset(void);
 
 /** Suspend for a while. */
 void hw_suspend(unsigned long time);
+
+/** Power down. */
+void hw_sleep(void);
 
 #endif /* __HW_H__ */
