@@ -22,6 +22,7 @@
 */
 
 #include "config.h"
+#include "hw.h"
 #include "net.h"
 #include "debug.h"
 
@@ -69,12 +70,12 @@ void NetServer::setup(void)
     digitalWrite(WIFIRS, HIGH);
 
     DPC("power on ESP8266");
-    // FIXME: TODO: hangs up here
-    _ticker.delay_shield_up();
 
     /* Establish connection. */
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
+    wdt_reset();
+
     if (WiFi.status() == WL_NO_SHIELD) {
         DPC("...not responding");
         _is_online = false;
@@ -85,14 +86,18 @@ void NetServer::setup(void)
     if (STYPE_STATION == _mode) {
         DPC("WiFi mode: station");
         WiFi.config(_ip);
+        wdt_reset();
         WiFi.begin(_ssid.c_str(), _password.c_str());
+        wdt_reset();
         DPV("SSID", _ssid);
         DPV("IP", _ip);
     }
     if (STYPE_ACCESS_POINT == _mode) {
         DPC("WiFi mode: access point");
         WiFi.configAP(_ip);
+        wdt_reset();
         WiFi.beginAP(_ssid.c_str(), _channel, _password.c_str(), _auth_type);
+        wdt_reset();
         DPV("SSID", _ssid);
         DPV("channel", _channel);
         DPV("IP", _ip);
@@ -104,6 +109,7 @@ void NetServer::setup(void)
     /* Start server. */
     _is_online = _udp.begin(_port);
     _is_sending = false;
+    wdt_reset();
 }
 
 void NetServer::disconnect(void)
@@ -112,11 +118,9 @@ void NetServer::disconnect(void)
 
     /* Turn off server. */
     _udp.stop();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI library. */
     WiFi.disconnect();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
     digitalWrite(WIFIEN, LOW);
@@ -132,11 +136,9 @@ void NetServer::suspend(void)
 
     /* Turn off server. */
     _udp.stop();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI library. */
     WiFi.disconnect();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
     /* TODO: keep ESP8266 operational */
