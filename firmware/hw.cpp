@@ -126,6 +126,7 @@ void hw_suspend(unsigned long time)
     // before
     noInterrupts();
 
+    power_adc_disable();
     power_timer0_disable();
     power_timer1_enable();
 
@@ -133,6 +134,8 @@ void hw_suspend(unsigned long time)
     TCCR1B = 0x05;
     TCNT1 = preload;
     TIMSK1 = 0x01;
+
+    // TODO: for pcb-3 add PCINT (user's buttons)
 
     // suspend/resume point
     set_sleep_mode(SLEEP_MODE_IDLE);
@@ -155,6 +158,7 @@ void hw_suspend(unsigned long time)
 
     power_timer1_disable();
     power_timer0_enable();
+    power_adc_enable();
 
     interrupts();
 
@@ -200,13 +204,3 @@ void hw_sleep(void)
     wdt_reset();
     wdt_ignore = false;
 }
-
-// #ifndef DEBUG_PRINTOUT
-// /** Pin change Interrupt Service. This is executed when pin form A0 to A5 changed. */
-// ISR (PCINT1_vect) {
-//     /* Turn off WDT. */
-//     wdt_disable();
-//     /* Disable pin change interrupts for A0 to A5 */
-//     PCICR  &= ~bit(PCIE1);
-// }
-// #endif /* DEBUG_PRINTOUT */
