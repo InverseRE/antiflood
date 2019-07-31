@@ -138,10 +138,6 @@ void setup()
     DPT(scheduler.add(task_display));
     DPT(scheduler.add(task_application));
     DPT(scheduler.add(task_server));
-
-    // some delay is needed for setup take effect
-    // (for example, charging detector's capacitors)
-    ticker.delay_setup();
     wdt_reset();
 
     DPC("setup complete");
@@ -295,7 +291,7 @@ static unsigned long task_server(unsigned long dt)
         return FAR_NEXT;
     }
 
-    ProtoAction action = ProtoSession(ticker, *p_server).action(
+    ProtoSession(ticker, *p_server).action(
             act_state,
             act_open,
             act_close,
@@ -304,17 +300,6 @@ static unsigned long task_server(unsigned long dt)
             act_disable,
             act_emu_water,
             act_emu_error);
-
-    switch (action) {
-    case PROTO_STATE:     DPC("proto: state");         break;
-    case PROTO_OPEN:      DPC("proto: open");          break;
-    case PROTO_CLOSE:     DPC("proto: close");         break;
-    case PROTO_SUSPEND:   DPC("proto: suspend");       break;
-    case PROTO_EN_PROBE:  DPC("proto: enable probe");  break;
-    case PROTO_DIS_PROBE: DPC("proto: disable probe"); break;
-    case PROTO_UNKNOWN:   DPC("proto: unknown");       break;
-    default:              DPC("proto: ...");
-    }
 
     return FAR_NEXT;
 }
