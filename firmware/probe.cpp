@@ -49,7 +49,7 @@ ProbeSensor Probe::test_sensor(void)
 {
     if (_is_sens_ovr) {
         _is_sens_ovr = false;
-        return _ovr_sens;
+        return _sensor = _ovr_sens;
     }
 
     if (_time_limit > _ticker.mark()) {
@@ -83,7 +83,7 @@ ProbeConnection Probe::test_connection(void)
 {
     if (_is_conn_ovr) {
         _is_conn_ovr = false;
-        return _ovr_conn;
+        return _connection = _ovr_conn;
     }
 
     if (_time_limit > _ticker.mark()) {
