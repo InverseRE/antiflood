@@ -23,6 +23,7 @@
 
 #include "app.h"
 #include "config.h"
+#include "debug.h"
 
 App::App(const Ticker& ticker,
         Led* leds, byte leds_cnt,
@@ -38,13 +39,14 @@ App::App(const Ticker& ticker,
 
 void App::setup(void)
 {
+    dPV("app: setup", _state);
 }
 
 AppState App::solve(void)
 {
     /* in case of hard error */
     if (_state == APP_MALFUNCTION) {
-        DPC("app: malfunction");
+        uPC("APP: MALFUNCTION");
         for (int i = 0; i < _leds_cnt; ++i) {
             _leds[i].set(LED_BLINK);
         }
@@ -85,14 +87,19 @@ AppState App::solve(void)
     }
 
     if (is_overrided) {
+        dPC("app: standby");
         _state = APP_STANDBY;
     } else if (!is_triggered && !is_engaged) {
+        dPC("app: ok (idle)");
         _state = APP_OK;
     } else if (is_triggered && !is_engaged) {
+        dPC("app: alarm");
         _state = APP_ALARM;
     } else if (!is_triggered && is_engaged) {
+        dPC("app: ok (engaged)");
         _state = APP_OK;
     } else {
+        dPC("app: solved");
         _state = APP_SOLVED;
     }
 

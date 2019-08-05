@@ -26,12 +26,19 @@
 
 #include "config.h"
 
+
+
+
 #if defined DEBUG_URGNET || defined DEBUG_INFO || defined DEBUG_DETAILS
+#define DEBUG
+#endif
+
+
+
+#ifdef DEBUG
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
-
-
 
 extern SoftwareSerial SWS;
 
@@ -47,7 +54,7 @@ void DPC_(const __FlashStringHelper* const msg);
 template <typename T> void DPV_(const __FlashStringHelper* const msg, const T& val)
 {
     SWS.print(msg);
-    SWS.print(F(": "));
+    SWS.print(F(" "));
     SWS.println(val);
 }
 
@@ -64,23 +71,25 @@ int DPM_(void);
 
 #else  /* DEBUG_URGNET || DEBUG_INFO || DEBUG_DETAILS */
 
+#define DPI()
+
 #define uPC(x)
-#define uPV(x, y)
-#define uPA(x, y, z)
-#define uPT(x)
+#define uPV(x, y)    (void)(y)
+#define uPA(x, y, z) (void)(y); (void)(z)
+#define uPT(x)       (x)
 #define uPM
 #define iPC(x)
-#define iPV(x, y)
-#define iPA(x, y, z)
-#define iPT(x)
+#define iPV(x, y)    (void)(y)
+#define iPA(x, y, z) (void)(y); (void)(z)
+#define iPT(x)       (x)
 #define iPM
 #define dPC(x)
-#define dPV(x, y)
-#define dPA(x, y, z)
-#define dPT(x)
+#define dPV(x, y)    (void)(y)
+#define dPA(x, y, z) (void)(y); (void)(z)
+#define dPT(x)       (x)
 #define dPM
 
-#endif  /* DEBUG_URGNET || DEBUG_INFO || DEBUG_DETAILS */
+#endif  /* DEBUG */
 
 #ifdef DEBUG_URGNET
 #define uPC(x)       DPC(x)
@@ -89,14 +98,14 @@ int DPM_(void);
 #define uPT(x)       DPT(x)
 #define uPM          DPM
 #define iPC(x)
-#define iPV(x, y)
-#define iPA(x, y, z)
-#define iPT(x)
+#define iPV(x, y)    (void)(y)
+#define iPA(x, y, z) (void)(y); (void)(z)
+#define iPT(x)       (x)
 #define iPM
 #define dPC(x)
-#define dPV(x, y)
-#define dPA(x, y, z)
-#define dPT(x)
+#define dPV(x, y)    (void)(y)
+#define dPA(x, y, z) (void)(y); (void)(z)
+#define dPT(x)       (x)
 #define dPM
 #endif
 
@@ -112,9 +121,9 @@ int DPM_(void);
 #define iPT(x)       DPT(x)
 #define iPM          DPM
 #define dPC(x)
-#define dPV(x, y)
-#define dPA(x, y, z)
-#define dPT(x)
+#define dPV(x, y)    (void)(y)
+#define dPA(x, y, z) (void)(y); (void)(z)
+#define dPT(x)       (x)
 #define dPM
 #endif
 

@@ -22,8 +22,9 @@
 */
 
 #include <Arduino.h>
-#include "proto.h"
+
 #include "debug.h"
+#include "proto.h"
 
 /** Packet class. */
 enum Class : byte {
@@ -198,6 +199,7 @@ ProtoSession::ProtoSession(const Ticker& ticker, NetServer& server)
 
 void ProtoSession::setup(void)
 {
+    dPC("proto: setup");
 }
 
 ProtoAction ProtoSession::action(
@@ -221,35 +223,36 @@ ProtoAction ProtoSession::action(
         /* get some data */
         len += _server.read(buf + len, sizeof(buf) - len);
 
-        DPA("rxd", buf, len);
+        dPA("proto: in", buf, len);
 
         /* parse packet */
         Packet* pkt = (Packet*)buf;
         if (!pkt->validate(len)) {
             /* get more data if uncompleted */
-            DPC("get more data");
+            dPC("proto: rx more");
             continue;
         }
 
         /* switch by class */
         switch (pkt->cla()) {
         case cRequest:
-            DPC("cRequest");
+            dPC("proto: cRequest");
             break;
         case cResponse:
-            DPC("cResponse");
+            dPC("proto: cResponse");
             break;
         case cEcho:
-            DPC("cEcho");
+            dPC("proto: cEcho");
             pkt->trx_info_back();
             len = pkt->raw(buf, sizeof(buf));
             _server.write(buf, len);
             _server.tx();
         case cInfo:
-            DPC("cInfo");
+            dPC("proto: cInfo");
         case cRFU:
-            DPC("cRFU");
+            iPC("proto: cRFU");
         default:
+            iPC("proto: unknown cla");
             len = 0;
             continue;
         }
@@ -275,6 +278,7 @@ ProtoAction ProtoSession::action(
         /* write out */
         len = pkt->raw(buf, sizeof(buf));
         _server.write(buf, len);
+        dPA("proto: out", buf, len);
 
         /* send data back immediately */
         _server.tx(); // XXX: but this can be done later as a bunch of packets are ready

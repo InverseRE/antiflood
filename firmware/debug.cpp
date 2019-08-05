@@ -22,13 +22,8 @@
 */
 
 #include "debug.h"
-#include "config.h"
 
-#ifdef DEBUG_PRINTOUT
-
-
-
-#include <SoftwareSerial.h>
+#ifdef DEBUG
 
 #define DEBUG_BAUD_RATE 115200              /* software serial baud rate */
 
@@ -50,7 +45,7 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt)
     String size(cnt);
 
     SWS.print(msg);
-    SWS.print(F(": ["));
+    SWS.print(F(" ["));
     SWS.print(size);
     SWS.print(F("] "));
     while (c--) {
@@ -69,4 +64,4 @@ int DPM_(void)
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
-#endif  /* DEBUG_PRINTOUT */
+#endif  /* DEBUG */

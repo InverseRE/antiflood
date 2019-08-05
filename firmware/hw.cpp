@@ -24,6 +24,7 @@
 #include <avr/power.h>
 #include <avr/sleep.h>
 
+#include "debug.h"
 #include "hw.h"
 #include "ticker.h"
 
@@ -60,6 +61,8 @@ ISR(WDT_vect)
 /** Perform reset by watchdog timer. */
 void hw_reset(void)
 {
+    dPC("hw: reset");
+
     wdt_ignore = false;
     wdt_enable(WDTO_15MS);
     while (true);
@@ -81,6 +84,8 @@ void wdt_configure(void)
     WDTCSR =  0b01000000 | 0b100001;
 
     sei();
+
+    dPC("hw: wdt configured");
 }
 
 /** Turn off unused modules at startup. */
@@ -97,6 +102,8 @@ void hw_configure()
     power_adc_enable();
     power_usart0_enable();
     wdt_configure();
+
+    dPC("hw: configured");
 }
 
 /**
@@ -109,13 +116,17 @@ void hw_configure()
  */
 void hw_suspend(unsigned long time)
 {
+    dPV("hw: suspend", time);
+
     wdt_reset();
 
     // time limits
     if (time < SUSPEND_MIN) {
+        dPC("hw: skipped");
         return;
     }
     if (time > SUSPEND_MAX) {
+        dPV("hw: defaults", SUSPEND_MAX);
         time = SUSPEND_MAX;
     }
 
@@ -164,11 +175,15 @@ void hw_suspend(unsigned long time)
 
     // continue
     wdt_reset();
+
+    dPV("hw: wake up", time_passed + 1);
 }
 
 /** Power down. */
 void hw_sleep(void)
 {
+    dPC("hw: sleep");
+
     wdt_reset();
     wdt_ignore = true;
 
@@ -203,4 +218,6 @@ void hw_sleep(void)
     // continue
     wdt_reset();
     wdt_ignore = false;
+
+    dPC("hw: wake up");
 }

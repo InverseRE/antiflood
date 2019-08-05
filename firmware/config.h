@@ -31,7 +31,7 @@
 /*
  * Debug/logging.
  */
-#define DEBUG_INFO // chosen from: nothing, DEBUG_URGNET, DEBUG_INFO, DEBUG_DETAILS
+#define DEBUG_INFO // chosen from: { nothing, DEBUG_URGNET, DEBUG_INFO, DEBUG_DETAILS }
 
 
 /*

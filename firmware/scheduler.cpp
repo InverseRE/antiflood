@@ -21,12 +21,13 @@
    For more details see LICENSE file.
 */
 
-#include "scheduler.h"
 #include "debug.h"
+#include "scheduler.h"
 
 void Scheduler::setup(void)
 {
     _time_mark = _ticker.mark();
+    dPV("schd: setup", _time_mark);
 }
 
 bool Scheduler::add(Fptr task, unsigned long t2g)
@@ -34,16 +35,23 @@ bool Scheduler::add(Fptr task, unsigned long t2g)
     Task nt{task, t2g};
     Task* t = _tasks.get(nt);
 
+    dPV("schd: add", (unsigned long)task);
+    dPV("schd: t2g", t2g);
+
     return !t && _tasks.add(nt);
 }
 
 bool Scheduler::drop(Fptr task)
 {
+    dPV("schd: drop", (unsigned long)task);
+
     return _tasks.drop(Task{task, 0});
 }
 
 bool Scheduler::supress(Fptr task)
 {
+    dPV("schd: supress", (unsigned long)task);
+
     Task* t = _tasks.get(Task{task, 0});
 
     return t && (t->t2g = -1);
@@ -51,6 +59,8 @@ bool Scheduler::supress(Fptr task)
 
 bool Scheduler::force(Fptr task)
 {
+    dPV("schd: force", (unsigned long)task);
+
     Task* t = _tasks.get(Task{task, 0});
 
     return t && !(t->t2g = 0);
@@ -62,6 +72,8 @@ unsigned long Scheduler::run(void)
     const unsigned long dt = mark - _time_mark;
     _time_mark = mark;
 
+    dPV("schd: dt", dt);
+
     for (Task* t = _tasks.start(); t; t = _tasks.next()) {
         t->t2g -= t->t2g < dt ? t->t2g : dt;
         t->t2g = t->t2g ? t->t2g : t->task(dt);
@@ -72,6 +84,8 @@ unsigned long Scheduler::run(void)
     for (Task* t = _tasks.start(); t; t = _tasks.next()) {
         next = next < t->t2g ? next : t->t2g;
     }
+
+    dPV("schd: next", next);
 
     return next;
 }
