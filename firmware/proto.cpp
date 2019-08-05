@@ -212,7 +212,7 @@ ProtoAction ProtoSession::action(
 {
     byte reads_limit = 2; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
-    byte buf[255];
+    byte buf[sizeof(Packet)];
     unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
