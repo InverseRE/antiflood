@@ -22,6 +22,8 @@
 */
 
 #include <Arduino.h>
+
+#include "debug.h"
 #include "led.h"
 
 Led::Led(const Ticker& ticker, byte port)
@@ -33,6 +35,8 @@ void Led::setup(void)
 {
     pinMode(_port, OUTPUT);
     digitalWrite(_port, LOW);
+
+    dPV("led: setup", _port);
 }
 
 byte Led::lit(void) const
