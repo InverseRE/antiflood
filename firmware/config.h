@@ -25,8 +25,13 @@
 #define __CONFIG_H__
 
 #include <Arduino.h>
-#include "debug.h"
 
+
+
+/*
+ * Debug/logging.
+ */
+#define DEBUG_INFO // chosen from: nothing, DEBUG_URGNET, DEBUG_INFO, DEBUG_DETAILS
 
 
 /*

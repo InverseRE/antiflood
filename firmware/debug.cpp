@@ -62,7 +62,7 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt)
     SWS.println(F(""));
 }
 
-int DFM_(void)
+int DPM_(void)
 {
   extern int __heap_start, *__brkval;
   int v;
