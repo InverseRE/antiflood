@@ -82,6 +82,7 @@ static unsigned long task_sensors(unsigned long dt);
 static unsigned long task_connections(unsigned long dt);
 static unsigned long task_display(unsigned long dt);
 static unsigned long task_valves(unsigned long dt);
+static unsigned long task_reboot(unsigned long dt);
 
 /** Startup procedure. */
 void setup()
@@ -151,15 +152,7 @@ void serialEvent() {
 /** Main procedure. */
 void loop()
 {
-    unsigned long tm = ticker.tick();
-
-    /* Application should restart once per month. */
-    if (tm & 0x80000000) {
-        hw_reset();
-    }
-
     unsigned long delay = scheduler.run();
-
     hw_suspend(delay);
 }
 
@@ -394,4 +387,22 @@ static unsigned long task_valves(unsigned long dt)
     }
 
     return is_engaged ? VALVE_NEXT : FAR_NEXT;
+}
+
+static unsigned long task_reboot(unsigned long dt)
+{
+    unsigned long tm = ticker.tick();
+
+    // skip this time
+    if (!(tm & 0x80000000)) {
+        return REBOOT_NEXT;
+    }
+
+    DPC("auto reboot...");
+
+    // TODO: signal about reboot
+    // TODO: schedule reboot on a night time
+    hw_reset();
+
+    return REBOOT_NEXT;
 }

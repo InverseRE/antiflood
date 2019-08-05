@@ -30,6 +30,7 @@
 #define SUSPEND_MAX             4194        /**< maximum suspend time, ms*/
 
 #define FAR_NEXT                (-1)
+#define REBOOT_NEXT             60000       /**< check once per minute */
 #define LED_NEXT                100         /**< blink's next schedule, ms */
 #define PROBE_IDLE_NEXT         4000        /**< measurement period, ms */
 #define PROBE_ACTIVE_NEXT       4000        /**< measurement period, ms */
