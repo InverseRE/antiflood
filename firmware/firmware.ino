@@ -306,8 +306,8 @@ static unsigned long task_server(unsigned long dt)
 
     (void)dt;
 
-    if (!p_server || p_server->is_offline() || !p_server->rx()) {
-        dPC("#server: skip");
+    if (!p_server || p_server->is_offline()) {
+        dPC("#server: offline");
         return FAR_NEXT;
     }
 

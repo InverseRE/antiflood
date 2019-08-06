@@ -218,7 +218,7 @@ ProtoAction ProtoSession::action(
     unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
-    while (_server.available() && len < sizeof(buf) && reads_limit--) {
+    while (_server.rx() && _server.available() && len < sizeof(buf) && reads_limit--) {
 
         /* get some data */
         len += _server.read(buf + len, sizeof(buf) - len);
