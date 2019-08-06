@@ -57,7 +57,7 @@ public:
 
     Setting();
     Setting(byte type, byte len, const byte *value);
-    Setting::~Setting();
+    ~Setting();
 
     int push(int addr);
     int pop(int addr);
@@ -66,31 +66,31 @@ public:
     static unsigned short crc16(const byte *block, unsigned short len);
 
     /* get total length in bytes */
-    short Setting::length(void) const
+    short length(void) const
     {
         return _len + 4;
     }
 
     /* get setting type */
-    byte Setting::get_type() const
+    byte get_type() const
     {
         return _type;
     }
 
     /* get payload length */
-    byte Setting::get_len() const
+    byte get_len() const
     {
         return _len;
     }
 
     /* get heck sum */
-    byte Setting::get_crc() const
+    byte get_crc() const
     {
         return _crc;
     }
 
     /* get payload */
-    byte Setting::get_data(byte *buff, byte buff_len = 255) const
+    byte get_data(byte *buff, byte buff_len = 255) const
     {
         byte len = buff_len < _len ? buff_len : _len;
         memcpy(buff, data + 2, len);

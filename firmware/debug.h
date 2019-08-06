@@ -24,14 +24,23 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-/* Debug config configure. */
-#define DEBUG_PRINTOUT                      /* debug printout */
-
-#ifdef DEBUG_PRINTOUT
+#include "config.h"
 
 
+
+
+#if defined DEBUG_URGNET || defined DEBUG_INFO || defined DEBUG_DETAILS
+#define DEBUG
+#endif
+
+
+
+#ifdef DEBUG
 
 #include <Arduino.h>
+#include <SoftwareSerial.h>
+
+extern SoftwareSerial SWS;
 
 /** Debug printout initialization. */
 void DPI(void);
@@ -42,14 +51,10 @@ void DPC_(const __FlashStringHelper* const msg);
 
 /** Debug printout a variable value. */
 #define DPV(msg, val) DPV_(F(msg), val)
-
-/* XXX: separating declarations and definitions doesn't work for templates */
-#include <SoftwareSerial.h>
-extern SoftwareSerial SWS;
 template <typename T> void DPV_(const __FlashStringHelper* const msg, const T& val)
 {
     SWS.print(msg);
-    SWS.print(F(": "));
+    SWS.print(F(" "));
     SWS.println(val);
 }
 
@@ -61,24 +66,83 @@ void DPA_(const __FlashStringHelper* const msg, const byte* ptr, int cnt);
 #define DPT(test) { if (!(test)) { DPC("#" #test); } }
 
 /** Free RAM. */
-#define DFM(msg) DPV((msg), DFM_());
-int DFM_(void);
+#define DPM(msg) DPV((msg), DPM_());
+int DPM_(void);
 
-
-
-#else  /* DEBUG_PRINTOUT */
-
-
+#else  /* DEBUG_URGNET || DEBUG_INFO || DEBUG_DETAILS */
 
 #define DPI()
-#define DPC(x)
-#define DPV(x, y)
-#define DPA(x, y, z)
-#define DPT(x) { (x); }
-#define DFM
 
+#define uPC(x)
+#define uPV(x, y)    (void)(y)
+#define uPA(x, y, z) (void)(y); (void)(z)
+#define uPT(x)       (x)
+#define uPM
+#define iPC(x)
+#define iPV(x, y)    (void)(y)
+#define iPA(x, y, z) (void)(y); (void)(z)
+#define iPT(x)       (x)
+#define iPM
+#define dPC(x)
+#define dPV(x, y)    (void)(y)
+#define dPA(x, y, z) (void)(y); (void)(z)
+#define dPT(x)       (x)
+#define dPM
 
+#endif  /* DEBUG */
 
-#endif  /* DEBUG_PRINTOUT */
+#ifdef DEBUG_URGNET
+#define uPC(x)       DPC(x)
+#define uPV(x, y)    DPV(x, y)
+#define uPA(x, y, z) DPA(x, y, z)
+#define uPT(x)       DPT(x)
+#define uPM          DPM
+#define iPC(x)
+#define iPV(x, y)    (void)(y)
+#define iPA(x, y, z) (void)(y); (void)(z)
+#define iPT(x)       (x)
+#define iPM
+#define dPC(x)
+#define dPV(x, y)    (void)(y)
+#define dPA(x, y, z) (void)(y); (void)(z)
+#define dPT(x)       (x)
+#define dPM
+#endif
+
+#ifdef DEBUG_INFO
+#define uPC(x)       DPC(x)
+#define uPV(x, y)    DPV(x, y)
+#define uPA(x, y, z) DPA(x, y, z)
+#define uPT(x)       DPT(x)
+#define uPM          DPM
+#define iPC(x)       DPC(x)
+#define iPV(x, y)    DPV(x, y)
+#define iPA(x, y, z) DPA(x, y, z)
+#define iPT(x)       DPT(x)
+#define iPM          DPM
+#define dPC(x)
+#define dPV(x, y)    (void)(y)
+#define dPA(x, y, z) (void)(y); (void)(z)
+#define dPT(x)       (x)
+#define dPM
+#endif
+
+#ifdef DEBUG_DETAILS
+#define uPC(x)       DPC(x)
+#define uPV(x, y)    DPV(x, y)
+#define uPA(x, y, z) DPA(x, y, z)
+#define uPT(x)       DPT(x)
+#define uPM          DPM
+#define iPC(x)       DPC(x)
+#define iPV(x, y)    DPV(x, y)
+#define iPA(x, y, z) DPA(x, y, z)
+#define iPT(x)       DPT(x)
+#define iPM          DPM
+#define dPC(x)       DPC(x)
+#define dPV(x, y)    DPV(x, y)
+#define dPA(x, y, z) DPA(x, y, z)
+#define dPT(x)       DPT(x)
+#define dPM          DPM
+#endif
 
 #endif  /* __DEBUG_H__ */

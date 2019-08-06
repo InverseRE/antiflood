@@ -22,8 +22,9 @@
 */
 
 #include <Arduino.h>
-#include "app.h"
+
 #include "debug.h"
+#include "app.h"
 
 #define TRIG_LVL                HIGH        /**< action engage level */
 #define IDLE_LVL                LOW         /**< idle level */
@@ -54,6 +55,9 @@ void Valve::setup(void)
     digitalWrite(_oport, IDLE_LVL);
     digitalWrite(_cport, IDLE_LVL);
     _is_ovr = false;
+
+    dPV("vlv: setup open", _oport);
+    dPV("vlv: setup close", _cport);
 }
 
 bool Valve::is_engaged(void) const
@@ -75,6 +79,8 @@ bool Valve::is_overrided(void) const
 
 bool Valve::open(void)
 {
+    dPV("vlv: open", _is_ovr);
+
     if (_is_ovr) {
         return false;
     }
@@ -86,6 +92,8 @@ bool Valve::open(void)
 
 bool Valve::close(void)
 {
+    dPV("vlv: close", _is_ovr);
+
     if (_is_ovr) {
         return false;
     }
@@ -97,6 +105,8 @@ bool Valve::close(void)
 
 bool Valve::force_open(void)
 {
+    dPV("vlv: force open", _is_ovr);
+
     if (_is_ovr) {
         return false;
     }
@@ -108,6 +118,8 @@ bool Valve::force_open(void)
 
 bool Valve::force_close(void)
 {
+    dPV("vlv: force close", _is_ovr);
+
     if (_is_ovr) {
         return false;
     }
@@ -127,7 +139,7 @@ ValveState Valve::run(void)
 
     if (switch_readings < MANUAL_OP_TRIGGER_BOTH) {
         /* stop all operations, due to a conflict */
-        DPV("valve conflicts, switch readings", switch_readings);
+        dPV("vlv: clash", switch_readings);
         digitalWrite(_oport, IDLE_LVL);
         digitalWrite(_cport, IDLE_LVL);
         _act_state = VALVE_IGNORE;
@@ -136,7 +148,7 @@ ValveState Valve::run(void)
         _time_mark = 0;
         _is_ovr = true;
     } else if (switch_readings < MANUAL_OP_TRIGGER && _is_ovr) {
-        DPV("valve overrided, switch readings", switch_readings);
+        dPV("vlv: overrided", switch_readings);
         _act_state = VALVE_IGNORE;
         _exp_state = VALVE_IGNORE;
         _ovr_state = VALVE_IGNORE;
@@ -147,6 +159,7 @@ ValveState Valve::run(void)
 
     /* Overrided action? */
     if (_ovr_state != VALVE_IGNORE) {
+        dPV("vlv: override", _ovr_state);
         _exp_state = _ovr_state;
         _ovr_state = VALVE_IGNORE;
         _time_mark = 0;
@@ -156,7 +169,7 @@ ValveState Valve::run(void)
     if (_act_state != _exp_state && _time_mark == 0) {
 
         /* Operation starts. */
-        DPC("valve engaged");
+        iPC("vlv: engage");
         _time_mark = _ticker.mark();
         _extra_time = VALVE_OPERATION_EXTRA;
     }
@@ -187,7 +200,7 @@ ValveState Valve::run(void)
     case VALVE_MALFUNCTION:
     default:
         /* Operation aborts. */
-        DPC("valve malfunction");
+        uPC("VLV: MALFUNCTION");
         digitalWrite(_oport, IDLE_LVL);
         digitalWrite(_cport, IDLE_LVL);
         _act_state = VALVE_MALFUNCTION;
@@ -203,14 +216,14 @@ ValveState Valve::run(void)
                 && _extra_time > 0) {
 
             /* Extra time needed? (apply only once) */
-            DPV("valve ops granted an extra time, supply readings", supply_readings);
+            iPV("vlv: extra", supply_readings);
             _time_mark += _extra_time;
             _extra_time = 0;
 
         } else {
 
             /* Operation stops. */
-            DPV("valve disengaged by timeout, supply readings", supply_readings);
+            iPV("vlv: disengage", supply_readings);
             digitalWrite(_oport, IDLE_LVL);
             digitalWrite(_cport, IDLE_LVL);
             _act_state = _exp_state;

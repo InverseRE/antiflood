@@ -22,8 +22,9 @@
 */
 
 #include <Arduino.h>
-#include "proto.h"
+
 #include "debug.h"
+#include "proto.h"
 #include "storage.h"
 
 /** Packet class. */
@@ -224,6 +225,7 @@ ProtoSession::ProtoSession(const Ticker& ticker, NetServer& server)
 
 void ProtoSession::setup(void)
 {
+    dPC("proto: setup");
 }
 
 ProtoAction ProtoSession::action(
@@ -238,47 +240,47 @@ ProtoAction ProtoSession::action(
         bool (*emu_water)(byte idx, bool immediately),
         bool (*emu_error)(byte idx, bool immediately))
 {
-    byte packets_limit = 1; // amount of packets parsed at a time
+    byte reads_limit = 2; // amount of packets parsed at a time
     ProtoAction action = PROTO_UNKNOWN;
-    byte buf[255];
+    byte buf[sizeof(Packet)];
     unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
-    while (_server.available() && len < sizeof(buf) && packets_limit) {
+    while (_server.rx() && _server.available() && len < sizeof(buf) && reads_limit--) {
 
         /* get some data */
         len += _server.read(buf + len, sizeof(buf) - len);
 
-        DPA("rxd", buf, len);
+        dPA("proto: in", buf, len);
 
         /* parse packet */
         Packet* pkt = (Packet*)buf;
         if (!pkt->validate(len)) {
             /* get more data if uncompleted */
-            DPC("get more data");
+            dPC("proto: rx more");
             continue;
         }
 
         /* switch by class */
         switch (pkt->cla()) {
         case cRequest:
-            DPC("cRequest");
+            dPC("proto: cRequest");
             break;
         case cResponse:
-            DPC("cResponse");
+            dPC("proto: cResponse");
             break;
         case cEcho:
-            DPC("cEcho");
+            dPC("proto: cEcho");
             pkt->trx_info_back();
             len = pkt->raw(buf, sizeof(buf));
             _server.write(buf, len);
             _server.tx();
         case cInfo:
-            DPC("cInfo");
+            dPC("proto: cInfo");
         case cRFU:
-            DPC("cRFU");
+            iPC("proto: cRFU");
         default:
-            packets_limit -= 1;
+            iPC("proto: unknown cla");
             len = 0;
             continue;
         }
@@ -306,12 +308,12 @@ ProtoAction ProtoSession::action(
         /* write out */
         len = pkt->raw(buf, sizeof(buf));
         _server.write(buf, len);
+        dPA("proto: out", buf, len);
 
         /* send data back immediately */
         _server.tx(); // XXX: but this can be done later as a bunch of packets are ready
 
         /* packet has been processed, get another one */
-        packets_limit -= 1;
         len = 0;
     }
 

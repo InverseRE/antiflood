@@ -67,7 +67,9 @@ const unsigned short crc_table[256] = {
 };
 
 Setting::Setting()
-    : _len(0), _type(0), _crc(0), data(NULL) {}
+    : data(NULL), _len(0), _type(0), _crc(0)
+{
+}
 
 Setting::Setting(byte type, byte len, const byte *value)
     : _len(len), _type(type)
@@ -82,14 +84,13 @@ Setting::Setting(byte type, byte len, const byte *value)
 }
 
 /* release memory */
-Setting::~Setting() {
-    if (data) {
-        free(data);
-    }
+Setting::~Setting()
+{
+    free(data);
 }
 
 /* calc check summ */
-static unsigned short Setting::crc16(const byte *block, unsigned short len)
+unsigned short Setting::crc16(const byte *block, unsigned short len)
 {
     unsigned short crc = 0xFFFF;
 
@@ -109,7 +110,7 @@ int Setting::push(int addr)
     }
 
     /* check addres is valid */
-    if ((addr + _len + 4) > EEPROM.length()) {
+    if ((addr + _len + 4) > (int)EEPROM.length()) {
         return BAD_ARGUMENT;
     }
 

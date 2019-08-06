@@ -22,8 +22,9 @@
 */
 
 #include <Arduino.h>
-#include "probe.h"
+
 #include "debug.h"
+#include "probe.h"
 
 #define PROBE_V_SHORT_CIRCUIT   5           /**< lower value is treated as short circuit */
 #define PROBE_V_FLOOD_TRIGGER   175         /**< lower value is treated like a signal */
@@ -42,17 +43,20 @@ Probe::Probe(const Ticker& ticker, byte port)
 void Probe::setup(void)
 {
     pinMode(_port, INPUT_PULLUP);
-    DPV("probe on port", _port);
+
+    dPV("prb: setup", _port);
 }
 
 ProbeSensor Probe::test_sensor(void)
 {
     if (_is_sens_ovr) {
+        dPV("prb: test ovr", _ovr_sens);
         _is_sens_ovr = false;
-        return _ovr_sens;
+        return _sensor = _ovr_sens;
     }
 
     if (_time_limit > _ticker.mark()) {
+        iPC("prb: test time limit");
         return _sensor = PROBE_UNAWARE;
     }
 
@@ -67,8 +71,8 @@ ProbeSensor Probe::test_sensor(void)
     pinMode(_port, INPUT_PULLUP);
 
     if (_sensor == PROBE_WATER) {
-        DPV("readings", _value);
-        DPV("water on port", _port);
+        dPV("prb: sig", _value);
+        dPV("prb: water port", _port);
     }
 
     return _sensor;
@@ -82,11 +86,13 @@ void Probe::delay(void) const
 ProbeConnection Probe::test_connection(void)
 {
     if (_is_conn_ovr) {
+        dPV("prb: conn ovr", _ovr_conn);
         _is_conn_ovr = false;
-        return _ovr_conn;
+        return _connection = _ovr_conn;
     }
 
     if (_time_limit > _ticker.mark()) {
+        iPC("prb: conn time limit");
         return _connection = PROBE_OFFLINE;
     }
 
@@ -104,8 +110,8 @@ ProbeConnection Probe::test_connection(void)
             :                              PROBE_ERROR;
 
     if (_connection == PROBE_ERROR) {
-        DPV("readings", c);
-        DPV("error on port", _port);
+        dPV("prb: sig", c);
+        dPV("prb: error port", _port);
     }
 
     return _connection;

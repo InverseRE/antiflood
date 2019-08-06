@@ -23,11 +23,11 @@
 */
 
 #include "config.h"
+#include "debug.h"
 #include "app.h"
 #include "hw.h"
 #include "led.h"
 #include "net.h"
-#include "power.h"
 #include "probe.h"
 #include "valve.h"
 #include "proto.h"
@@ -89,17 +89,17 @@ static unsigned long task_sensors(unsigned long dt);
 static unsigned long task_connections(unsigned long dt);
 static unsigned long task_display(unsigned long dt);
 static unsigned long task_valves(unsigned long dt);
+static unsigned long task_reboot(unsigned long dt);
 
 /** Startup procedure. */
 void setup()
 {
     /* Debug printout. */
     DPI();
-    DPC("setup");
+    iPC("start");
 
     /* Setup HW devices */
-    peripheral_configure();
-    DPC("peripheral configured");
+    hw_configure();
 
     /* Create/Load settings storage. */
     if (sst.exist()) {
@@ -122,7 +122,7 @@ void setup()
 
     /* Default settings. */
     byte wifi_mode = 0;
-    byte ip_address[4] = {APP_DEFAULT_IP};
+    byte ip_bytes[4] = {APP_DEFAULT_IP};
     unsigned short ip_port = APP_DEFAULT_PORT;
     String ssid = WIFI_DEFAULT_SSID;
     String password = WIFI_DEFAULT_PASS;
@@ -131,30 +131,30 @@ void setup()
 
     /* Apply user settings if exist. */
     short settings_num = sst.enumerate();
-    if (storage_loaded && settings_num) {
-        DPC("manual configuration");
-        load_setting(sst, WIFI_MODE, wifi_mode);
-        DPV("WIFI_MODE", wifi_mode);
-        load_setting_bytes(sst, IP_ADDRESS, ip_address);
-        DPV("IP_ADDRESS", ip_address[0]);
-        DPV("IP_ADDRESS", ip_address[1]);
-        DPV("IP_ADDRESS", ip_address[2]);
-        DPV("IP_ADDRESS", ip_address[3]);
-        load_setting(sst, PORT_NUMBER, ip_port);
-        DPV("PORT_NUMBER", ip_port);
-        load_setting_string(sst, SSID, ssid);
-        DPV("SSID", ssid);
-        load_setting_string(sst, PASSWORD, password);
-        DPV("PASSWORD", password);
-        load_setting(sst, CHANNEL, channel);
-        DPV("CHANNEL", channel);
-        load_setting(sst, AUTH_TYPE, auth_type);
-        DPV("AUTH_TYPE", auth_type);
+
+    if (!storage_loaded || !settings_num) {
+        iPC("default config");
     } else {
-        DPC("default configuration");
+        iPC("custom config");
+
+        load_setting(sst, WIFI_MODE, wifi_mode);
+        load_setting_bytes(sst, IP_ADDRESS, ip_bytes);
+        load_setting(sst, PORT_NUMBER, ip_port);
+        load_setting_string(sst, SSID, ssid);
+        load_setting_string(sst, PASSWORD, password);
+        load_setting(sst, CHANNEL, channel);
+        load_setting(sst, AUTH_TYPE, auth_type);
+
+        dPV("WiFi mode", wifi_mode);
+        dPA("ip", ip_bytes, 4);
+        dPV("port", ip_port);
+        dPV("sid", ssid);
+        dPV("pwd", password);
+        dPV("ch", channel);
+        dPV("auth", auth_type);
     }
 
-    IPAddress ip_addr(ip_address);
+    IPAddress ip_addr(ip_bytes);
 
     /* Setup local data. */
     ticker.setup();
@@ -169,49 +169,44 @@ void setup()
         valves[i].setup();
     }
     app.setup();
+    wdt_reset();
 
-    if (wifi_mode) {
-        p_server = new NetServer(ticker, ip_addr, ip_port, ssid, password); // STATION
-    } else {
-        p_server = new NetServer(ticker, ip_addr, ip_port, ssid, password, channel, auth_type); // AP
-    }
-
+    p_server = wifi_mode
+                ? new NetServer(ticker, ip_addr, ip_port, ssid, password)
+                : new NetServer(ticker, ip_addr, ip_port, ssid, password, channel, auth_type);
     p_server->setup();
+    wdt_reset();
 
     scheduler.setup();
-    DPT(scheduler.add(task_sensors));
-    DPT(scheduler.add(task_connections));
-    DPT(scheduler.add(task_valves));
-    DPT(scheduler.add(task_display));
-    DPT(scheduler.add(task_application));
-    DPT(scheduler.add(task_server));
+    dPT(scheduler.add(task_sensors));
+    dPT(scheduler.add(task_connections));
+    dPT(scheduler.add(task_valves));
+    dPT(scheduler.add(task_display));
+    dPT(scheduler.add(task_application));
+    dPT(scheduler.add(task_server));
+    dPT(scheduler.add(task_reboot));
+    wdt_reset();
 
-    // some delay is needed for setup take effect
-    // (for example, charging detector's capacitors)
-    ticker.delay_setup();
+    iPC("setup complete");
+}
 
-    DPC("setup complete");
+/** Serial interface event. */
+void serialEvent() {
+    dPC("serial event");
+    dPT(scheduler.force(task_server));
 }
 
 /** Main procedure. */
 void loop()
 {
-    unsigned long tm = ticker.tick();
-
-    /* Application should restart once per month. */
-    if (tm & 0x80000000) {
-        reset();
-        return;
-    }
-
     unsigned long delay = scheduler.run();
-    // TODO: check WiFi events too
-
-    ticker.suspend(delay);
+    hw_suspend(delay);
 }
 
 static byte act_state(byte* buf, byte buf_max_size)
 {
+    iPC("@state");
+
     byte size = 4 + 1 * leds_cnt + 2 * probes_cnt + 3 * valves_cnt;
 
     if (size > buf_max_size) {
@@ -241,32 +236,38 @@ static byte act_state(byte* buf, byte buf_max_size)
 
 static bool act_open(void)
 {
+    iPC("@open");
+
     bool res = true;
 
     for (int i = 0; i < valves_cnt; ++i) {
         res &= valves[i].force_open();
     }
 
-    DPT(scheduler.force(task_valves));
+    dPT(scheduler.force(task_valves));
 
     return res;
 }
 
 static bool act_close(void)
 {
+    iPC("@close");
+
     bool res = true;
 
     for (int i = 0; i < valves_cnt; ++i) {
         res &= valves[i].force_close();
     }
 
-    DPT(scheduler.force(task_valves));
+    dPT(scheduler.force(task_valves));
 
     return res;
 }
 
 static bool act_suspend(void)
 {
+    iPC("@suspend");
+
     // TODO: postpone action, engage after response packet sent
     // enter_sleep(true, true);
     return false;
@@ -274,28 +275,34 @@ static bool act_suspend(void)
 
 static bool act_enable(byte idx)
 {
+    iPV("@enable", idx);
+
     if (idx >= probes_cnt) {
+        dPC("@enable: bad idx");
         return false;
     }
 
     probes[idx].enable();
 
-    DPT(scheduler.force(task_sensors));
-    DPT(scheduler.force(task_connections));
+    dPT(scheduler.force(task_sensors));
+    dPT(scheduler.force(task_connections));
 
     return true;
 }
 
 static bool act_disable(byte idx, unsigned long duration)
 {
+    iPV("@disable", idx);
+
     if (idx >= probes_cnt) {
+        dPC("@disable: bad idx");
         return false;
     }
 
     probes[idx].disable(duration);
 
-    DPT(scheduler.force(task_sensors));
-    DPT(scheduler.force(task_connections));
+    dPT(scheduler.force(task_sensors));
+    dPT(scheduler.force(task_connections));
 
     return true;
 }
@@ -343,14 +350,18 @@ static int act_set_setting(byte type, const byte* data, byte len)
 
 static bool act_emu_water(byte idx, bool immediately)
 {
+    iPV("@emu_water", idx);
+
     if (idx >= probes_cnt) {
+        dPC("@emu_water: bad idx");
         return false;
     }
 
     probes[idx].emulate_water();
 
     if (immediately) {
-        DPT(scheduler.force(task_sensors));
+        dPC("@emu_water: immediately");
+        dPT(scheduler.force(task_sensors));
     }
 
     return true;
@@ -358,14 +369,18 @@ static bool act_emu_water(byte idx, bool immediately)
 
 static bool act_emu_error(byte idx, bool immediately)
 {
+    iPV("@emu_error", idx);
+
     if (idx >= probes_cnt) {
+        dPC("@emu_error: bad idx");
         return false;
     }
 
     probes[idx].emulate_error();
 
     if (immediately) {
-        DPT(scheduler.force(task_connections));
+        dPC("@emu_error: immediately");
+        dPT(scheduler.force(task_connections));
     }
 
     return true;
@@ -373,13 +388,16 @@ static bool act_emu_error(byte idx, bool immediately)
 
 static unsigned long task_server(unsigned long dt)
 {
+    dPC("#server");
+
     (void)dt;
 
-    if (!p_server || p_server->is_offline() || !p_server->rx()) {
-        return PROTO_NEXT;
+    if (!p_server || p_server->is_offline()) {
+        dPC("#server: offline");
+        return FAR_NEXT;
     }
 
-    ProtoAction action = ProtoSession(ticker, *p_server).action(
+    ProtoSession(ticker, *p_server).action(
             act_state,
             act_open,
             act_close,
@@ -391,37 +409,23 @@ static unsigned long task_server(unsigned long dt)
             act_emu_water,
             act_emu_error);
 
-    switch (action) {
-    case PROTO_STATE:       DPC("proto: state");         break;
-    case PROTO_OPEN:        DPC("proto: open");          break;
-    case PROTO_CLOSE:       DPC("proto: close");         break;
-    case PROTO_SUSPEND:     DPC("proto: suspend");       break;
-    case PROTO_EN_PROBE:    DPC("proto: enable probe");  break;
-    case PROTO_DIS_PROBE:   DPC("proto: disable probe"); break;
-    case PROTO_GET_SETTING: DPC("proto: get setting");   break;
-    case PROTO_SET_SETTING: DPC("proto: set setting");   break;
-    case PROTO_EMU_WATER:   DPC("proto: emulate water"); break;
-    case PROTO_EMU_ERROR:   DPC("proto: emulate error"); break;
-    case PROTO_UNKNOWN:     DPC("proto: unknown");       break;
-    default:                DPC("proto: ...");
-    }
-
-    return PROTO_NEXT; // TODO: adjust timings:
-                       // activate this task by actual signals from ESP01
-                       // or scheduling it during intensive communications
+    return FAR_NEXT;
 }
 
 static unsigned long task_application(unsigned long dt)
 {
+    dPC("#application");
+
     (void)dt;
 
     static AppState last_state = APP_MALFUNCTION;
     AppState app_state = app.solve();
 
     if (last_state != app_state) {
-        DPT(scheduler.force(task_display));
-        DPT(scheduler.force(task_valves));
-        DPT(scheduler.force(task_server));
+        dPV("#application: changed", app_state);
+        dPT(scheduler.force(task_display));
+        dPT(scheduler.force(task_valves));
+        dPT(scheduler.force(task_server));
         last_state = app_state;
     }
 
@@ -430,6 +434,8 @@ static unsigned long task_application(unsigned long dt)
 
 static unsigned long task_sensors(unsigned long dt)
 {
+    dPC("#sensors");
+
     (void)dt;
 
     static bool last_trigger = false;
@@ -440,7 +446,8 @@ static unsigned long task_sensors(unsigned long dt)
     }
 
     if (last_trigger != trigger) {
-        DPT(scheduler.force(task_application));
+        dPC("#sensors: changed");
+        dPT(scheduler.force(task_application));
         last_trigger = trigger;
     }
 
@@ -449,6 +456,8 @@ static unsigned long task_sensors(unsigned long dt)
 
 static unsigned long task_connections(unsigned long dt)
 {
+    dPC("#connections");
+
     (void)dt;
 
     static bool last_trigger = false;
@@ -459,7 +468,8 @@ static unsigned long task_connections(unsigned long dt)
     }
 
     if (last_trigger != trigger) {
-        DPT(scheduler.force(task_application));
+        dPC("#connections: changed");
+        dPT(scheduler.force(task_application));
         last_trigger = trigger;
     }
 
@@ -468,6 +478,8 @@ static unsigned long task_connections(unsigned long dt)
 
 static unsigned long task_display(unsigned long dt)
 {
+    // dPC("#reboot");
+
     (void)dt;
 
     LedMode max = LED_OFF;
@@ -483,6 +495,8 @@ static unsigned long task_display(unsigned long dt)
 
 static unsigned long task_valves(unsigned long dt)
 {
+    dPC("#valves");
+
     (void)dt;
 
     static bool last_trigger = false;
@@ -495,10 +509,34 @@ static unsigned long task_valves(unsigned long dt)
     }
 
     if (last_trigger != is_engaged) {
-        DPT(scheduler.force(task_server));
-        DPT(scheduler.force(task_application));
+        dPC("#valves: changed");
+        dPT(scheduler.force(task_server));
+        dPT(scheduler.force(task_application));
         last_trigger = is_engaged;
     }
 
     return is_engaged ? VALVE_NEXT : FAR_NEXT;
+}
+
+static unsigned long task_reboot(unsigned long dt)
+{
+    dPC("#reboot");
+
+    (void)dt;
+
+    unsigned long tm = ticker.tick();
+
+    // skip this time
+    if (!(tm & 0x80000000)) {
+        dPC("#reboot: next time");
+        return REBOOT_NEXT;
+    }
+
+    iPC("#reboot: reset");
+
+    // TODO: schedule reboot on a night time
+    // TODO: signal about reboot (through a trigger rerun this task later)
+    hw_reset();
+
+    return REBOOT_NEXT;
 }

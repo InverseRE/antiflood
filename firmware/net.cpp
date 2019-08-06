@@ -22,6 +22,8 @@
 */
 
 #include "config.h"
+#include "debug.h"
+#include "hw.h"
 #include "net.h"
 #include "debug.h"
 
@@ -63,60 +65,70 @@ NetServer::NetServer(const Ticker& ticker,
 void NetServer::setup(void)
 {
     /* Start shield HW. */
+    dPC("net: power up ESP8266");
+
     pinMode(WIFIEN, OUTPUT);
     pinMode(WIFIRS, OUTPUT);
     digitalWrite(WIFIEN, HIGH);
     digitalWrite(WIFIRS, HIGH);
 
-    DPC("power on ESP8266");
-    // FIXME: TODO: hangs up here
-    _ticker.delay_shield_up();
-
     /* Establish connection. */
+    dPC("net: init WiFi");
+
     Serial.begin(SHIELD_BAUD_RATE);
     WiFi.init(&Serial);
+    wdt_reset();
+
     if (WiFi.status() == WL_NO_SHIELD) {
-        DPC("...not responding");
+        iPC("net: no response, offline");
         _is_online = false;
         return;
     }
 
     /* Register in a network. */
     if (STYPE_STATION == _mode) {
-        DPC("WiFi mode: station");
+        iPC("net: S-mode");
         WiFi.config(_ip);
+        wdt_reset();
         WiFi.begin(_ssid.c_str(), _password.c_str());
-        DPV("SSID", _ssid);
-        DPV("IP", _ip);
+        wdt_reset();
+        iPV("net: ssid", _ssid);
+        iPV("net: ip", _ip);
+        iPV("net: port", _port);
     }
     if (STYPE_ACCESS_POINT == _mode) {
-        DPC("WiFi mode: access point");
+        iPC("net: AP-mode");
         WiFi.configAP(_ip);
+        wdt_reset();
         WiFi.beginAP(_ssid.c_str(), _channel, _password.c_str(), _auth_type);
-        DPV("SSID", _ssid);
-        DPV("channel", _channel);
-        DPV("IP", _ip);
+        wdt_reset();
+        dPV("net: ch", _channel);
+        iPV("net: ssid", _ssid);
+        iPV("net: ip", _ip);
+        iPV("net: port", _port);
     }
     if (STYPE_DUAL == _mode) {
-        DPC("WiFi mode: dual");
+        iPC("net: D-mode");
+        uPC("NET: USUPPORTED");
     }
 
     /* Start server. */
     _is_online = _udp.begin(_port);
     _is_sending = false;
+    wdt_reset();
+
+    dPV("net: setup", _is_online);
 }
 
 void NetServer::disconnect(void)
 {
-    DPC("network shutdown");
+    dPC("net: disconnect");
 
     /* Turn off server. */
     _udp.stop();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI library. */
     WiFi.disconnect();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
     digitalWrite(WIFIEN, LOW);
@@ -128,15 +140,13 @@ void NetServer::disconnect(void)
 
 void NetServer::suspend(void)
 {
-    DPC("network suspend");
+    dPC("net: suspend");
 
     /* Turn off server. */
     _udp.stop();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI library. */
     WiFi.disconnect();
-    _ticker.delay_shield_down();
 
     /* Turn off WIFI shield. */
     /* TODO: keep ESP8266 operational */
@@ -149,7 +159,7 @@ void NetServer::suspend(void)
 
 void NetServer::resume(void)
 {
-    DPC("network resume");
+    dPC("net: resume");
 
     /* TODO: restore ESP8266 operations */
     _is_online = true;
@@ -160,10 +170,12 @@ bool NetServer::rx(void)
 {
     bool conn = _udp.parsePacket();
     if (conn) {
+        dPC("net: rx");
+
         IPAddress ipa = _udp.remoteIP();
         uint16_t rp = _udp.remotePort();
-        DPV("rx from", ipa);
-        DPV("@port", rp);
+        dPV("net: dx ip", ipa);
+        dPV("net: dx port", rp);
     }
     return conn;
 }
@@ -181,6 +193,8 @@ int NetServer::read(void* buf, int len)
 void NetServer::write(const void* buf, int len)
 {
     if (!_is_sending) {
+        dPC("net: tx");
+
         _is_sending = true;
         // FIXME: _udp.remotePort() from Arduino/libraries/WiFiEsp/src/utility/EspDrv.cpp
         // comment out the second serial read (at EspDrv.cpp:686)
@@ -188,8 +202,8 @@ void NetServer::write(const void* buf, int len)
         IPAddress ipa = _udp.remoteIP();
         uint16_t rp = _udp.remotePort();
         _udp.beginPacket(ipa, rp);
-        DPV("tx to", ipa);
-        DPV("@port", rp);
+        dPV("net: dx ip", ipa);
+        dPV("net: dx port", rp);
     }
     _udp.write((byte*)buf, len);
 }
@@ -198,6 +212,8 @@ void NetServer::write(const void* buf, int len)
 void NetServer::tx(void)
 {
     if (_is_sending) {
+        dPC("net: tx stop");
+
         _is_sending = false;
         _udp.endPacket();
     }

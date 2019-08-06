@@ -24,19 +24,20 @@
 #ifndef __HW_H__
 #define __HW_H__
 
+#include <avr/wdt.h>
 #include "config.h"
 
 
-
 /** Turn off unused modules at startup. */
-void peripheral_configure();
-
-/** Signal an error by all means. */
-void halt_on_error(void);
+void hw_configure();
 
 /** Perform reset by watchdog timer. */
-void reset(void);
+void hw_reset(void);
 
+/** Suspend for a while. */
+void hw_suspend(unsigned long time);
 
+/** Power down. */
+void hw_sleep(void);
 
 #endif /* __HW_H__ */

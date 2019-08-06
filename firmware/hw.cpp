@@ -21,38 +21,203 @@
    For more details see LICENSE file.
 */
 
-#include <avr/wdt.h>
 #include <avr/power.h>
+#include <avr/sleep.h>
 
+#include "debug.h"
 #include "hw.h"
-#include "net.h"
-#include "probe.h"
+#include "ticker.h"
 
-/** Turn off unused modules at startup. */
-void peripheral_configure()
+extern volatile unsigned long timer0_millis;
+static volatile bool wdt_ignore = false;
+
+ISR(TIMER1_OVF_vect)
 {
-    /* Disable not used timers. */
-    power_timer1_disable();
-    power_timer2_disable();
-
-    /* Disable I2C. */
-    power_twi_disable();
-
-    /* Disable SPI. */
-    power_spi_disable();
 }
 
-/** Signal an error by all means. */
-void halt_on_error(void)
+ISR(WDT_vect)
 {
-    // TODO
-    do { } while (true); /* here may be placed an option to unstack */
+    if (wdt_ignore) {
+
+        /* Continue one time. */
+        wdt_reset();
+        wdt_ignore = false;
+
+    } else {
+
+        /*
+         * Reset-only mode.
+         * Ñlear WDIE (interrupt enable...7th from left).
+         * Set WDE (reset enable...4th from left), and set delay interval.
+         * Reset system in 16 ms...
+         */
+        MCUSR = 0;
+        WDTCSR |= 0b00011000;
+        WDTCSR = 0b00001000 | 0b000000;
+        while (true);
+    }
 }
 
 /** Perform reset by watchdog timer. */
-void reset(void)
+void hw_reset(void)
 {
-    /* Ensure WD timer is power up. */
-    wdt_enable(WDTO_4S);
-    halt_on_error();
+    dPC("hw: reset");
+
+    wdt_ignore = false;
+    wdt_enable(WDTO_15MS);
+    while (true);
+}
+
+void wdt_configure(void)
+{
+    cli();
+
+    /*
+     * Interrupt-only mode.
+     * Set WDCE (5th from left) and WDE (4th from left).
+     * Set WDIE: interrupt enabled.
+     * Clear WDE: reset disabled.
+     * Interval (right side of bar) to 8 seconds
+     */
+    MCUSR = 0;
+    WDTCSR |= 0b00011000;
+    WDTCSR =  0b01000000 | 0b100001;
+
+    sei();
+
+    dPC("hw: wdt configured");
+}
+
+/** Turn off unused modules at startup. */
+void hw_configure()
+{
+    interrupts();
+
+    power_timer1_disable();
+    power_timer2_disable();
+    power_twi_disable();
+    power_spi_disable();
+
+    power_timer0_enable();
+    power_adc_enable();
+    power_usart0_enable();
+    wdt_configure();
+
+    dPC("hw: configured");
+}
+
+/**
+ * Enters the arduino into a sleep mode.
+ *
+ * Uses IDLE mode, TIMER1(2^16).
+ *
+ * time = 1/16MHz * 1024 * (2^16 - preload) * 1000, ms
+ * preload = 2^16 - (time * 16000 / 1024)
+ */
+void hw_suspend(unsigned long time)
+{
+    dPV("hw: suspend", time);
+
+    wdt_reset();
+
+    // time limits
+    if (time < SUSPEND_MIN) {
+        dPC("hw: skipped");
+        return;
+    }
+    if (time > SUSPEND_MAX) {
+        dPV("hw: defaults", SUSPEND_MAX);
+        time = SUSPEND_MAX;
+    }
+
+    unsigned long ticks = (time * 125) / 8; // GCD(16000, 1024) = 128
+    ticks = ticks < 65535 ? ticks : 65535;
+    unsigned short preload = 65535 - (unsigned short)ticks;
+
+    // before
+    noInterrupts();
+
+    power_adc_disable();
+    power_timer0_disable();
+    power_timer1_enable();
+
+    TCCR1A = 0x00;
+    TCCR1B = 0x05;
+    TCNT1 = preload;
+    TIMSK1 = 0x01;
+
+    // TODO: for pcb-3 add PCINT (user's buttons)
+
+    // suspend/resume point
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_enable();
+
+    interrupts();
+    sleep_cpu();
+    sleep_disable();
+    noInterrupts();
+
+    // after
+    unsigned short ticks_passed = TCNT1 - preload;
+    unsigned long time_passed = (unsigned long)ticks_passed * 8 / 125;
+    unsigned long ms = timer0_millis;
+    ms += time_passed;
+    ms += 1; // overdraft for the above code
+    timer0_millis = ms;
+
+    TIMSK1 = 0x00;
+
+    power_timer1_disable();
+    power_timer0_enable();
+    power_adc_enable();
+
+    interrupts();
+
+    // continue
+    wdt_reset();
+
+    dPV("hw: wake up", time_passed + 1);
+}
+
+/** Power down. */
+void hw_sleep(void)
+{
+    dPC("hw: sleep");
+
+    wdt_reset();
+    wdt_ignore = true;
+
+    // before
+    noInterrupts();
+
+    power_timer0_disable();
+    power_adc_disable();
+    power_usart0_disable();
+
+    // power down
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+
+    interrupts();
+    sleep_cpu();
+    sleep_disable();
+    noInterrupts();
+
+    // after
+    unsigned long ms = timer0_millis;
+    ms += 8000; // approximately
+    ms += 1; // overdraft for the above code
+    timer0_millis = ms;
+
+    power_timer0_enable();
+    power_adc_enable();
+    power_usart0_enable();
+
+    interrupts();
+
+    // continue
+    wdt_reset();
+    wdt_ignore = false;
+
+    dPC("hw: wake up");
 }
