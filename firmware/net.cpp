@@ -102,7 +102,7 @@ void NetServer::setup(void)
         wdt_reset();
         WiFi.beginAP(_ssid.c_str(), _channel, _password.c_str(), _auth_type);
         wdt_reset();
-        iPV("net: ch", _channel);
+        dPV("net: ch", _channel);
         iPV("net: ssid", _ssid);
         iPV("net: ip", _ip);
         iPV("net: port", _port);

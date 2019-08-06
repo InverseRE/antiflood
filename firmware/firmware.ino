@@ -390,6 +390,8 @@ static unsigned long task_connections(unsigned long dt)
 
 static unsigned long task_display(unsigned long dt)
 {
+    // dPC("#reboot");
+
     (void)dt;
 
     LedMode max = LED_OFF;
