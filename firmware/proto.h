@@ -28,21 +28,6 @@
 #include "app.h"
 #include "net.h"
 
-/** User commands. */
-enum ProtoAction {
-    PROTO_UNKNOWN,                            /* unknown */
-    PROTO_STATE,                              /* show state */
-    PROTO_OPEN,                               /* open valves */
-    PROTO_CLOSE,                              /* close valves */
-    PROTO_SUSPEND,                            /* enter a power-save mode */
-    PROTO_EN_PROBE,                           /* enable probes */
-    PROTO_DIS_PROBE,                          /* disable probes */
-    PROTO_GET_SETTING,                        /* read setting */
-    PROTO_SET_SETTING,                        /* append/update setting */
-    PROTO_EMU_WATER,                          /* emulate WATER on probes */
-    PROTO_EMU_ERROR                           /* emulate ERROR on probes */
-};
-
 /** Client session. */
 class ProtoSession {
 private:
@@ -53,17 +38,20 @@ public:
     ProtoSession(const Ticker& ticker, NetServer& server);
     void setup(void);
 
-    ProtoAction action(
+    void action(
             byte (*state)(byte* buf, byte buf_max_size),
             bool (*open)(void),
             bool (*close)(void),
             bool (*suspend)(void),
             bool (*enable)(byte idx),
             bool (*disable)(byte idx, unsigned long duration),
-            int (*get_setting)(byte type, byte* buff, byte* size),
-            int (*set_setting)(byte type, const byte* data, byte size),
             bool (*emu_water)(byte idx, bool immediately),
-            bool (*emu_error)(byte idx, bool immediately));
+            bool (*emu_error)(byte idx, bool immediately),
+            byte (*get_wifi)(byte* buf, byte buf_max_size),
+            bool (*set_wifi)(const byte* buf, byte buf_size),
+            bool (*set_wifi_pwd)(const byte* buf, byte buf_size),
+            byte (*get_serv)(byte* buf, byte buf_max_size),
+            bool (*set_serv)(const byte* buf, byte buf_size));
 };
 
 #endif  /* __PROTO_H__ */

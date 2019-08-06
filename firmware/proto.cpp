@@ -25,7 +25,6 @@
 
 #include "debug.h"
 #include "proto.h"
-#include "storage.h"
 
 /** Packet class. */
 enum Class : byte {
@@ -46,10 +45,13 @@ enum Instruction : byte {
     iSuspend      = 5,                      /**< enter power save mode */
     iEnableProbe  = 6,                      /**< enable probes */
     iDisableProbe = 7,                      /**< disable probes */
-    iGetSetting   = 8,                      /**< read settings */
-    iSetSetting   = 9,                      /**< append/update settings */
-    iEmuWater     = 10,                     /**< emulate WATER on probes */
-    iEmuError     = 11,                     /**< emulate ERROR on probes */
+    iEmuWater     = 8,                      /**< emulate WATER on probes */
+    iEmuError     = 9,                      /**< emulate ERROR on probes */
+    iGetWiFi      = 100,                    /**< read WiFi settings */
+    iGetServ      = 101,                    /**< read Server settings */
+    iSetWiFi      = 200,                    /**< write WiFi settings */
+    iSetServ      = 201,                    /**< write Server settings */
+    iSetWiFiPwd   = 202,                    /**< write WiFi settings (password) */
     iEcho         = 253,                    /**< echoed packet */
     iUnsupported  = 254,                    /**< unsupported request */
     iRFU          = 255                     /**< reserved */
@@ -129,28 +131,41 @@ public:
         _ins = 1 == _data_size ? iUnsupported : iFullStatus;
     }
 
-    void trx_get_setting(int (*get_setting)(byte type, byte* buf, byte* size)) {
-        byte size = sizeof(_data) - sizeof(int);
-        int res = get_setting(_data[0], _data, &size);
+    void trx_get_wifi(int (*get_wifi)(byte* buf, byte buf_max_size)) {
+        _data_size = get_wifi(_data, sizeof(_data));
         _cla = cResponse;
-        _ins = iGetSetting;
-        if (res == ST_OK || res == ST_NOT_ENAUGHT) {
-            _data_size = size;
-            memcpy(_data + size, &res, sizeof(res));
-        } else {
-            _data_size = sizeof(res);
-            memcpy(_data, &res, sizeof(res));
-        }
+        _ins = iGetWiFi;
     }
 
-    void trx_set_setting(int (*set_setting)(byte type, const byte* data, byte size)) {
-        int res = set_setting(_data[0], _data + 2, _data[1]);
+    void trx_set_wifi(bool (*set_wifi)(const byte* buf, byte buf_size)) {
+        bool res = set_wifi(_data, _data_size);
         _cla = cResponse;
-        _ins = iSetSetting;
+        _ins = iSetWiFi;
         _data_size = sizeof(res);
         memcpy(_data, &res, sizeof(res));
     }
 
+    void trx_set_wifi_pwd(bool (*set_wifi_pwd)(const byte* buf, byte buf_size)) {
+        bool res = set_wifi_pwd(_data, _data_size);
+        _cla = cResponse;
+        _ins = iSetWiFiPwd;
+        _data_size = sizeof(res);
+        memcpy(_data, &res, sizeof(res));
+    }
+
+    void trx_get_serv(int (*get_serv)(byte* buf, byte buf_max_size)) {
+        _data_size = get_serv(_data, sizeof(_data));
+        _cla = cResponse;
+        _ins = iGetServ;
+    }
+
+    void trx_set_serv(bool (*set_serv)(const byte* buf, byte buf_size)) {
+        bool res = set_serv(_data, _data_size);
+        _cla = cResponse;
+        _ins = iSetServ;
+        _data_size = sizeof(res);
+        memcpy(_data, &res, sizeof(res));
+    }
 
     void trx_open(bool (*open)(void)) {
         bool res = open();
@@ -228,20 +243,22 @@ void ProtoSession::setup(void)
     dPC("proto: setup");
 }
 
-ProtoAction ProtoSession::action(
+void ProtoSession::action(
         byte (*state)(byte* buf, byte buf_max_size),
         bool (*open)(void),
         bool (*close)(void),
         bool (*suspend)(void),
         bool (*enable)(byte idx),
         bool (*disable)(byte idx, unsigned long duration),
-        int (*get_setting)(byte type, byte* buff, byte* size),
-        int (*set_setting)(byte type, const byte* data, byte size),
         bool (*emu_water)(byte idx, bool immediately),
-        bool (*emu_error)(byte idx, bool immediately))
+        bool (*emu_error)(byte idx, bool immediately),
+        byte (*get_wifi)(byte* buf, byte buf_max_size),
+        bool (*set_wifi)(const byte* buf, byte buf_size),
+        bool (*set_wifi_pwd)(const byte* buf, byte buf_size),
+        byte (*get_serv)(byte* buf, byte buf_max_size),
+        bool (*set_serv)(const byte* buf, byte buf_size))
 {
     byte reads_limit = 2; // amount of packets parsed at a time
-    ProtoAction action = PROTO_UNKNOWN;
     byte buf[sizeof(Packet)];
     unsigned len = 0;
 
@@ -287,22 +304,25 @@ ProtoAction ProtoSession::action(
 
         /* switch by requested action */
         switch (pkt->ins())  {
-        case iAbout:        pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
-        case iTime:         pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
-        case iFullStatus:   pkt->trx_full_status(state);       action = PROTO_STATE;   break;
-        case iOpenValves:   pkt->trx_open(open);               action = PROTO_OPEN;    break;
-        case iCloseValves:  pkt->trx_close(close);             action = PROTO_CLOSE;   break;
-        case iSuspend:      pkt->trx_suspend(suspend);         action = PROTO_SUSPEND; break;
-        case iEnableProbe:  pkt->trx_enable_probe(enable);     action = PROTO_EN_PROBE; break;
-        case iDisableProbe: pkt->trx_disable_probe(disable);   action = PROTO_DIS_PROBE; break;
-        case iGetSetting:   pkt->trx_get_setting(get_setting); action = PROTO_GET_SETTING; break;
-        case iSetSetting:   pkt->trx_set_setting(set_setting); action = PROTO_SET_SETTING; break;
-        case iEmuWater:     pkt->trx_emu_water(emu_water);     action = PROTO_EMU_WATER; break;
-        case iEmuError:     pkt->trx_emu_error(emu_error);     action = PROTO_EMU_ERROR; break;
-        case iEcho:         pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
-        case iUnsupported:  pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
-        case iRFU:          pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
-        default:            pkt->trx_unsupported();            action = PROTO_UNKNOWN; break;
+        case iAbout:        pkt->trx_unsupported();              break;
+        case iTime:         pkt->trx_unsupported();              break;
+        case iFullStatus:   pkt->trx_full_status(state);         break;
+        case iOpenValves:   pkt->trx_open(open);                 break;
+        case iCloseValves:  pkt->trx_close(close);               break;
+        case iSuspend:      pkt->trx_suspend(suspend);           break;
+        case iEnableProbe:  pkt->trx_enable_probe(enable);       break;
+        case iDisableProbe: pkt->trx_disable_probe(disable);     break;
+        case iEmuWater:     pkt->trx_emu_water(emu_water);       break;
+        case iEmuError:     pkt->trx_emu_error(emu_error);       break;
+        case iGetWiFi:      pkt->trx_get_wifi(get_wifi);         break;
+        case iGetServ:      pkt->trx_get_serv(get_serv);         break;
+        case iSetWiFi:      pkt->trx_set_wifi(set_wifi);         break;
+        case iSetServ:      pkt->trx_set_serv(set_serv);         break;
+        case iSetWiFiPwd:   pkt->trx_set_wifi_pwd(set_wifi_pwd); break;
+        case iEcho:         pkt->trx_unsupported();              break;
+        case iUnsupported:  pkt->trx_unsupported();              break;
+        case iRFU:          pkt->trx_unsupported();              break;
+        default:            pkt->trx_unsupported();              break;
         }
 
         /* write out */
@@ -316,6 +336,4 @@ ProtoAction ProtoSession::action(
         /* packet has been processed, get another one */
         len = 0;
     }
-
-    return action;
 }

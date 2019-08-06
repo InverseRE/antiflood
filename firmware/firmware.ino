@@ -34,7 +34,6 @@
 #include "scheduler.h"
 #include "ticker.h"
 #include "setting.h"
-#include "storage.h"
 
 static Ticker ticker;
 
@@ -68,10 +67,9 @@ static App app(ticker,
         probes, probes_cnt,
         valves, valves_cnt);
 
+static Setting setting;
+
 static NetServer* p_server = nullptr;
-static SettingsStorage& sst = SettingsStorage::get_instance();;
-static bool storage_loaded = false;
-static bool storage_created = false;
 
 static Scheduler scheduler(ticker);
 
@@ -83,6 +81,11 @@ static bool act_enable(byte idx);
 static bool act_disable(byte idx, unsigned long duration);
 static bool act_emu_water(byte idx, bool immediately);
 static bool act_emu_error(byte idx, bool immediately);
+static byte act_get_wifi(byte* buf, byte buf_max_size);
+static bool act_set_wifi(const byte* buf, byte buf_size);
+static bool act_set_wifi_pwd(const byte* buf, byte buf_size);
+static byte act_get_serv(byte* buf, byte buf_max_size);
+static bool act_set_serv(const byte* buf, byte buf_size);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -90,6 +93,7 @@ static unsigned long task_connections(unsigned long dt);
 static unsigned long task_display(unsigned long dt);
 static unsigned long task_valves(unsigned long dt);
 static unsigned long task_reboot(unsigned long dt);
+static unsigned long task_setting(unsigned long dt);
 
 /** Startup procedure. */
 void setup()
@@ -101,60 +105,21 @@ void setup()
     /* Setup HW devices */
     hw_configure();
 
-    /* Create/Load settings storage. */
-    if (sst.exist()) {
-        DPC("storage already exist");
-        if (sst.load() != ST_OK) {
-            DPC("storage loading failed");
-        } else {
-            DPC("storage loaded successfully");
-            storage_loaded = true;
-        }
-    } else {
-        DPC("storage not exist");
-        if (sst.create() != ST_OK) {
-            DPC("create failed");
-        } else {
-            DPC("storage created successfully");
-            storage_created = true;
-        }
-    }
-
-    /* Default settings. */
-    byte wifi_mode = 0;
-    byte ip_bytes[4] = {APP_DEFAULT_IP};
-    unsigned short ip_port = APP_DEFAULT_PORT;
-    String ssid = WIFI_DEFAULT_SSID;
-    String password = WIFI_DEFAULT_PASS;
-    byte channel = WIFI_DEFAULT_CHAN;
-    int auth_type = WIFI_DEFAULT_SECU;
-
-    /* Apply user settings if exist. */
-    short settings_num = sst.enumerate();
-
-    if (!storage_loaded || !settings_num) {
-        iPC("default config");
-    } else {
+    /* Settings. */
+    if (setting.load()) {
         iPC("custom config");
-
-        load_setting(sst, WIFI_MODE, wifi_mode);
-        load_setting_bytes(sst, IP_ADDRESS, ip_bytes);
-        load_setting(sst, PORT_NUMBER, ip_port);
-        load_setting_string(sst, SSID, ssid);
-        load_setting_string(sst, PASSWORD, password);
-        load_setting(sst, CHANNEL, channel);
-        load_setting(sst, AUTH_TYPE, auth_type);
-
-        dPV("WiFi mode", wifi_mode);
-        dPA("ip", ip_bytes, 4);
-        dPV("port", ip_port);
-        dPV("sid", ssid);
-        dPV("pwd", password);
-        dPV("ch", channel);
-        dPV("auth", auth_type);
+    } else {
+        iPC("default config");
+        setting.defaults();
     }
 
-    IPAddress ip_addr(ip_bytes);
+    dPV("wifi mode", setting.wifi_mode);
+    dPV("wifi ch", setting.wifi_ch);
+    dPA("wifi ssid", setting.wifi_ssid, sizeof(setting.wifi_ssid));
+    dPA("wifi pwd", setting.wifi_pwd, sizeof(setting.wifi_pwd));
+    dPV("wifi auth", setting.wifi_auth);
+    dPA("serv ip", setting.serv_addr, 4);
+    dPV("serv port", setting.serv_port);
 
     /* Setup local data. */
     ticker.setup();
@@ -171,9 +136,13 @@ void setup()
     app.setup();
     wdt_reset();
 
-    p_server = wifi_mode
-                ? new NetServer(ticker, ip_addr, ip_port, ssid, password)
-                : new NetServer(ticker, ip_addr, ip_port, ssid, password, channel, auth_type);
+    IPAddress addr(setting.serv_addr);
+    p_server = setting.wifi_mode
+                ? new NetServer(ticker, addr, setting.serv_port,
+                        setting.wifi_ssid, setting.wifi_pwd)
+                : new NetServer(ticker, addr, setting.serv_port,
+                        setting.wifi_ssid, setting.wifi_pwd,
+                        setting.wifi_ch, setting.wifi_auth);
     p_server->setup();
     wdt_reset();
 
@@ -185,6 +154,7 @@ void setup()
     dPT(scheduler.add(task_application));
     dPT(scheduler.add(task_server));
     dPT(scheduler.add(task_reboot));
+    dPT(scheduler.add(task_setting));
     wdt_reset();
 
     iPC("setup complete");
@@ -307,47 +277,6 @@ static bool act_disable(byte idx, unsigned long duration)
     return true;
 }
 
-static int act_get_setting(byte type, byte* buff, byte* len)
-{
-    int ret;
-    DPC("act_get_setting");
-    DPV("type", type);
-    DPV("len", *len);
-
-    if (!storage_loaded) {
-        DPC("not loaded");
-        return ST_NOT_FOUND;
-    }
-
-    if (!sst.enumerate()) {
-        DPC("no records");
-        return ST_NOT_FOUND;
-    }
-
-    ret = read_setting(sst, type, buff, len);
-    DPV("ret", ret);
-
-    return ret;
-}
-
-static int act_set_setting(byte type, const byte* data, byte len)
-{
-    int ret;
-    DPC("act_set_setting");
-    DPV("type", type);
-    DPV("len", len);
-
-    if (!storage_loaded && !storage_created) {
-        DPC("not loaded & not created");
-        return ST_NOT_FOUND;
-    }
-
-    ret = write_setting(sst, type, data, len);
-    DPV("ret", ret);
-
-    return ret;
-}
-
 static bool act_emu_water(byte idx, bool immediately)
 {
     iPV("@emu_water", idx);
@@ -386,6 +315,105 @@ static bool act_emu_error(byte idx, bool immediately)
     return true;
 }
 
+static byte act_get_wifi(byte* buf, byte buf_max_size)
+{
+    iPC("@get_wifi");
+
+    const byte len = sizeof(setting.wifi_mode)
+            + sizeof(setting.wifi_ch)
+            + sizeof(setting.wifi_auth)
+            + sizeof(setting.wifi_ssid);
+
+    if (len > buf_max_size) {
+        return 0;
+    }
+
+    *buf++ = setting.wifi_mode;
+    *buf++ = setting.wifi_ch;
+    *buf++ = setting.wifi_auth;
+    memcpy(buf, setting.wifi_ssid, sizeof(setting.wifi_ssid));
+
+    return len;
+}
+
+static bool act_set_wifi(const byte* buf, byte buf_size)
+{
+    iPC("@set_wifi");
+
+    const byte len = sizeof(setting.wifi_mode)
+            + sizeof(setting.wifi_ch)
+            + sizeof(setting.wifi_auth)
+            + sizeof(setting.wifi_ssid);
+
+    if (len != buf_size) {
+        return false;
+    }
+
+    setting.wifi_mode = *buf++;
+    setting.wifi_ch = *buf++;
+    setting.wifi_auth = *buf++;
+    memcpy(setting.wifi_ssid, buf, sizeof(setting.wifi_ssid));
+
+    dPT(scheduler.force(task_setting));
+
+    return true;
+}
+
+static bool act_set_wifi_pwd(const byte* buf, byte buf_size)
+{
+    iPC("@set_wifi_pwd");
+
+    const byte len = sizeof(setting.wifi_pwd);
+
+    if (len != buf_size) {
+        return false;
+    }
+
+    memcpy(setting.wifi_pwd, buf, sizeof(setting.wifi_pwd));
+
+    dPT(scheduler.force(task_setting));
+
+    return true;
+}
+
+static byte act_get_serv(byte* buf, byte buf_max_size)
+{
+    iPC("@get_serv");
+
+    const byte len = sizeof(setting.serv_addr)
+            + sizeof(setting.serv_port);
+
+    if (len > buf_max_size) {
+        return 0;
+    }
+
+    memcpy(buf, setting.serv_addr, sizeof(setting.serv_addr));
+    buf += sizeof(setting.serv_addr);
+    memcpy(buf, &setting.serv_port, sizeof(setting.serv_port));
+
+    return len;
+}
+
+static bool act_set_serv(const byte* buf, byte buf_size)
+{
+    iPC("@set_serv");
+
+    const byte len = sizeof(setting.serv_addr)
+            + sizeof(setting.serv_port);
+
+    if (len != buf_size) {
+        return false;
+    }
+
+    memcpy(setting.serv_addr, buf, sizeof(setting.serv_addr));
+    buf += sizeof(setting.serv_addr);
+    memcpy(&setting.serv_port, buf, sizeof(setting.serv_port));
+
+    dPT(scheduler.force(task_setting));
+
+    return true;
+}
+
 static unsigned long task_server(unsigned long dt)
 {
     dPC("#server");
@@ -404,10 +432,13 @@ static unsigned long task_server(unsigned long dt)
             act_suspend,
             act_enable,
             act_disable,
-            act_get_setting,
-            act_set_setting,
             act_emu_water,
-            act_emu_error);
+            act_emu_error,
+            act_get_wifi,
+            act_set_wifi,
+            act_set_wifi_pwd,
+            act_get_serv,
+            act_set_serv);
 
     return FAR_NEXT;
 }
@@ -539,4 +570,21 @@ static unsigned long task_reboot(unsigned long dt)
     hw_reset();
 
     return REBOOT_NEXT;
+}
+
+static unsigned long task_setting(unsigned long dt)
+{
+    iPC("#setting");
+
+    (void)dt;
+
+    Setting stored;
+
+    stored.load();
+
+    if (memcmp(&setting, &stored, sizeof(Setting))) {
+        setting.save();
+    }
+
+    return FAR_NEXT;
 }
