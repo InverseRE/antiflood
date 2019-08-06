@@ -1,4 +1,4 @@
-/* -*- mode: c -*- */
+/* -*- mode: c++ -*- */
 
 /*
    Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky

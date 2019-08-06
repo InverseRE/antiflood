@@ -1,4 +1,4 @@
-/* -*- mode: c -*- */
+/* -*- mode: c++ -*- */
 
 /*
    Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
@@ -130,7 +130,7 @@ int Setting::pop(int addr)
         return BAD_ARGUMENT;
     }
 
-    /* get record type & length */    
+    /* get record type & length */
     _type = EEPROM.read(addr + 0);
     _len = EEPROM.read(addr + 1);
 

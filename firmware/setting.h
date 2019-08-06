@@ -1,4 +1,4 @@
-/* -*- mode: c -*- */
+/* -*- mode: c++ -*- */
 
 /*
    Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
@@ -57,7 +57,7 @@ public:
 
     Setting();
     Setting(byte type, byte len, const byte *value);
-    Setting::~Setting(); 
+    Setting::~Setting();
 
     int push(int addr);
     int pop(int addr);
@@ -65,8 +65,8 @@ public:
     /* crc-16 calculation */
     static unsigned short crc16(const byte *block, unsigned short len);
 
-    /* get total length in bytes */   
-    short Setting::length(void) const 
+    /* get total length in bytes */
+    short Setting::length(void) const
     {
         return _len + 4;
     }
@@ -98,7 +98,7 @@ public:
     }
 
     /* check equality */
-    bool operator == (const Setting &Ref) const 
+    bool operator == (const Setting &Ref) const
     {
         return ((this->_type == Ref._type) &&
                 (this->_len == Ref._len) &&
