@@ -37,6 +37,10 @@
 |display |        |   100  |  inf   |        |
 |        |        |        |        |        |
 +--------+--------+--------+--------+--------+
+|        |        |        |        |        |
+|reboot  |        |  inf   |  inf   |        |
+|        |        |        |        |        |
++--------+--------+--------+--------+--------+
 
 
 
@@ -59,6 +63,7 @@ PROLONGED ROUTINE:
 
 scheduler  =>  valves
 scheduler  =>  display
+scheduler  =>  reboot
 
 
 
