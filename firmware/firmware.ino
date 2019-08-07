@@ -509,7 +509,7 @@ static unsigned long task_connections(unsigned long dt)
 
 static unsigned long task_display(unsigned long dt)
 {
-    // dPC("#reboot");
+    // dPC("#disaply");
 
     (void)dt;
 
@@ -574,15 +574,13 @@ static unsigned long task_reboot(unsigned long dt)
 
 static unsigned long task_setting(unsigned long dt)
 {
-    iPC("#setting");
+    dPC("#setting");
 
     (void)dt;
 
     Setting stored;
 
-    stored.load();
-
-    if (memcmp(&setting, &stored, sizeof(Setting))) {
+    if (!stored.load() || memcmp(&setting, &stored, sizeof(Setting))) {
         setting.save();
     }
 
