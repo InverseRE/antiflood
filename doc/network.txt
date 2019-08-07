@@ -49,23 +49,29 @@ ENABLE PROBE #0
 > echo "0206 0001 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
 SIGNAL WATER ON PROBE #3
-> echo "020a 0002 03 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+> echo "0208 0002 03 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
 SIGNAL WATER ON PROBE #3 (FORCED)
-> echo "020a 0002 03 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+> echo "0208 0002 03 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
 SIGNAL ERROR ON PROBE #5
-> echo "020b 0002 05 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+> echo "0209 0002 05 00" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
 SIGNAL ERROR ON PROBE #5 (FORCED)
-> echo "020b 0002 05 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+> echo "0209 0002 05 01" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
-Command to check already stored setting:
-> send "0208 0001 tag"
-  where 'tag' is 1 byte value (see SettingTypes enum from setting.h)
+GET WIFI SETTINGS
+> echo "0264 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
-Commands to store setting:
-> send "0209 00 len+2 tag len data"
-  where 'tag' is 1 byte value (see SettingTypes enum from setting.h)
-        'len' setting data length in bytes
-        'data' setting data bytes
+GET SERVER SETTINGS
+> echo "0265 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SET WIFI SETTINGS (MODE CH AUTH SSID[48])
+> echo "0264 0033 010000 566567613933000000000000000000000000000000000000000000000000000000000000000000000000000000000000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SET SERVER SETTINGS (IP PORT)
+> echo "0265 0006 c0a8006f 5000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+SET WIFI PASSWORD
+> echo "0264 0030 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
