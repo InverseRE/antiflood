@@ -70,7 +70,7 @@ void hw_reset(void)
 
 void wdt_configure(void)
 {
-    cli();
+    noInterrupts();
 
     /*
      * Interrupt-only mode.
@@ -83,7 +83,7 @@ void wdt_configure(void)
     WDTCSR |= 0b00011000;
     WDTCSR =  0b01000000 | 0b100001;
 
-    sei();
+    interrupts();
 
     dPC("hw: wdt configured");
 }
@@ -220,4 +220,14 @@ void hw_sleep(void)
     wdt_ignore = false;
 
     dPC("hw: wake up");
+}
+
+/** Make millis() starts from 0 again. */
+void hw_reset_time(void)
+{
+    dPC("hw: reset millis()");
+
+    noInterrupts();
+    timer0_millis = 0;
+    interrupts();
 }

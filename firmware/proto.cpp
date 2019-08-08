@@ -120,11 +120,12 @@ public:
         memcpy(_data, msg.c_str(), _data_size);
     }
 
-    void trx_time(unsigned long time) {
-        _data_size = sizeof(time);
+    void trx_time(unsigned long (*time)(bool sync, bool ref, bool raw)) {
+        unsigned long t = 3 == _data_size ? time(_data[0], _data[1], _data[2]) : 0;
+        _data_size = sizeof(t);
         _cla = cResponse;
         _ins = iTime;
-        memcpy(_data, &time, _data_size);
+        memcpy(_data, &t, _data_size);
     }
 
     void trx_full_status(byte (*state)(byte* buf, byte buf_max_size)) {
@@ -133,7 +134,7 @@ public:
         _ins = 1 == _data_size ? iUnsupported : iFullStatus;
     }
 
-    void trx_get_wifi(int (*get_wifi)(byte* buf, byte buf_max_size)) {
+    void trx_get_wifi(byte (*get_wifi)(byte* buf, byte buf_max_size)) {
         _data_size = get_wifi(_data, sizeof(_data));
         _cla = cResponse;
         _ins = iGetWiFi;
@@ -155,7 +156,7 @@ public:
         memcpy(_data, &res, sizeof(res));
     }
 
-    void trx_get_serv(int (*get_serv)(byte* buf, byte buf_max_size)) {
+    void trx_get_serv(byte (*get_serv)(byte* buf, byte buf_max_size)) {
         _data_size = get_serv(_data, sizeof(_data));
         _cla = cResponse;
         _ins = iGetServ;
@@ -169,7 +170,7 @@ public:
         memcpy(_data, &res, sizeof(res));
     }
 
-    void trx_get_ntp(int (*get_ntp)(byte* buf, byte buf_max_size)) {
+    void trx_get_ntp(byte (*get_ntp)(byte* buf, byte buf_max_size)) {
         _data_size = get_ntp(_data, sizeof(_data));
         _cla = cResponse;
         _ins = iGetNTP;
@@ -260,6 +261,7 @@ void ProtoSession::setup(void)
 }
 
 void ProtoSession::action(
+        unsigned long (*time)(bool sync, bool ref, bool raw),
         byte (*state)(byte* buf, byte buf_max_size),
         bool (*open)(void),
         bool (*close)(void),
@@ -323,7 +325,7 @@ void ProtoSession::action(
         /* switch by requested action */
         switch (pkt->ins())  {
         case iAbout:        pkt->trx_unsupported();              break;
-        case iTime:         pkt->trx_unsupported();              break;
+        case iTime:         pkt->trx_time(time);                 break;
         case iFullStatus:   pkt->trx_full_status(state);         break;
         case iOpenValves:   pkt->trx_open(open);                 break;
         case iCloseValves:  pkt->trx_close(close);               break;

@@ -40,4 +40,7 @@ void hw_suspend(unsigned long time);
 /** Power down. */
 void hw_sleep(void);
 
+/** Make millis() starts from 0 again. */
+void hw_reset_time(void);
+
 #endif /* __HW_H__ */

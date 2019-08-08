@@ -39,6 +39,7 @@ public:
     void setup(void);
 
     void action(
+            unsigned long (*time)(bool sync, bool ref, bool raw),
             byte (*state)(byte* buf, byte buf_max_size),
             bool (*open)(void),
             bool (*close)(void),

@@ -1,4 +1,4 @@
-/* -*- mode: c -*- */
+/* -*- mode: c++ -*- */
 
 /*
    Antiflood Copyright (C) 2019 Alexey <SmallShark> Khomyakovsky
@@ -25,28 +25,26 @@
 #ifndef __NTP_H__
 #define __NTP_H__
 
-#include "config.h"
 #include "net.h"
 #include "ticker.h"
-
-#define NTP_PACKET_SIZE  48              /**< NTP packet size */
 
 class NTP
 {
 private:
-    unsigned long epoch;
+    const Ticker& _ticker;
+    unsigned long _epoch;
 
-    byte request(byte* buff, byte len);
-    unsigned long response(const byte* buff, byte len);
+    byte make_ntp_request(byte* buff, byte len);
+    unsigned long parse_ntp_response(const byte* buff, byte len);
 
 public:
-    NTP(const Ticker& ticker) : {}
+    NTP(const Ticker& ticker) : _ticker(ticker), _epoch(0) {}
 
-    bool sync(NetServer& net);
-    bool sync(NetServer& net, const char* pool);
-    unsigned long get_utc_hours() const;
-    unsigned long get_utc_minutes() const;
-    unsigned long get_utc_seconds() const;
+    bool sync(NetServer& net, const char* pool, unsigned short port, unsigned short wait_time);
+    unsigned long get_utc_epoch(bool current_time) const;
+    unsigned short get_utc_hours(bool current_time) const;
+    byte get_utc_minutes(bool current_time) const;
+    byte get_utc_seconds(bool current_time) const;
 };
 
 #endif /* __NTP_TIME_H__ */

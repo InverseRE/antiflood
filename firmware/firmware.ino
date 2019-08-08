@@ -28,12 +28,13 @@
 #include "hw.h"
 #include "led.h"
 #include "net.h"
+#include "ntp.h"
 #include "probe.h"
-#include "valve.h"
 #include "proto.h"
+#include "setting.h"
 #include "scheduler.h"
 #include "ticker.h"
-#include "setting.h"
+#include "valve.h"
 
 static Ticker ticker;
 
@@ -71,8 +72,11 @@ static Setting setting;
 
 static NetServer* p_server = nullptr;
 
+static NTP ntp(ticker);
+
 static Scheduler scheduler(ticker);
 
+static unsigned long act_time(bool sync, bool ref, bool raw);
 static byte act_state(byte* buf, byte buf_max_size);
 static bool act_open(void);
 static bool act_close(void);
@@ -96,6 +100,7 @@ static unsigned long task_display(unsigned long dt);
 static unsigned long task_valves(unsigned long dt);
 static unsigned long task_reboot(unsigned long dt);
 static unsigned long task_setting(unsigned long dt);
+static unsigned long task_sync(unsigned long dt);
 
 /** Startup procedure. */
 void setup()
@@ -157,6 +162,7 @@ void setup()
     dPT(scheduler.add(task_server));
     dPT(scheduler.add(task_reboot));
     dPT(scheduler.add(task_setting));
+    dPT(scheduler.add(task_sync));
     wdt_reset();
 
     iPC("setup complete");
@@ -173,6 +179,36 @@ void loop()
 {
     unsigned long delay = scheduler.run();
     hw_suspend(delay);
+}
+
+static unsigned long act_time(bool sync, bool ref, bool raw)
+{
+    iPC("@time");
+
+    if (sync) {
+        dPC("@time: sync");
+        dPT(scheduler.force(task_sync));
+    }
+    if (ref) {
+        dPC("@time: ref");
+    }
+    if (raw) {
+        dPC("@time: raw");
+    }
+
+    unsigned long time;
+
+    if (raw) {
+        time = ntp.get_utc_epoch(!ref);
+    } else {
+        unsigned long hrs = ntp.get_utc_hours(!ref);
+        byte mins = ntp.get_utc_minutes(!ref);
+        byte secs = ntp.get_utc_seconds(!ref);
+
+        time = hrs << 16 | mins << 8 | secs;
+    }
+
+    return time;
 }
 
 static byte act_state(byte* buf, byte buf_max_size)
@@ -420,13 +456,19 @@ static byte act_get_ntp(byte* buf, byte buf_max_size)
 {
     iPC("@get_ntp");
 
-    const byte len = sizeof(setting.ntp_host);
+    const byte len = sizeof(setting.ntp_host)
+            + sizeof(setting.ntp_port)
+            + sizeof(setting.ntp_wait);
 
     if (len > buf_max_size) {
         return 0;
     }
 
     memcpy(buf, setting.ntp_host, sizeof(setting.ntp_host));
+    buf += sizeof(setting.ntp_host);
+    memcpy(buf, &setting.ntp_port, sizeof(setting.ntp_port));
+    buf += sizeof(setting.ntp_port);
+    memcpy(buf, &setting.ntp_wait, sizeof(setting.ntp_wait));
 
     return len;
 }
@@ -435,13 +477,19 @@ static bool act_set_ntp(const byte* buf, byte buf_size)
 {
     iPC("@set_ntp");
 
-    const byte len = sizeof(setting.ntp_host);
+    const byte len = sizeof(setting.ntp_host)
+            + sizeof(setting.ntp_port)
+            + sizeof(setting.ntp_wait);
 
     if (len != buf_size) {
         return false;
     }
 
     memcpy(setting.ntp_host, buf, sizeof(setting.ntp_host));
+    buf += sizeof(setting.ntp_host);
+    memcpy(&setting.ntp_port, buf, sizeof(setting.ntp_port));
+    buf += sizeof(setting.ntp_port);
+    memcpy(&setting.ntp_wait, buf, sizeof(setting.ntp_wait));
 
     dPT(scheduler.force(task_setting));
 
@@ -460,6 +508,7 @@ static unsigned long task_server(unsigned long dt)
     }
 
     ProtoSession(ticker, *p_server).action(
+            act_time,
             act_state,
             act_open,
             act_close,
@@ -621,4 +670,31 @@ static unsigned long task_setting(unsigned long dt)
     }
 
     return FAR_NEXT;
+}
+
+static unsigned long task_sync(unsigned long dt)
+{
+    dPC("#sync");
+
+    (void)dt;
+
+    // ensure there is no time critical operations
+    bool is_engaged = false;
+
+    for (int i = 0; i < valves_cnt; ++i) {
+        is_engaged |= valves[i].is_engaged();
+    }
+
+    if (is_engaged) {
+        dPC("#sync: postpone");
+        return SYNC_POSTPONE_NEXT;
+    }
+
+    // perform syncing
+    if (!ntp.sync(*p_server, setting.ntp_host, setting.ntp_port, setting.ntp_wait)) {
+        dPC("#sync: fails");
+        return SYNC_FAIL_NEXT;
+    }
+
+    return SYNC_NEXT;
 }

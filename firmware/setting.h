@@ -54,7 +54,9 @@ struct __attribute__((packed)) Setting {
     char wifi_pwd[48];
     byte serv_addr[4];
     unsigned short serv_port;
-    char ntp_host[56];
+    char ntp_host[52];
+    unsigned short ntp_port;
+    unsigned short ntp_wait;
 
     void defaults()
     {
@@ -71,6 +73,8 @@ struct __attribute__((packed)) Setting {
         memcpy(serv_addr, ip, sizeof(serv_addr));
         serv_port = APP_DEFAULT_PORT;
         hp.getBytes(ntp_host, sizeof(ntp_host));
+        ntp_port = NTP_DEFAULT_PORT;
+        ntp_wait = NTP_DEFAULT_WAIT;
     }
 
     byte crc8() const
