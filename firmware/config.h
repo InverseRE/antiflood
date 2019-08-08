@@ -87,6 +87,9 @@
 #define WIFI_DEFAULT_CHAN 10                /**< default network channel number */
 #define WIFI_DEFAULT_SECU ENC_TYPE_WPA2_PSK /**< default authentication type */
 
+/* Time service. */
+#define NTP_DEFAULT_POOL "pool.ntp.org"     /**< default NTP server pool */
+
 
 
 #endif  /* __CONFIG_H__ */
