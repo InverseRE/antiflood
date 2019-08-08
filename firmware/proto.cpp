@@ -49,9 +49,11 @@ enum Instruction : byte {
     iEmuError     = 9,                      /**< emulate ERROR on probes */
     iGetWiFi      = 100,                    /**< read WiFi settings */
     iGetServ      = 101,                    /**< read Server settings */
+    iGetNTP       = 102,                    /**< read NTP host setting */
     iSetWiFi      = 200,                    /**< write WiFi settings */
     iSetServ      = 201,                    /**< write Server settings */
     iSetWiFiPwd   = 202,                    /**< write WiFi settings (password) */
+    iSetNTP       = 203,                    /**< write NTP host setting (name) */
     iEcho         = 253,                    /**< echoed packet */
     iUnsupported  = 254,                    /**< unsupported request */
     iRFU          = 255                     /**< reserved */
@@ -167,6 +169,20 @@ public:
         memcpy(_data, &res, sizeof(res));
     }
 
+    void trx_get_ntp(int (*get_ntp)(byte* buf, byte buf_max_size)) {
+        _data_size = get_ntp(_data, sizeof(_data));
+        _cla = cResponse;
+        _ins = iGetNTP;
+    }
+
+    void trx_set_ntp(bool (*set_ntp)(const byte* buf, byte buf_size)) {
+        bool res = set_ntp(_data, _data_size);
+        _cla = cResponse;
+        _ins = iSetNTP;
+        _data_size = sizeof(res);
+        memcpy(_data, &res, sizeof(res));
+    }
+
     void trx_open(bool (*open)(void)) {
         bool res = open();
         _data_size = sizeof(res);
@@ -256,7 +272,9 @@ void ProtoSession::action(
         bool (*set_wifi)(const byte* buf, byte buf_size),
         bool (*set_wifi_pwd)(const byte* buf, byte buf_size),
         byte (*get_serv)(byte* buf, byte buf_max_size),
-        bool (*set_serv)(const byte* buf, byte buf_size))
+        bool (*set_serv)(const byte* buf, byte buf_size),
+        byte (*get_ntp)(byte* buf, byte buf_max_size),
+        bool (*set_ntp)(const byte* buf, byte buf_size))
 {
     byte reads_limit = 2; // amount of packets parsed at a time
     byte buf[sizeof(Packet)];
@@ -316,9 +334,11 @@ void ProtoSession::action(
         case iEmuError:     pkt->trx_emu_error(emu_error);       break;
         case iGetWiFi:      pkt->trx_get_wifi(get_wifi);         break;
         case iGetServ:      pkt->trx_get_serv(get_serv);         break;
+        case iGetNTP:       pkt->trx_get_ntp(get_ntp);           break;
         case iSetWiFi:      pkt->trx_set_wifi(set_wifi);         break;
         case iSetServ:      pkt->trx_set_serv(set_serv);         break;
         case iSetWiFiPwd:   pkt->trx_set_wifi_pwd(set_wifi_pwd); break;
+        case iSetNTP:       pkt->trx_set_ntp(set_ntp);           break;
         case iEcho:         pkt->trx_unsupported();              break;
         case iUnsupported:  pkt->trx_unsupported();              break;
         case iRFU:          pkt->trx_unsupported();              break;

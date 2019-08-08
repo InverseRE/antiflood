@@ -51,7 +51,9 @@ public:
             bool (*set_wifi)(const byte* buf, byte buf_size),
             bool (*set_wifi_pwd)(const byte* buf, byte buf_size),
             byte (*get_serv)(byte* buf, byte buf_max_size),
-            bool (*set_serv)(const byte* buf, byte buf_size));
+            bool (*set_serv)(const byte* buf, byte buf_size),
+            byte (*get_ntp)(byte* buf, byte buf_max_size),
+            bool (*set_ntp)(const byte* buf, byte buf_size));
 };
 
 #endif  /* __PROTO_H__ */

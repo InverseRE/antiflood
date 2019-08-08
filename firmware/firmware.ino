@@ -86,6 +86,8 @@ static bool act_set_wifi(const byte* buf, byte buf_size);
 static bool act_set_wifi_pwd(const byte* buf, byte buf_size);
 static byte act_get_serv(byte* buf, byte buf_max_size);
 static bool act_set_serv(const byte* buf, byte buf_size);
+static byte act_get_ntp(byte* buf, byte buf_max_size);
+static bool act_set_ntp(const byte* buf, byte buf_size);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -414,6 +416,38 @@ static bool act_set_serv(const byte* buf, byte buf_size)
     return true;
 }
 
+static byte act_get_ntp(byte* buf, byte buf_max_size)
+{
+    iPC("@get_ntp");
+
+    const byte len = sizeof(setting.ntp_host);
+
+    if (len > buf_max_size) {
+        return 0;
+    }
+
+    memcpy(buf, setting.ntp_host, sizeof(setting.ntp_host));
+
+    return len;
+}
+
+static bool act_set_ntp(const byte* buf, byte buf_size)
+{
+    iPC("@set_ntp");
+
+    const byte len = sizeof(setting.ntp_host);
+
+    if (len != buf_size) {
+        return false;
+    }
+
+    memcpy(setting.ntp_host, buf, sizeof(setting.ntp_host));
+
+    dPT(scheduler.force(task_setting));
+
+    return true;
+}
+
 static unsigned long task_server(unsigned long dt)
 {
     dPC("#server");
@@ -438,7 +472,9 @@ static unsigned long task_server(unsigned long dt)
             act_set_wifi,
             act_set_wifi_pwd,
             act_get_serv,
-            act_set_serv);
+            act_set_serv,
+            act_get_ntp,
+            act_set_ntp);
 
     return FAR_NEXT;
 }

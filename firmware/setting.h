@@ -54,12 +54,14 @@ struct __attribute__((packed)) Setting {
     char wifi_pwd[48];
     byte serv_addr[4];
     unsigned short serv_port;
+    char ntp_host[56];
 
     void defaults()
     {
         byte ip[] = {APP_DEFAULT_IP};
         String id = WIFI_DEFAULT_SSID;
         String pd = WIFI_DEFAULT_PASS;
+        String hp = NTP_DEFAULT_POOL;
 
         wifi_mode = WIFI_DEFAULT_MODE;
         wifi_ch = WIFI_DEFAULT_CHAN;
@@ -68,6 +70,7 @@ struct __attribute__((packed)) Setting {
         pd.getBytes(wifi_pwd, sizeof(wifi_pwd));
         memcpy(serv_addr, ip, sizeof(serv_addr));
         serv_port = APP_DEFAULT_PORT;
+        hp.getBytes(ntp_host, sizeof(ntp_host));
     }
 
     byte crc8() const
