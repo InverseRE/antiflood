@@ -172,10 +172,10 @@ bool NetServer::rx(void)
     if (conn) {
         dPC("net: rx");
 
-        IPAddress ipa = _udp.remoteIP();
-        uint16_t rp = _udp.remotePort();
-        dPV("net: dx ip", ipa);
-        dPV("net: dx port", rp);
+        IPAddress ip = _udp.remoteIP();
+        uint16_t port = _udp.remotePort();
+        dPV("net: dx ip", ip);
+        dPV("net: dx port", port);
     }
     return conn;
 }
@@ -193,26 +193,37 @@ int NetServer::read(void* buf, int len)
 void NetServer::write(const void* buf, int len)
 {
     if (!_is_sending) {
-        dPC("net: tx");
-
         _is_sending = true;
         // FIXME: _udp.remotePort() from Arduino/libraries/WiFiEsp/src/utility/EspDrv.cpp
         // comment out the second serial read (at EspDrv.cpp:686)
         // https://github.com/bportaluri/WiFiEsp/issues/119
-        IPAddress ipa = _udp.remoteIP();
-        uint16_t rp = _udp.remotePort();
-        _udp.beginPacket(ipa, rp);
-        dPV("net: dx ip", ipa);
-        dPV("net: dx port", rp);
+        IPAddress ip = _udp.remoteIP();
+        uint16_t port = _udp.remotePort();
+        _udp.beginPacket(ip, port);
+        dPV("net: dx ip", ip);
+        dPV("net: dx port", port);
     }
     _udp.write((byte*)buf, len);
 }
 
+void NetServer::write(const char* host, uint16_t port, const void* buf, int len)
+{
+    if (!_is_sending) {
+        _is_sending = true;
+        // FIXME: _udp.remotePort() from Arduino/libraries/WiFiEsp/src/utility/EspDrv.cpp
+        // comment out the second serial read (at EspDrv.cpp:686)
+        // https://github.com/bportaluri/WiFiEsp/issues/119
+        _udp.beginPacket(host, port);
+        dPV("net: dx host", host);
+        dPV("net: dx port", port);
+    }
+    _udp.write((byte*)buf, len);
+}
 
 void NetServer::tx(void)
 {
     if (_is_sending) {
-        dPC("net: tx stop");
+        dPC("net: tx");
 
         _is_sending = false;
         _udp.endPacket();
