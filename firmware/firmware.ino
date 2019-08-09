@@ -696,5 +696,8 @@ static unsigned long task_sync(unsigned long dt)
         return SYNC_FAIL_NEXT;
     }
 
+    // restart tasks
+    scheduler.restart();
+
     return SYNC_NEXT;
 }

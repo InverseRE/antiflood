@@ -53,6 +53,7 @@ public:
     bool drop(Fptr task);
     bool supress(Fptr task);
     bool force(Fptr task);
+    void restart(void);
     unsigned long run(void);                /**< returns total time passed */
 };
 

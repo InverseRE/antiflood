@@ -66,6 +66,17 @@ bool Scheduler::force(Fptr task)
     return t && !(t->t2g = 0);
 }
 
+void Scheduler::restart(void)
+{
+    dPC("schd: restart");
+
+    for (Task* t = _tasks.start(); t; t = _tasks.next()) {
+        t->t2g = 0;
+    }
+
+    _time_mark = _ticker.mark();
+}
+
 unsigned long Scheduler::run(void)
 {
     const unsigned long mark = _ticker.mark();
