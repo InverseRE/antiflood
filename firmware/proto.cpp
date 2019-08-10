@@ -47,6 +47,8 @@ enum Instruction : byte {
     iDisableProbe = 7,                      /**< disable probes */
     iEmuWater     = 8,                      /**< emulate WATER on probes */
     iEmuError     = 9,                      /**< emulate ERROR on probes */
+    iSettingsLoad = 10,                     /**< re-read all settings */
+    iSettingsSave = 11,                     /**< write current settings */
     iGetWiFi      = 100,                    /**< read WiFi settings */
     iGetServ      = 101,                    /**< read Server settings */
     iGetNTP       = 102,                    /**< read NTP host setting */
@@ -242,6 +244,22 @@ public:
         memcpy(_data, &res, _data_size);
     }
 
+    void trx_settings_load(bool (*settings_load)(bool def)) {
+        bool res = _data_size == 1 && settings_load(_data[0]);
+        _data_size = sizeof(res);
+        _cla = cResponse;
+        _ins = iSettingsLoad;
+        memcpy(_data, &res, _data_size);
+    }
+
+    void trx_settings_save(bool (*settings_save)(void)) {
+        bool res = _data_size == 0 && settings_save();
+        _data_size = sizeof(res);
+        _cla = cResponse;
+        _ins = iSettingsSave;
+        memcpy(_data, &res, _data_size);
+    }
+
     void trx_unsupported(void) {
         memcpy(_data, this, hdr_size());
         _data_size = hdr_size();
@@ -276,7 +294,9 @@ void ProtoSession::action(
         byte (*get_serv)(byte* buf, byte buf_max_size),
         bool (*set_serv)(const byte* buf, byte buf_size),
         byte (*get_ntp)(byte* buf, byte buf_max_size),
-        bool (*set_ntp)(const byte* buf, byte buf_size))
+        bool (*set_ntp)(const byte* buf, byte buf_size),
+        bool (*settings_load)(bool def),
+        bool (*settings_save)(void))
 {
     byte reads_limit = 2; // amount of packets parsed at a time
     byte buf[sizeof(Packet)];
@@ -324,27 +344,29 @@ void ProtoSession::action(
 
         /* switch by requested action */
         switch (pkt->ins())  {
-        case iAbout:        pkt->trx_unsupported();              break;
-        case iTime:         pkt->trx_time(time);                 break;
-        case iFullStatus:   pkt->trx_full_status(state);         break;
-        case iOpenValves:   pkt->trx_open(open);                 break;
-        case iCloseValves:  pkt->trx_close(close);               break;
-        case iSuspend:      pkt->trx_suspend(suspend);           break;
-        case iEnableProbe:  pkt->trx_enable_probe(enable);       break;
-        case iDisableProbe: pkt->trx_disable_probe(disable);     break;
-        case iEmuWater:     pkt->trx_emu_water(emu_water);       break;
-        case iEmuError:     pkt->trx_emu_error(emu_error);       break;
-        case iGetWiFi:      pkt->trx_get_wifi(get_wifi);         break;
-        case iGetServ:      pkt->trx_get_serv(get_serv);         break;
-        case iGetNTP:       pkt->trx_get_ntp(get_ntp);           break;
-        case iSetWiFi:      pkt->trx_set_wifi(set_wifi);         break;
-        case iSetServ:      pkt->trx_set_serv(set_serv);         break;
-        case iSetWiFiPwd:   pkt->trx_set_wifi_pwd(set_wifi_pwd); break;
-        case iSetNTP:       pkt->trx_set_ntp(set_ntp);           break;
-        case iEcho:         pkt->trx_unsupported();              break;
-        case iUnsupported:  pkt->trx_unsupported();              break;
-        case iRFU:          pkt->trx_unsupported();              break;
-        default:            pkt->trx_unsupported();              break;
+        case iAbout:        pkt->trx_unsupported();                break;
+        case iTime:         pkt->trx_time(time);                   break;
+        case iFullStatus:   pkt->trx_full_status(state);           break;
+        case iOpenValves:   pkt->trx_open(open);                   break;
+        case iCloseValves:  pkt->trx_close(close);                 break;
+        case iSuspend:      pkt->trx_suspend(suspend);             break;
+        case iEnableProbe:  pkt->trx_enable_probe(enable);         break;
+        case iDisableProbe: pkt->trx_disable_probe(disable);       break;
+        case iEmuWater:     pkt->trx_emu_water(emu_water);         break;
+        case iEmuError:     pkt->trx_emu_error(emu_error);         break;
+        case iSettingsLoad: pkt->trx_settings_load(settings_load); break;
+        case iSettingsSave: pkt->trx_settings_save(settings_save); break;
+        case iGetWiFi:      pkt->trx_get_wifi(get_wifi);           break;
+        case iGetServ:      pkt->trx_get_serv(get_serv);           break;
+        case iGetNTP:       pkt->trx_get_ntp(get_ntp);             break;
+        case iSetWiFi:      pkt->trx_set_wifi(set_wifi);           break;
+        case iSetServ:      pkt->trx_set_serv(set_serv);           break;
+        case iSetWiFiPwd:   pkt->trx_set_wifi_pwd(set_wifi_pwd);   break;
+        case iSetNTP:       pkt->trx_set_ntp(set_ntp);             break;
+        case iEcho:         pkt->trx_unsupported();                break;
+        case iUnsupported:  pkt->trx_unsupported();                break;
+        case iRFU:          pkt->trx_unsupported();                break;
+        default:            pkt->trx_unsupported();                break;
         }
 
         /* write out */

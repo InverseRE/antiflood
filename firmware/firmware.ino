@@ -92,6 +92,8 @@ static byte act_get_serv(byte* buf, byte buf_max_size);
 static bool act_set_serv(const byte* buf, byte buf_size);
 static byte act_get_ntp(byte* buf, byte buf_max_size);
 static bool act_set_ntp(const byte* buf, byte buf_size);
+static bool act_settings_load(bool def);
+static bool act_settings_save(void);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -99,7 +101,6 @@ static unsigned long task_connections(unsigned long dt);
 static unsigned long task_display(unsigned long dt);
 static unsigned long task_valves(unsigned long dt);
 static unsigned long task_reboot(unsigned long dt);
-static unsigned long task_setting(unsigned long dt);
 static unsigned long task_sync(unsigned long dt);
 
 /** Startup procedure. */
@@ -161,7 +162,6 @@ void setup()
     dPT(scheduler.add(task_application));
     dPT(scheduler.add(task_server));
     dPT(scheduler.add(task_reboot));
-    dPT(scheduler.add(task_setting));
     dPT(scheduler.add(task_sync));
     wdt_reset();
 
@@ -392,8 +392,6 @@ static bool act_set_wifi(const byte* buf, byte buf_size)
     setting.wifi_auth = *buf++;
     memcpy(setting.wifi_ssid, buf, sizeof(setting.wifi_ssid));
 
-    dPT(scheduler.force(task_setting));
-
     return true;
 }
 
@@ -408,8 +406,6 @@ static bool act_set_wifi_pwd(const byte* buf, byte buf_size)
     }
 
     memcpy(setting.wifi_pwd, buf, sizeof(setting.wifi_pwd));
-
-    dPT(scheduler.force(task_setting));
 
     return true;
 }
@@ -446,8 +442,6 @@ static bool act_set_serv(const byte* buf, byte buf_size)
     memcpy(setting.serv_addr, buf, sizeof(setting.serv_addr));
     buf += sizeof(setting.serv_addr);
     memcpy(&setting.serv_port, buf, sizeof(setting.serv_port));
-
-    dPT(scheduler.force(task_setting));
 
     return true;
 }
@@ -491,7 +485,25 @@ static bool act_set_ntp(const byte* buf, byte buf_size)
     buf += sizeof(setting.ntp_port);
     memcpy(&setting.ntp_wait, buf, sizeof(setting.ntp_wait));
 
-    dPT(scheduler.force(task_setting));
+    return true;
+}
+
+static bool act_settings_load(bool def)
+{
+    if (def) {
+        iPC("@settings_load: default");
+    } else {
+        iPC("@settings_load: custom");
+    }
+
+    return def ? (setting.defaults(), true) : setting.load();
+}
+
+static bool act_settings_save(void)
+{
+    iPC("@settings_save");
+
+    setting.save();
 
     return true;
 }
@@ -523,7 +535,9 @@ static unsigned long task_server(unsigned long dt)
             act_get_serv,
             act_set_serv,
             act_get_ntp,
-            act_set_ntp);
+            act_set_ntp,
+            act_settings_load,
+            act_settings_save);
 
     return FAR_NEXT;
 }
@@ -655,21 +669,6 @@ static unsigned long task_reboot(unsigned long dt)
     hw_reset();
 
     return REBOOT_NEXT;
-}
-
-static unsigned long task_setting(unsigned long dt)
-{
-    dPC("#setting");
-
-    (void)dt;
-
-    Setting stored;
-
-    if (!stored.load() || memcmp(&setting, &stored, sizeof(Setting))) {
-        setting.save();
-    }
-
-    return FAR_NEXT;
 }
 
 static unsigned long task_sync(unsigned long dt)
