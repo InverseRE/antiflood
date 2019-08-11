@@ -57,7 +57,7 @@ public:
             bool (*set_ntp)(const byte* buf, byte buf_size),
             bool (*settings_load)(bool def),
             bool (*settings_save)(void),
-            void (*reboot)(void));
+            bool (*reboot)(bool def_next));
 };
 
 #endif  /* __PROTO_H__ */

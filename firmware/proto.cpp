@@ -261,11 +261,12 @@ public:
         memcpy(_data, &res, _data_size);
     }
 
-    void trx_reboot(void (*reboot)(void)) {
-        _data_size = 0;
+    void trx_reboot(bool (*reboot)(bool def_next)) {
+        bool res = _data_size == 1 && reboot(_data[0]);
+        _data_size = sizeof(res);
         _cla = cResponse;
         _ins = iReboot;
-        reboot();
+        memcpy(_data, &res, _data_size);
     }
 
     void trx_unsupported(void) {
@@ -305,7 +306,7 @@ void ProtoSession::action(
         bool (*set_ntp)(const byte* buf, byte buf_size),
         bool (*settings_load)(bool def),
         bool (*settings_save)(void),
-        void (*reboot)(void))
+        bool (*reboot)(bool def_next))
 {
     byte reads_limit = 1; // amount of packets parsed at a time
     byte buf[sizeof(Packet)];

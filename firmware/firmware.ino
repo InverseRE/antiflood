@@ -94,7 +94,7 @@ static byte act_get_ntp(byte* buf, byte buf_max_size);
 static bool act_set_ntp(const byte* buf, byte buf_size);
 static bool act_settings_load(bool def);
 static bool act_settings_save(void);
-static bool act_reboot(void);
+static bool act_reboot(bool def_next);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -491,11 +491,9 @@ static bool act_set_ntp(const byte* buf, byte buf_size)
 
 static bool act_settings_load(bool def)
 {
-    if (def) {
-        iPC("@settings_load: default");
-    } else {
-        iPC("@settings_load: custom");
-    }
+    iPC("@settings_load");
+
+    dPV("@settings_load: type", def);
 
     return def ? (setting.defaults(), true) : setting.load();
 }
@@ -509,9 +507,14 @@ static bool act_settings_save(void)
     return true;
 }
 
-static bool act_reboot(void)
+static bool act_reboot(bool def_next)
 {
     iPC("@reboot");
+
+    if (def_next) {
+        dPC("@reboot: default next");
+        setting.skip_next_load();
+    }
 
     hw_reset_delay();
 

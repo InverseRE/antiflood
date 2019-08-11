@@ -47,6 +47,7 @@ static const byte PROGMEM dscrc_table[] = {
     116, 42,200,150, 21, 75,169,247,182,232, 10, 84,215,137,107, 53};
 
 struct __attribute__((packed)) Setting {
+    bool _fail_once;
     byte wifi_mode;
     byte wifi_ch;
     byte wifi_auth;
@@ -64,6 +65,8 @@ struct __attribute__((packed)) Setting {
         String id = WIFI_DEFAULT_SSID;
         String pd = WIFI_DEFAULT_PASS;
         String hp = NTP_DEFAULT_POOL;
+
+        _fail_once = false;
 
         wifi_mode = WIFI_DEFAULT_MODE;
         wifi_ch = WIFI_DEFAULT_CHAN;
@@ -98,8 +101,19 @@ struct __attribute__((packed)) Setting {
 
     bool load()
     {
+        EEPROM.get(EEPROM_SETTING_ADDRESS, _fail_once);
+        EEPROM.put(EEPROM_SETTING_ADDRESS, (bool)false);
+        if (_fail_once) {
+            return false;
+        }
+
         EEPROM.get(EEPROM_SETTING_ADDRESS, *this);
         return crc8() == EEPROM[EEPROM_SETTING_ADDRESS + sizeof(*this)];
+    }
+
+    void skip_next_load()
+    {
+        EEPROM.put(EEPROM_SETTING_ADDRESS, (bool)true);
     }
 };
 
