@@ -180,17 +180,17 @@ bool Net::rx(void)
     return conn;
 }
 
-int Net::available(void)
+byte Net::available(void)
 {
     return _udp.available();
 }
 
-int Net::read(void* buf, int len)
+byte Net::read(void* buf, byte len)
 {
     return _udp.read((byte*)buf, len);
 }
 
-void Net::write(const void* buf, int len)
+void Net::write(const void* buf, byte len)
 {
     if (!_is_sending) {
         _is_sending = true;
@@ -206,7 +206,7 @@ void Net::write(const void* buf, int len)
     _udp.write((byte*)buf, len);
 }
 
-void Net::write(const char* host, uint16_t port, const void* buf, int len)
+void Net::write(const char* host, uint16_t port, const void* buf, byte len)
 {
     if (!_is_sending) {
         _is_sending = true;

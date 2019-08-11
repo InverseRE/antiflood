@@ -67,11 +67,11 @@ public:
     void resume(void);
 
     bool rx(void);
-    int available(void);
-    int read(void* buf, int len);
+    byte available(void);
+    byte read(void* buf, byte len);
 
-    void write(const void* buf, int len);
-    void write(const char* host, uint16_t port, const void* buf, int len);
+    void write(const void* buf, byte len);
+    void write(const char* host, uint16_t port, const void* buf, byte len);
     void tx(void);
 };
 
