@@ -33,6 +33,15 @@ ECHO
 STATE
 > echo "0202 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
+TIME (get current SEC MIN HOUR)
+> echo "0201 0003 000000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+TIME (get last synced SEC MIN HOUR)
+> echo "0201 0003 000100" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
+TIME (sync now, get current TOTAL SECONDS)
+> echo "0201 0003 010001" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
+
 OPEN
 > echo "0203 0000" | xxd -r -p - | nc -u -w 1 192.168.0.111 80 | xxd -
 
