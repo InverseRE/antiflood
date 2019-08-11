@@ -35,7 +35,7 @@ enum WiFiType {
     STYPE_STATION
 };
 
-class NetServer {
+class Net {
 private:
     const Ticker& _ticker;
     const WiFiType _mode;
@@ -50,10 +50,10 @@ private:
     bool _is_sending;
 
 public:
-    NetServer(const Ticker& ticker,
+    Net(const Ticker& ticker,
             IPAddress ip, short port,
             const String& ssid, const String& password);
-    NetServer(const Ticker& ticker,
+    Net(const Ticker& ticker,
             IPAddress ip, short port,
             const String& ssid, const String& password,
             int channel, int auth_type);

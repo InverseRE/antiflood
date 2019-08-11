@@ -277,8 +277,8 @@ public:
     }
 };
 
-ProtoSession::ProtoSession(const Ticker& ticker, NetServer& server)
-        : _ticker(ticker), _server(server)
+ProtoSession::ProtoSession(const Ticker& ticker, Net& net)
+        : _ticker(ticker), _net(net)
 {
 }
 
@@ -313,10 +313,10 @@ void ProtoSession::action(
     unsigned len = 0;
 
     /* till data is incoming and enough buffer left */
-    while (_server.rx() && _server.available() && len < sizeof(buf) && reads_limit--) {
+    while (_net.rx() && _net.available() && len < sizeof(buf) && reads_limit--) {
 
         /* get some data */
-        len += _server.read(buf + len, sizeof(buf) - len);
+        len += _net.read(buf + len, sizeof(buf) - len);
 
         dPA("proto: in", buf, len);
 
@@ -340,8 +340,8 @@ void ProtoSession::action(
             dPC("proto: cEcho");
             pkt->trx_info_back();
             len = pkt->raw(buf, sizeof(buf));
-            _server.write(buf, len);
-            _server.tx();
+            _net.write(buf, len);
+            _net.tx();
             len = 0;
             continue;
         case cInfo:
@@ -388,11 +388,11 @@ void ProtoSession::action(
 
         /* write out */
         len = pkt->raw(buf, sizeof(buf));
-        _server.write(buf, len);
+        _net.write(buf, len);
         dPA("proto: out", buf, len);
 
         /* send data back immediately */
-        _server.tx(); // XXX: but this can be done later as a bunch of packets are ready
+        _net.tx(); // XXX: but this can be done later as a bunch of packets are ready
 
         /* packet has been processed, get another one */
         len = 0;

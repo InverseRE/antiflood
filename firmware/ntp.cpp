@@ -28,7 +28,7 @@
 
 #define NTP_PACKET_SIZE 48
 
-bool NTP::sync(NetServer& net, const char* pool, unsigned short port, unsigned short wait_time)
+bool NTP::sync(Net& net, const char* pool, unsigned short port, unsigned short wait_time)
 {
     dPA("ntp: pool", pool, strlen(pool));
     dPV("ntp: port", port);

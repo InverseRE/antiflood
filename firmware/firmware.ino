@@ -70,7 +70,7 @@ static App app(ticker,
 
 static Setting setting;
 
-static NetServer* p_server = nullptr;
+static Net* p_net = nullptr;
 
 static NTP ntp(ticker);
 
@@ -95,7 +95,7 @@ static bool act_set_ntp(const byte* buf, byte buf_size);
 static bool act_settings_load(bool def);
 static bool act_settings_save(void);
 static bool act_reboot(bool def_next);
-static unsigned long task_server(unsigned long dt);
+static unsigned long task_net(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
 static unsigned long task_connections(unsigned long dt);
@@ -146,13 +146,13 @@ void setup()
     wdt_reset();
 
     IPAddress addr(setting.serv_addr);
-    p_server = setting.wifi_mode
-                ? new NetServer(ticker, addr, setting.serv_port,
+    p_net = setting.wifi_mode
+                ? new Net(ticker, addr, setting.serv_port,
                         setting.wifi_ssid, setting.wifi_pwd)
-                : new NetServer(ticker, addr, setting.serv_port,
+                : new Net(ticker, addr, setting.serv_port,
                         setting.wifi_ssid, setting.wifi_pwd,
                         setting.wifi_ch, setting.wifi_auth);
-    p_server->setup();
+    p_net->setup();
     wdt_reset();
 
     scheduler.setup();
@@ -161,7 +161,7 @@ void setup()
     dPT(scheduler.add(task_valves));
     dPT(scheduler.add(task_display));
     dPT(scheduler.add(task_application));
-    dPT(scheduler.add(task_server));
+    dPT(scheduler.add(task_net));
     dPT(scheduler.add(task_reboot));
     dPT(scheduler.add(task_sync));
     wdt_reset();
@@ -172,7 +172,7 @@ void setup()
 /** Serial interface event. */
 void serialEvent() {
     dPC("serial event");
-    dPT(scheduler.force(task_server));
+    dPT(scheduler.force(task_net));
 }
 
 /** Main procedure. */
@@ -524,18 +524,18 @@ static bool act_reboot(bool def_next)
     return true;
 }
 
-static unsigned long task_server(unsigned long dt)
+static unsigned long task_net(unsigned long dt)
 {
-    dPC("#server");
+    dPC("#net");
 
     (void)dt;
 
-    if (!p_server || p_server->is_offline()) {
-        dPC("#server: offline");
+    if (!p_net || p_net->is_offline()) {
+        dPC("#net: offline");
         return FAR_NEXT;
     }
 
-    ProtoSession(ticker, *p_server).action(
+    ProtoSession(ticker, *p_net).action(
             act_time,
             act_state,
             act_open,
@@ -572,7 +572,7 @@ static unsigned long task_application(unsigned long dt)
         dPV("#application: changed", app_state);
         dPT(scheduler.force(task_display));
         dPT(scheduler.force(task_valves));
-        dPT(scheduler.force(task_server));
+        dPT(scheduler.force(task_net));
         last_state = app_state;
     }
 
@@ -657,7 +657,7 @@ static unsigned long task_valves(unsigned long dt)
 
     if (last_trigger != is_engaged) {
         dPC("#valves: changed");
-        dPT(scheduler.force(task_server));
+        dPT(scheduler.force(task_net));
         dPT(scheduler.force(task_application));
         last_trigger = is_engaged;
     }
@@ -707,7 +707,7 @@ static unsigned long task_sync(unsigned long dt)
     }
 
     // perform syncing
-    if (!ntp.sync(*p_server, setting.ntp_host, setting.ntp_port, setting.ntp_wait)) {
+    if (!ntp.sync(*p_net, setting.ntp_host, setting.ntp_port, setting.ntp_wait)) {
         dPC("#sync: fails");
         return SYNC_FAIL_NEXT;
     }

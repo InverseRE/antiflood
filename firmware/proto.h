@@ -32,10 +32,10 @@
 class ProtoSession {
 private:
     const Ticker& _ticker;
-    NetServer& _server;
+    Net& _net;
 
 public:
-    ProtoSession(const Ticker& ticker, NetServer& server);
+    ProtoSession(const Ticker& ticker, Net& net);
     void setup(void);
 
     void action(

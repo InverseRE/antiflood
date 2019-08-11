@@ -40,7 +40,7 @@ private:
 public:
     NTP(const Ticker& ticker) : _ticker(ticker), _epoch(0) {}
 
-    bool sync(NetServer& net, const char* pool, unsigned short port, unsigned short wait_time);
+    bool sync(Net& net, const char* pool, unsigned short port, unsigned short wait_time);
     unsigned long get_utc_epoch(bool current_time) const;
     unsigned short get_utc_hours(bool current_time) const;
     byte get_utc_minutes(bool current_time) const;

@@ -29,7 +29,7 @@
 
 #define SHIELD_BAUD_RATE     115200         /**< shield's UART baud rate */
 
-NetServer::NetServer(const Ticker& ticker,
+Net::Net(const Ticker& ticker,
         IPAddress ip, short port,
         const String& ssid, const String& password)
         : _ticker(ticker),
@@ -45,7 +45,7 @@ NetServer::NetServer(const Ticker& ticker,
 {
 }
 
-NetServer::NetServer(const Ticker& ticker,
+Net::Net(const Ticker& ticker,
         IPAddress ip, short port,
         const String& ssid, const String& password,
         int channel, int auth_type)
@@ -62,7 +62,7 @@ NetServer::NetServer(const Ticker& ticker,
 {
 }
 
-void NetServer::setup(void)
+void Net::setup(void)
 {
     /* Start shield HW. */
     dPC("net: power up ESP8266");
@@ -112,7 +112,7 @@ void NetServer::setup(void)
         uPC("NET: USUPPORTED");
     }
 
-    /* Start server. */
+    /* Start net. */
     _is_online = _udp.begin(_port);
     _is_sending = false;
     wdt_reset();
@@ -120,11 +120,11 @@ void NetServer::setup(void)
     dPV("net: setup", _is_online);
 }
 
-void NetServer::disconnect(void)
+void Net::disconnect(void)
 {
     dPC("net: disconnect");
 
-    /* Turn off server. */
+    /* Turn off net. */
     _udp.stop();
 
     /* Turn off WIFI library. */
@@ -138,11 +138,11 @@ void NetServer::disconnect(void)
     _is_sending = false;
 }
 
-void NetServer::suspend(void)
+void Net::suspend(void)
 {
     dPC("net: suspend");
 
-    /* Turn off server. */
+    /* Turn off net. */
     _udp.stop();
 
     /* Turn off WIFI library. */
@@ -157,7 +157,7 @@ void NetServer::suspend(void)
     _is_sending = false;
 }
 
-void NetServer::resume(void)
+void Net::resume(void)
 {
     dPC("net: resume");
 
@@ -166,7 +166,7 @@ void NetServer::resume(void)
     _is_sending = false;
 }
 
-bool NetServer::rx(void)
+bool Net::rx(void)
 {
     bool conn = _udp.parsePacket();
     if (conn) {
@@ -180,17 +180,17 @@ bool NetServer::rx(void)
     return conn;
 }
 
-int NetServer::available(void)
+int Net::available(void)
 {
     return _udp.available();
 }
 
-int NetServer::read(void* buf, int len)
+int Net::read(void* buf, int len)
 {
     return _udp.read((byte*)buf, len);
 }
 
-void NetServer::write(const void* buf, int len)
+void Net::write(const void* buf, int len)
 {
     if (!_is_sending) {
         _is_sending = true;
@@ -206,7 +206,7 @@ void NetServer::write(const void* buf, int len)
     _udp.write((byte*)buf, len);
 }
 
-void NetServer::write(const char* host, uint16_t port, const void* buf, int len)
+void Net::write(const char* host, uint16_t port, const void* buf, int len)
 {
     if (!_is_sending) {
         _is_sending = true;
@@ -220,7 +220,7 @@ void NetServer::write(const char* host, uint16_t port, const void* buf, int len)
     _udp.write((byte*)buf, len);
 }
 
-void NetServer::tx(void)
+void Net::tx(void)
 {
     if (_is_sending) {
         dPC("net: tx");
