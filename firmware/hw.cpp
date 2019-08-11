@@ -29,8 +29,10 @@
 #include "ticker.h"
 
 extern volatile unsigned long timer0_millis;
+
 static volatile bool wdt_ignore = false;
 static volatile bool wdt_permanent = false;
+static volatile bool internal_power_source = false;
 
 ISR(TIMER1_OVF_vect)
 {
@@ -113,6 +115,8 @@ void hw_configure()
     power_adc_enable();
     power_usart0_enable();
     wdt_configure();
+
+    internal_power_source = false;
 
     dPC("hw: configured");
 }
@@ -243,4 +247,16 @@ void hw_reset_time(void)
     noInterrupts();
     timer0_millis = 0;
     interrupts();
+}
+
+/** Checks if external power supplied. */
+bool hw_power_internal(void)
+{
+    return internal_power_source;
+}
+
+/** Emulate internal-power mode. */
+bool hw_power_save(void)
+{
+    return internal_power_source = true;
 }

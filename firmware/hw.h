@@ -46,4 +46,10 @@ void hw_sleep(void);
 /** Make millis() starts from 0 again. */
 void hw_reset_time(void);
 
+/** Checks if internal power supplied. */
+bool hw_power_internal(void);
+
+/** Emulate internal-power mode. */
+bool hw_power_save(void);
+
 #endif /* __HW_H__ */

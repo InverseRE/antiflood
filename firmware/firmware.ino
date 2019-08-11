@@ -179,7 +179,12 @@ void serialEvent() {
 void loop()
 {
     unsigned long delay = scheduler.run();
-    hw_suspend(delay);
+
+    if (hw_power_internal()) {
+        hw_sleep();
+    } else {
+        hw_suspend(delay);
+    }
 }
 
 static unsigned long act_time(bool sync, bool ref, bool raw)
@@ -277,9 +282,7 @@ static bool act_suspend(void)
 {
     iPC("@suspend");
 
-    // TODO: postpone action, engage after response packet sent
-    // enter_sleep(true, true);
-    return false;
+    return hw_power_save();
 }
 
 static bool act_enable(byte idx)
