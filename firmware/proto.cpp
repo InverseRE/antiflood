@@ -56,6 +56,7 @@ enum Instruction : byte {
     iSetServ      = 201,                    /**< write Server settings */
     iSetWiFiPwd   = 202,                    /**< write WiFi settings (password) */
     iSetNTP       = 203,                    /**< write NTP host setting (name) */
+    iReboot       = 252,                    /**< perform S/W reboot */
     iEcho         = 253,                    /**< echoed packet */
     iUnsupported  = 254,                    /**< unsupported request */
     iRFU          = 255                     /**< reserved */
@@ -260,6 +261,13 @@ public:
         memcpy(_data, &res, _data_size);
     }
 
+    void trx_reboot(void (*reboot)(void)) {
+        _data_size = 0;
+        _cla = cResponse;
+        _ins = iReboot;
+        reboot();
+    }
+
     void trx_unsupported(void) {
         memcpy(_data, this, hdr_size());
         _data_size = hdr_size();
@@ -296,9 +304,10 @@ void ProtoSession::action(
         byte (*get_ntp)(byte* buf, byte buf_max_size),
         bool (*set_ntp)(const byte* buf, byte buf_size),
         bool (*settings_load)(bool def),
-        bool (*settings_save)(void))
+        bool (*settings_save)(void),
+        void (*reboot)(void))
 {
-    byte reads_limit = 2; // amount of packets parsed at a time
+    byte reads_limit = 1; // amount of packets parsed at a time
     byte buf[sizeof(Packet)];
     unsigned len = 0;
 
@@ -332,12 +341,18 @@ void ProtoSession::action(
             len = pkt->raw(buf, sizeof(buf));
             _server.write(buf, len);
             _server.tx();
+            len = 0;
+            continue;
         case cInfo:
             dPC("proto: cInfo");
+            len = 0;
+            continue;
         case cRFU:
-            iPC("proto: cRFU");
+            dPC("proto: cRFU");
+            len = 0;
+            continue;
         default:
-            iPC("proto: unknown cla");
+            dPC("proto: unknown cla");
             len = 0;
             continue;
         }
@@ -363,6 +378,7 @@ void ProtoSession::action(
         case iSetServ:      pkt->trx_set_serv(set_serv);           break;
         case iSetWiFiPwd:   pkt->trx_set_wifi_pwd(set_wifi_pwd);   break;
         case iSetNTP:       pkt->trx_set_ntp(set_ntp);             break;
+        case iReboot:       pkt->trx_reboot(reboot);               break;
         case iEcho:         pkt->trx_unsupported();                break;
         case iUnsupported:  pkt->trx_unsupported();                break;
         case iRFU:          pkt->trx_unsupported();                break;

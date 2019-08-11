@@ -30,6 +30,7 @@
 
 extern volatile unsigned long timer0_millis;
 static volatile bool wdt_ignore = false;
+static volatile bool wdt_permanent = false;
 
 ISR(TIMER1_OVF_vect)
 {
@@ -68,6 +69,15 @@ void hw_reset(void)
     while (true);
 }
 
+/** Perform reset by watchdog timer. */
+void hw_reset_delay(void)
+{
+    dPC("hw: reset delayed");
+
+    wdt_ignore = false;
+    wdt_permanent = true;
+}
+
 void wdt_configure(void)
 {
     noInterrupts();
@@ -84,6 +94,7 @@ void wdt_configure(void)
     WDTCSR =  0b01000000 | 0b100001;
 
     interrupts();
+    wdt_permanent = false;
 
     dPC("hw: wdt configured");
 }
@@ -118,6 +129,7 @@ void hw_suspend(unsigned long time)
 {
     dPV("hw: suspend", time);
 
+    while (wdt_permanent);
     wdt_reset();
 
     // time limits
@@ -184,6 +196,7 @@ void hw_sleep(void)
 {
     dPC("hw: sleep");
 
+    while (wdt_permanent);
     wdt_reset();
     wdt_ignore = true;
 

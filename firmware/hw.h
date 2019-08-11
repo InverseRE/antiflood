@@ -34,6 +34,9 @@ void hw_configure();
 /** Perform reset by watchdog timer. */
 void hw_reset(void);
 
+/** Perform reset by watchdog timer. */
+void hw_reset_delay(void);
+
 /** Suspend for a while. */
 void hw_suspend(unsigned long time);
 

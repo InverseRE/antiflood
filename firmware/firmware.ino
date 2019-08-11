@@ -94,6 +94,7 @@ static byte act_get_ntp(byte* buf, byte buf_max_size);
 static bool act_set_ntp(const byte* buf, byte buf_size);
 static bool act_settings_load(bool def);
 static bool act_settings_save(void);
+static bool act_reboot(void);
 static unsigned long task_server(unsigned long dt);
 static unsigned long task_application(unsigned long dt);
 static unsigned long task_sensors(unsigned long dt);
@@ -508,6 +509,15 @@ static bool act_settings_save(void)
     return true;
 }
 
+static bool act_reboot(void)
+{
+    iPC("@reboot");
+
+    hw_reset_delay();
+
+    return true;
+}
+
 static unsigned long task_server(unsigned long dt)
 {
     dPC("#server");
@@ -537,7 +547,8 @@ static unsigned long task_server(unsigned long dt)
             act_get_ntp,
             act_set_ntp,
             act_settings_load,
-            act_settings_save);
+            act_settings_save,
+            act_reboot);
 
     return FAR_NEXT;
 }
