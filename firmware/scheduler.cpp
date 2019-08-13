@@ -79,7 +79,7 @@ void Scheduler::restart(void)
 
 unsigned long Scheduler::run(void)
 {
-    const unsigned long mark = _ticker.mark();
+    const unsigned long mark = _ticker.tick();
     const unsigned long dt = mark - _time_mark;
     _time_mark = mark;
 
