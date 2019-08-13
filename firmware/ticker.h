@@ -33,7 +33,7 @@
 #define SYNC_POSTPONE_NEXT      30000       /**< postpone sync for 30 secs */
 #define SYNC_FAIL_NEXT          3600000     /**< sync over next hour if fails */
 #define SYNC_NEXT               36000000    /**< sync once per 10 hours */
-#define REBOOT_NEXT             60000       /**< check once per minute */
+#define REBOOT_NEXT             1728000000  /**< make a reboot in a 20 days */
 #define LED_NEXT                100         /**< blink's next schedule, ms */
 #define PROBE_IDLE_NEXT         4000        /**< measurement period, ms */
 #define PROBE_ACTIVE_NEXT       4000        /**< measurement period, ms */

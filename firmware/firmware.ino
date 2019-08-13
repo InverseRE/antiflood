@@ -162,7 +162,7 @@ void setup()
     dPT(scheduler.add(task_display));
     dPT(scheduler.add(task_application));
     dPT(scheduler.add(task_net));
-    dPT(scheduler.add(task_reboot));
+    dPT(scheduler.add(task_reboot, REBOOT_NEXT));
     dPT(scheduler.add(task_sync));
     wdt_reset();
 
@@ -671,18 +671,6 @@ static unsigned long task_reboot(unsigned long dt)
 
     (void)dt;
 
-    bool cond = true; // TODO
-
-    // skip this time
-    if (cond) {
-        dPC("#reboot: next time");
-        return REBOOT_NEXT;
-    }
-
-    iPC("#reboot: reset");
-
-    // TODO: schedule reboot on a night time
-    // TODO: signal about reboot (through a trigger rerun this task later)
     hw_reset();
 
     return REBOOT_NEXT;
