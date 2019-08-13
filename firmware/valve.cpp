@@ -77,6 +77,13 @@ bool Valve::is_overrided(void) const
     return _is_ovr;
 }
 
+void Valve::unaware(void)
+{
+    dPC("vlv: unaware");
+
+    _act_state = VALVE_IGNORE;
+}
+
 bool Valve::open(void)
 {
     dPV("vlv: open", _is_ovr);

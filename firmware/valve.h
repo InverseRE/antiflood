@@ -57,6 +57,7 @@ public:
 
     bool is_engaged(void) const;
     bool is_overrided(void) const;
+    void unaware(void);                     // TODO: remove this
     bool open(void);
     bool close(void);
     bool force_open(void);

@@ -103,6 +103,7 @@ static unsigned long task_display(unsigned long dt);
 static unsigned long task_valves(unsigned long dt);
 static unsigned long task_reboot(unsigned long dt);
 static unsigned long task_sync(unsigned long dt);
+static unsigned long task_forget(unsigned long dt); // TODO: remove
 
 /** Startup procedure. */
 void setup()
@@ -164,6 +165,7 @@ void setup()
     dPT(scheduler.add(task_net));
     dPT(scheduler.add(task_reboot, REBOOT_NEXT));
     dPT(scheduler.add(task_sync));
+    dPT(scheduler.add(task_forget));
     wdt_reset();
 
     iPC("setup complete");
@@ -704,4 +706,29 @@ static unsigned long task_sync(unsigned long dt)
     scheduler.restart();
 
     return SYNC_NEXT;
+}
+
+static unsigned long task_forget(unsigned long dt)
+{
+    dPC("#forget");
+
+    (void)dt;
+
+    bool is_engaged = false;
+
+    for (int i = 0; i < valves_cnt; ++i) {
+        is_engaged |= valves[i].is_overrided();
+        is_engaged |= valves[i].is_engaged();
+    }
+
+    if (is_engaged) {
+        dPC("#forget: next time");
+        return VALVE_FORGET_NEXT;
+    }
+
+    for (int i = 0; i < valves_cnt; ++i) {
+        valves[i].unaware();
+    }
+
+    return VALVE_FORGET_NEXT;
 }
