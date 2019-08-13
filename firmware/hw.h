@@ -28,8 +28,14 @@
 #include "config.h"
 
 
-/** Turn off unused modules at startup. */
-void hw_configure();
+
+/**
+ * Configure peripherals.
+ * Checks buttons pressed.
+ *
+ * @return true - no buttons pressed, false - some button is pressed
+ */
+bool hw_configure();
 
 /** Perform reset by watchdog timer. */
 void hw_reset(void);

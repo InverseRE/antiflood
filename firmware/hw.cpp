@@ -34,6 +34,8 @@ static volatile bool wdt_ignore = false;
 static volatile bool wdt_permanent = false;
 static volatile bool internal_power_source = false;
 
+#define BUTTON_TRIGGER 850
+
 ISR(TIMER1_OVF_vect)
 {
 }
@@ -101,8 +103,13 @@ void wdt_configure(void)
     dPC("hw: wdt configured");
 }
 
-/** Turn off unused modules at startup. */
-void hw_configure()
+/**
+ * Configure peripherals.
+ * Checks buttons pressed.
+ *
+ * @return true - no buttons pressed, false - some button is pressed
+ */
+bool hw_configure()
 {
     interrupts();
 
@@ -118,7 +125,12 @@ void hw_configure()
 
     internal_power_source = false;
 
-    dPC("hw: configured");
+    /* pinMode() should be ommited for A6/A7*/
+    int switch_readings = analogRead(VFOPST);
+
+    dPV("hw: configured, switch", switch_readings);
+
+    return switch_readings > BUTTON_TRIGGER;
 }
 
 /**

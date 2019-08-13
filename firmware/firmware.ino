@@ -112,10 +112,10 @@ void setup()
     iPC("start");
 
     /* Setup HW devices */
-    hw_configure();
+    bool normal_boot = hw_configure();
 
     /* Settings. */
-    if (setting.load()) {
+    if (normal_boot && setting.load()) {
         iPC("custom config");
     } else {
         iPC("default config");
