@@ -41,12 +41,12 @@ struct Task {
 /** Scheduler. */
 class Scheduler {
 private:
-    const Ticker& _ticker;
+    Ticker& _ticker;
     unsigned long _time_mark;
     List<Task> _tasks;
 
 public:
-    Scheduler(const Ticker& ticker) : _ticker(ticker) {}
+    Scheduler(Ticker& ticker) : _ticker(ticker) {}
     void setup(void);
 
     bool add(Fptr task, unsigned long t2g = 0);
