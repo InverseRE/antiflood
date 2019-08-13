@@ -671,10 +671,10 @@ static unsigned long task_reboot(unsigned long dt)
 
     (void)dt;
 
-    unsigned long tm = ticker.tick();
+    bool cond = true; // TODO
 
     // skip this time
-    if (!(tm & 0x80000000)) {
+    if (cond) {
         dPC("#reboot: next time");
         return REBOOT_NEXT;
     }
