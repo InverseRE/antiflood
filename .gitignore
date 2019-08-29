@@ -1,4 +1,5 @@
 /.*bak
+**/Makefile.config
 *.diff
 *.patch
 GPATH
