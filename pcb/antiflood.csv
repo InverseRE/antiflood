@@ -1,0 +1,46 @@
+v;Designator;Package;Quantity;Designation;Supplier and ref;Price;Ordered Quantity;Summary;Variant B
+1;C1,C5,C12;CP_Elec_6.3x5.7;3;100;https://www.rcscomponents.kiev.ua/product/100uf-16v-ezv-smd-sizec-6-3x5-7-low-imp-ezv101m16rc-moq-3kpcs-elektroliticheskij-kondensator-smd-nizkoimpedansnyj_23396.html;3;6;18;
+2;C2,C4,C6,C7,C8,C13;C_1206;6;0.1;https://www.rcscomponents.kiev.ua/product/100nf-50v-x7r-10-1206-cc1206krx7r9bb104-yageo_105624.html;1,5;20;30;
+3;C3;CP_Elec_6.3x5.7;1;470;https://www.rcscomponents.kiev.ua/product/220uf-16v-ezv-smd-sizec8-6-3x7-7-low-imp-ezv221m16rc8-elektroliticheskij-kondensator-smd-nizkoimpedansnyj_30348.html;3,5;2;7;
+4;C10,C9;C_1206;2;22;https://www.rcscomponents.kiev.ua/product/22uf-16v-x5r-10-1210-cl32a226kojnnne_148483.html;11;4;44;на 10В https://www.rcscomponents.kiev.ua/product/22uf-10v-x7r-10-c1206-2k-reel-c1206b226k100n2-hitano-kondensatory-keramicheskie-smd_153942.html
+5;C11;C_1206;1;470p;https://www.rcscomponents.kiev.ua/product/470pf-50v-x7r-10-1206-1206b471k500nt-fenghua-kondensatory-keramicheskie-smd_149404.html;1,4;10;14;
+6;D1,D3,D8;D_SMA;3;D;https://www.rcscomponents.kiev.ua/product/1n4007-smd-m7-do214ac-2000-sht-b_73458.html;1;6;6;
+7;D4,,,,,D2,D5,,;LED_1206;9;LED;https://www.rcscomponents.kiev.ua/product/kls9-t1206uyc_126858.html;1;18;18;других цветов https://www.rcscomponents.kiev.ua/product/kt-smd1206-w_86415.html https://www.rcscomponents.kiev.ua/product/kt-smd1206-r_86411.html https://www.rcscomponents.kiev.ua/product/kt-smd1206-g_86412.html
+8;D6,D7;D_SMA;2;YJ SS14;https://www.rcscomponents.kiev.ua/product/ss14_1577.html;1,5;4;6;
+9;J1;BARREL_JACK;1;Barrel_Jack;https://www.rcscomponents.kiev.ua/product/dc-140-002-kls1-dc-005a-2-0-dc-power-socket_56645.html;3,5;2;7;
+10;J3,J4;TerminalBlock_bornier-3_P5.08mm;2;01x03;https://www.rcscomponents.kiev.ua/product/klemmnik-kls2-300-500-03p-2c_30659.html;3;4;12;
+11;J5;Socket_Strip_Straight_2x04_Pitch2.54mm;1;Conn_02x04_Odd_Even;https://www.rcscomponents.kiev.ua/product/pbd-8-gnezda-na-platu-2h4-2-54mm-kls1-208-3-5-2-08_92750.html;4,5;2;9;можно не брать, есть в наличии
+12;J6;Socket_Strip_Straight_2x05_Pitch2.54mm;1;Conn_02x05_Odd_Even;https://www.rcscomponents.kiev.ua/product/bh-10-vilka-na-platu-kls1-202-10-s-b-kls_72272.html;3;2;6;
+13;J7;Socket_Strip_Straight_2x03_Pitch2.54mm;1;Conn_02x03_Odd_Even;https://www.rcscomponents.kiev.ua/product/bh-6-vilka-na-platu-kls1-202-06-s-b_72276.html;3;2;6;
+14;J8,J9,J10,J11,J12,J13;TerminalBlock_bornier-2_P5.08mm;6;Screw_Terminal_01x02;https://www.rcscomponents.kiev.ua/product/klemmnik-dg301-5-0-02p-12-02a-h_124197.html;2;12;24;
+15;K1,K2;Relay_DPDT_FRT5;2;P-5;https://www.rcscomponents.kiev.ua/product/rele-p-5_24213.html;32;4;128;
+16;L1,L2;L_12x12mm_h6mm;2;220;https://www.rcscomponents.kiev.ua/product/scb1207-221m-220uh-20-1-2a-0-4-ohm-smd-12x12mm-h-8mm-v-bronevom-serdechnike-anla-tech-drossel-silovoj_39180.html;11;4;44;
+17;R1,R7,R22,R26;R_0805;4;1k5;https://www.rcscomponents.kiev.ua/product/1-5-kohm-5-0-125w-150v-0805-rc0805jr-1k5r-hitano-rezistor-smd_3703.html;0,09;100;9;
+18;R2,R8;R_0805;2;82;https://www.rcscomponents.kiev.ua/product/82-ohm-5-0-125w-150v-0805-rc0805jr-82r-hitano-rezistor-smd_1371.html;0,09;100;9;`
+19;R3;R_0805;1;2k;https://www.rcscomponents.kiev.ua/product/2-kohm-5-0-125w-150v-0805-rc0805jr-072kl-yageo_103691.html;0,09;100;9;
+20;R4;R_0805;1;12k;https://www.rcscomponents.kiev.ua/product/12-kohm-5-0-125w-150v-0805-rc0805jr-12k-hitano-rezistor-smd_1402.html;0,09;100;9;
+21;R5,R9,R10,R20,R21;R_0805;5;10k;https://www.rcscomponents.kiev.ua/product/10-kohm-5-0-125w-150v-0805-rc0805s8j0103t5e-uni-ohm-rezistor-smd_150145.html;0,25;100;25;
+22;R6,R12,,,,R14,,,;R_0805;9;1k;https://www.rcscomponents.kiev.ua/product/1-1-kohm-5-0-125w-150v-0805-rc0805jr-1k1-hitano-rezistor-smd_10835.html;0,09;100;9;по факту 1k1
+23;R16;R_0805;1;1k2;https://www.rcscomponents.kiev.ua/product/1-3-kohm-5-0-125w-150v-0805-rc0805jr-1k3-hitano-rezistor-smd_1713.html;0,09;100;9;
+24;R17;R_0805;1;1k05;https://www.rcscomponents.kiev.ua/product/1-1-kohm-5-0-125w-150v-0805-rc0805jr-1k1-hitano-rezistor-smd_10835.html;0;0;0;по факту 1k1
+25;R18;R_0805;1;20k;https://www.rcscomponents.kiev.ua/product/20-kohm-5-0-125w-150v-0805-rc0805jr-20kr-hitano-rezistor-smd_1766.html;0,09;100;9;
+26;R19;R_0805;1;3k6;https://www.rcscomponents.kiev.ua/product/3-6-kohm-5-0-125w-150v-0805-rc0805jr-3k6-hitano-rezistor-smd_1789.html;0,09;100;9;
+27;R23;R_0805;1;19k;https://www.rcscomponents.kiev.ua/product/20-kohm-5-0-125w-150v-0805-rc0805jr-20kr-hitano-rezistor-smd_1766.html;0;0;0;по факту 20k
+28;R24,R25,R27,R28,R29;R_0805;5;3k3;https://www.rcscomponents.kiev.ua/product/3-3-kohm-5-0-125w-150v-0805-rc0805jr-073k3-phycomp-rezistor-smd_3721.html;0,09;100;9;
+29;U5;SOIC-8-N;1;MC34063;https://www.rcscomponents.kiev.ua/product/mc34063acd-tr_12419.html;6;2;12;
+30;U6;SOIC-8-N;1;TP4056;https://www.rcscomponents.kiev.ua/product/tp4056_103650.html;10;2;20;
+31;Y1;Crystal_HC49-U_Vertical;1;16MHz;https://www.rcscomponents.kiev.ua/product/hc49u-16mhz_114757.html;7;2;14;
+32;SW1,SW2,SW3;SW_SPST_SKQG;3;SW_Push;https://www.rcscomponents.kiev.ua/product/knopka-taktovaya-tactm-613n-f_72986.html;1,5;10;15;
+33;C14,C15;C_1206;2;22p;https://www.rcscomponents.kiev.ua/product/22pf-50v-np0-5-1206-4k-reel-c1206n220j500nt-hitano-kondensatory-keramicheskie-smd_2270.html;0,95;10;9,5;
+34;J2;Pin_Header_Straight_1x03_Pitch2.54mm;1;Conn_01x03_Male;https://www.rcscomponents.kiev.ua/product/wh-3-wf-03s-ci3103p1v00-ns25-w3p-vilka-na-platu_12374.html;1,5;2;3;
+35;R11,R13;R_2010;2;0.5;https://www.rcscomponents.kiev.ua/product/1-ohm-5-3-4w-200v-2010-rc2010jk-1r-hitano_51177.html;0,7;10;7;
+36;R15;R_0805;1;0.33;https://www.rcscomponents.kiev.ua/product/0-33-ohm-5-0-125w-150v-0805-rl0805jr-0r33-hitano-rezistor-smd_25056.html;0,5;10;5;
+37;R36;R_0805;1;1M;https://www.rcscomponents.kiev.ua/product/1-mohm-5-0-125w-150v-0805-rc0805jr-1mr-hitano-rezistor-smd_27810.html;0,09;100;9;
+38;U1;TQFP-32_7x7mm_Pitch0.8mm;1;ATMEGA328P-AU;https://www.rcscomponents.kiev.ua/product/atmega328p-au_29080.html;65;2;130;
+39;U2;SOIC-8-N;1;TL7705;https://www.rcscomponents.kiev.ua/product/tl7705bcd_123304.html;9;2;18;
+40;U3;SOT-223-3_TabPin2;1;LM1117-3.3;https://www.rcscomponents.kiev.ua/product/lm1117mp-3-3-nopb_73474.html;24,5;2;49;
+41;U4;Ceramic_Filter;1;MT3608;https://radiostore.com.ua/p563091417-mikroshema-mt3608-sot23.html;4;2;8;
+42;Q1,Q2;SOT-23;2;MMBT3904;https://www.rcscomponents.kiev.ua/product/mmbt3904lt1g-ons_58026.html;1;4;4;
+43;корпус;plastic case;1;Z101 UKR;https://korpusdnepr.com/p360876244-korpus-z101-ukr.html;59;2;118;
+;;;;;;;;;
+;;;;;;;;906,5;
