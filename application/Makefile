@@ -128,7 +128,7 @@ $(DIRS):
 .SECONDEXPANSION:
 
 $(TESTER): $(SRCS) | $$(dir $$@) $$(TARGET_BUILD_DIR)
-	ghc -o $@ -odir $(TARGET_BUILD_DIR) -hidir $(TARGET_BUILD_DIR) $<
+	ghc -o $@ -odir $(TARGET_BUILD_DIR) -hidir $(TARGET_BUILD_DIR) $^
 
 ################################################################
 # Run something.
