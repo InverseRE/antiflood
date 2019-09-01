@@ -7,13 +7,11 @@ import Data.Word (Word8)
 
 
 
-from x = fromJust . ((flip lookup) x)
-
 data Cls = CEcho | CInfo | CRequest | CResponse | CRFU
          deriving (Eq)
 
 instance Enum Cls where
-    fromEnum = from cls_table
+    fromEnum = fromJust . flip lookup cls_table
     toEnum = fromJust . flip lookup (map swap cls_table)
 cls_table = [(CEcho, 0),
              (CInfo, 1),
@@ -29,7 +27,7 @@ data Ins = IAbout | ITime | IFullStatus | IOpenVavles | ICloseValves
          deriving (Eq)
 
 instance Enum Ins where
-    fromEnum = from ins_table
+    fromEnum = fromJust . flip lookup ins_table
     toEnum = fromJust . flip lookup (map swap ins_table)
 ins_table = [(IAbout, 0),
              (ITime, 1),
