@@ -1,0 +1,83 @@
+<resources>
+    <!-- Socket Timeout Preference -->
+    <string-array name="timeoutValues">
+        <item>"1000"</item>
+        <item>"2000"</item>
+        <item>"3000"</item>
+        <item>"5000"</item>
+        <item>"10000"</item>
+    </string-array>
+
+    <string-array name="timeoutAlias">
+        <item>"1 sec"</item>
+        <item>"2 sec"</item>
+        <item>"3 sec"</item>
+        <item>"5 sec"</item>
+        <item>"10 sec"</item>
+    </string-array>
+
+
+    <!-- WIFI Mode Preference -->
+    <string-array name="wifiModeValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="wifiModeAlias">
+        <item>Access Point (AP)</item>
+        <item>Station (STA)</item>
+        <item>Both</item>
+    </string-array>
+
+    <!-- WIFI Channel Preference -->
+    <string-array name="wifiChannelValues">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>13</item>
+    </string-array>
+
+    <string-array name="wifiChannelAlias">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>13</item>
+    </string-array>
+
+    <!-- WIFI Auth Preference -->
+    <string-array name="wifiAuthValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>
+
+    <string-array name="wifiAuthAlias">
+        <item>None</item>
+        <item>WEP</item>
+        <item>WPA_PSK</item>
+        <item>WPA2_PSK</item>
+        <item>WPA_WPA2_PSK</item>
+    </string-array>
+
+</resources>

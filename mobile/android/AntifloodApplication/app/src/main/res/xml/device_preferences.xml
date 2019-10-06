@@ -1,0 +1,78 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/device_first_header">
+
+        <EditTextPreference
+            android:key="@string/server_ip_key"
+            android:singleLine="true"
+            android:title="@string/server_ip"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            android:key="@string/server_port_key"
+            android:singleLine="true"
+            android:title="@string/server_port"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/device_second_header">
+
+        <ListPreference
+            android:key="@string/wifi_mode_key"
+            android:title="@string/wifi_mode"
+            android:entries="@array/wifiModeAlias"
+            android:entryValues="@array/wifiModeValues"
+            app:useSimpleSummaryProvider="true"/>
+
+        <ListPreference
+            android:key="@string/wifi_channel_key"
+            android:title="@string/wifi_channel"
+            android:entries="@array/wifiChannelAlias"
+            android:entryValues="@array/wifiChannelValues"
+            app:useSimpleSummaryProvider="true"/>
+
+        <ListPreference
+            android:key="@string/wifi_auth_key"
+            android:title="@string/wifi_auth"
+            android:entries="@array/wifiAuthAlias"
+            android:entryValues="@array/wifiAuthValues"
+            app:useSimpleSummaryProvider="true"/>
+
+        <EditTextPreference
+            android:key="@string/wifi_ssid_key"
+            android:singleLine="true"
+            android:title="@string/wifi_ssid"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/device_third_header">
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/device_fourth_header">
+
+        <EditTextPreference
+            android:key="@string/ntp_pool_key"
+            android:singleLine="true"
+            android:title="@string/ntp_pool_domain"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="">
+
+        <Preference
+            android:key="@string/load_eeprom_key"
+            android:summary="Press to load settings"
+            android:title="Load Device Settings" />
+
+        <Preference
+            android:key="@string/store_eeprom_key"
+            android:summary="Press to store settings"
+            android:title="Store Device Settings" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
